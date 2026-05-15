@@ -1,0 +1,99 @@
+<div style="display: grid; grid-template-columns: 1.2fr 2fr; gap: 1.5rem; align-items: start;">
+    <!-- Left: Balance Card -->
+    <div>
+        <div class="glass-card" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); margin-bottom: 1.5rem; position: relative; overflow: hidden; color: white; border: none; padding: 2rem;">
+            <div style="position: absolute; top: -10%; right: -5%; font-size: 10rem; color: rgba(255,255,255,0.08); transform: rotate(-15deg);">
+                <i class="fas fa-wallet"></i>
+            </div>
+            <div style="position: relative; z-index: 1;">
+                <p style="color: rgba(255,255,255,0.85); font-size: 0.95rem; font-weight: 600; margin-bottom: 0.5rem; letter-spacing: 0.02em;">Total Balance</p>
+                <h1 style="font-size: 3rem; font-weight: 800; margin-bottom: 2.5rem; letter-spacing: -0.02em;">₹<%= wallet.balance.toLocaleString('en-IN') %></h1>
+                <div style="display: flex; gap: 12px;">
+                    <button style="flex: 1; padding: 0.8rem; background: #fff; border: none; border-radius: 14px; color: #4f46e5; font-weight: 700; cursor: pointer; font-size: 0.9rem; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <i class="bi bi-arrow-up-right-circle-fill"></i> Withdraw
+                    </button>
+                    <button style="flex: 1; padding: 0.8rem; background: rgba(255,255,255,0.2); border: none; border-radius: 14px; color: white; font-weight: 700; cursor: pointer; font-size: 0.9rem; backdrop-filter: blur(8px); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                        <i class="bi bi-plus-circle-fill"></i> Add Funds
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card" style="padding: 1.5rem;">
+            <h4 style="margin-bottom: 1.2rem; color: var(--nav-text); font-weight: 700; font-size: 1rem;">Settlement Methods</h4>
+            <div style="background: #f8fafc; padding: 1rem; border-radius: 16px; border: 1.5px solid var(--glass-border); display: flex; align-items: center; gap: 12px; margin-bottom: 1.2rem;">
+                <div style="background: #1e293b; width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fab fa-cc-visa" style="color: #fff; font-size: 1.6rem;"></i>
+                </div>
+                <div style="flex-grow: 1;">
+                    <p style="font-size: 0.9rem; font-weight: 700; color: var(--nav-text);">Visa Ending in 4242</p>
+                    <p style="font-size: 0.75rem; color: var(--nav-muted); font-weight: 500;">Default Method • Exp 12/28</p>
+                </div>
+                <i class="bi bi-chevron-right" style="color: var(--nav-muted);"></i>
+            </div>
+            <button style="width: 100%; padding: 0.9rem; background: transparent; border: 1.5px dashed var(--glass-border); border-radius: 14px; color: var(--nav-muted); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--primary)'; this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--glass-border)'; this.style.color='var(--nav-muted)'">
+                <i class="bi bi-plus-lg"></i> Add New Settlement Method
+            </button>
+        </div>
+    </div>
+
+    <!-- Right: Transactions Table -->
+    <div class="glass-card" style="padding: 0; overflow: hidden;">
+        <div style="padding: 1.5rem 1.2rem; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="color: var(--nav-text); font-weight: 800; font-size: 1.2rem;">Transaction History</h3>
+            <button style="background: none; border: none; color: var(--primary); font-weight: 600; font-size: 0.85rem; cursor: pointer;">View All</button>
+        </div>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                <thead>
+                    <tr style="background: #f8fafc;">
+                        <th style="padding: 1rem 1.2rem; color: var(--nav-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Details</th>
+                        <th style="padding: 1rem 1.2rem; color: var(--nav-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Type</th>
+                        <th style="padding: 1rem 1.2rem; color: var(--nav-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Date</th>
+                        <th style="padding: 1rem 1.2rem; color: var(--nav-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Amount</th>
+                        <th style="padding: 1rem 1.2rem; color: var(--nav-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (transactions.length > 0) { %>
+                        <% transactions.forEach(tx => { %>
+                            <tr style="border-bottom: 1px solid var(--glass-border); transition: background 0.2s;" onmouseover="this.style.background='rgba(79, 70, 229, 0.02)'" onmouseout="this.style.background='transparent'">
+                                <td style="padding: 1.2rem; min-width: 200px;">
+                                    <p style="font-weight: 700; color: var(--nav-text); font-size: 0.95rem; margin-bottom: 2px;"><%= tx.description %></p>
+                                    <p style="font-size: 0.75rem; color: var(--nav-muted); font-weight: 500;">Ref ID: #<%= tx.id.slice(0,12).toUpperCase() %></p>
+                                </td>
+                                <td style="padding: 1.2rem;">
+                                    <span style="background: <%= tx.type === 'credit' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)' %>; color: <%= tx.type === 'credit' ? '#10b981' : '#ef4444' %>; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em;">
+                                        <%= tx.type %>
+                                    </span>
+                                </td>
+                                <td style="padding: 1.2rem; white-space: nowrap;">
+                                    <p style="font-size: 0.85rem; color: var(--nav-text); font-weight: 600; margin-bottom: 2px;"><%= new Date(tx.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %></p>
+                                    <p style="font-size: 0.7rem; color: var(--nav-muted); font-weight: 500;"><%= new Date(tx.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) %></p>
+                                </td>
+                                <td style="padding: 1.2rem; font-weight: 800; color: var(--nav-text); font-size: 1rem;">
+                                    <span style="color: <%= tx.type === 'credit' ? '#10b981' : '#ef4444' %>;"><%= tx.type === 'credit' ? '+' : '-' %> ₹<%= tx.amount.toLocaleString('en-IN') %></span>
+                                </td>
+                                <td style="padding: 1.2rem;">
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <div style="width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></div>
+                                        <span style="color: var(--nav-text); font-size: 0.85rem; font-weight: 700; text-transform: capitalize;"><%= tx.status %></span>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="5" style="padding: 5rem 2rem; text-align: center;">
+                                <div style="opacity: 0.3; margin-bottom: 1rem;">
+                                    <i class="bi bi-clock-history" style="font-size: 3rem; color: var(--nav-muted);"></i>
+                                </div>
+                                <p style="color: var(--nav-muted); font-size: 0.95rem; font-weight: 500;">No transactions recorded yet.</p>
+                            </td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

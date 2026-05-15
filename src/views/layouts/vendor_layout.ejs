@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= title %> - Vendor Portal
+    </title>
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --secondary: #06b6d4;
+            --accent: #8b5cf6;
+            --bg-main: #f1f5f9;
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --sidebar-bg: #1e293b;
+            --nav-panel-bg: #ffffff;
+            --icon-strip-bg: #1e293b;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --glass-border: rgba(0, 0, 0, 0.05);
+            --nav-text: #334155;
+            --nav-muted: #64748b;
+            --icon-strip-w: 72px;
+            --nav-panel-w: 260px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.05) 0px, transparent 50%);
+            background-attachment: fixed;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        /* ── Layout Wrapper ── */
+        .layout-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ── Icon Strip ── */
+        .icon-strip {
+            width: var(--icon-strip-w);
+            background: var(--icon-strip-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem 0;
+            gap: 0.8rem;
+            flex-shrink: 0;
+            z-index: 1001;
+            border-right: 1px solid var(--glass-border);
+            position: sticky;
+            top: 0;
+            height: 100vh;
+        }
+
+        .strip-icon {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            color: var(--text-muted);
+            font-size: 1.25rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid transparent;
+        }
+
+        .strip-icon:hover {
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--primary);
+            border-color: rgba(99, 102, 241, 0.2);
+            transform: scale(1.05);
+        }
+
+        .strip-icon.active {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .strip-divider {
+            width: 30px;
+            height: 1px;
+            background: var(--glass-border);
+            margin: 0.5rem 0;
+        }
+
+        .strip-toggle {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.15rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 0.5rem;
+        }
+
+        .strip-toggle:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+        }
+
+        /* ── Nav Panel ── */
+        .nav-panel {
+            width: var(--nav-panel-w);
+            background: var(--nav-panel-bg);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            z-index: 1000;
+            border-right: 1px solid var(--glass-border);
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s, transform 0.3s;
+        }
+
+        .nav-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5rem 1.2rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 1.2rem;
+            background: linear-gradient(to right, #6366f1, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-panel-toggle {
+            color: var(--text-muted);
+            border: none;
+            background: rgba(255, 255, 255, 0.05);
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-panel-toggle:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+        }
+
+        .nav-menu {
+            padding: 1.2rem 0.8rem;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .nav-link-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0.85rem 1rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-radius: 12px;
+            margin-bottom: 0.4rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .nav-link-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            transform: translateX(4px);
+        }
+
+        .nav-link-item.active {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .nav-link-item i {
+            font-size: 1.1rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .nav-panel-footer {
+            padding: 1.2rem;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .user-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0.8rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .user-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        .user-info {
+            flex-grow: 1;
+            min-width: 0;
+        }
+
+        .user-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-role {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: capitalize;
+        }
+
+        .logout-link {
+            color: #ef4444;
+            font-size: 1.1rem;
+            transition: transform 0.2s;
+        }
+
+        .logout-link:hover {
+            transform: scale(1.1);
+        }
+
+        /* ── Main Content ── */
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        header.topbar {
+            height: 72px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            border-bottom: 1px solid var(--glass-border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .topbar-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.02em;
+        }
+
+        .page-content {
+            padding: 2rem;
+            flex-grow: 1;
+        }
+
+        /* Glass Card Utility */
+        .glass-card {
+            background: #ffffff;
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .nav-panel {
+                position: fixed;
+                left: var(--icon-strip-w);
+                height: 100vh;
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+
+            .nav-panel.show {
+                transform: translateX(0);
+                opacity: 1;
+                box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
+            }
+        }
+
+        @media (max-width: 576px) {
+            .icon-strip {
+                width: 54px;
+            }
+
+            :root {
+                --icon-strip-w: 54px;
+            }
+
+            .strip-icon,
+            .strip-toggle {
+                width: 38px;
+                height: 38px;
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+    <%- typeof extraHead !=='undefined' ? extraHead : '' %>
+</head>
+
+<body>
+    <div class="layout-wrapper">
+        <!-- ① Icon Strip -->
+        <div class="icon-strip">
+            <button class="strip-toggle" id="stripToggleBtn" title="Toggle Menu">
+                <i class="bi bi-list"></i>
+            </button>
+            <div class="strip-divider"></div>
+
+            <a href="/vendor/dashboard" class="strip-icon <%= title === 'Vendor Dashboard' ? 'active' : '' %>"
+                title="Dashboard">
+                <i class="bi bi-grid-1x2-fill"></i>
+            </a>
+
+            <a href="/vendor/packages" class="strip-icon <%= title === 'My Packages' ? 'active' : '' %>"
+                title="Packages">
+                <i class="bi bi-box-seam-fill"></i>
+            </a>
+
+            <a href="/vendor/wallet" class="strip-icon <%= title === 'My Wallet' ? 'active' : '' %>" title="Wallet">
+                <i class="bi bi-wallet2"></i>
+            </a>
+
+            <div class="strip-divider"></div>
+
+            <a href="#" class="strip-icon" title="Analytics">
+                <i class="bi bi-bar-chart-fill"></i>
+            </a>
+
+            <a href="#" class="strip-icon" title="Settings">
+                <i class="bi bi-gear-fill"></i>
+            </a>
+        </div>
+
+        <!-- ② Nav Panel -->
+        <aside class="nav-panel" id="navPanel">
+            <div class="nav-panel-header">
+                <div class="nav-logo">
+                    <i class="fas fa-mountain-sun"></i>
+                    <span>Picktrails</span>
+                </div>
+                <button class="nav-panel-toggle" id="navPanelClose"><i class="bi bi-chevron-left"></i></button>
+            </div>
+
+            <nav class="nav-menu">
+                <a href="/vendor/dashboard" class="nav-link-item <%= title === 'Vendor Dashboard' ? 'active' : '' %>">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/vendor/packages" class="nav-link-item <%= title === 'My Packages' ? 'active' : '' %>">
+                    <i class="bi bi-archive"></i>
+                    <span>My Packages</span>
+                </a>
+                <a href="/vendor/wallet" class="nav-link-item <%= title === 'My Wallet' ? 'active' : '' %>">
+                    <i class="bi bi-wallet"></i>
+                    <span>My Wallet</span>
+                </a>
+                <a href="#" class="nav-link-item">
+                    <i class="bi bi-graph-up-arrow"></i>
+                    <span>Analytics</span>
+                </a>
+                <a href="#" class="nav-link-item">
+                    <i class="bi bi-sliders"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+
+            <div class="nav-panel-footer">
+                <div class="user-card">
+                    <div class="user-avatar">
+                        <%= user.name.charAt(0) %>
+                    </div>
+                    <div class="user-info">
+                        <div class="user-name">
+                            <%= user.name %>
+                        </div>
+                        <div class="user-role">
+                            <%= user.type %>
+                        </div>
+                    </div>
+                    <a href="/vendor/logout" class="logout-link" title="Logout">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ③ Main Content -->
+        <main class="main-content">
+            <header class="topbar">
+                <span class="topbar-title">
+                    <%= title %>
+                </span>
+                <div style="display: flex; gap: 1rem;">
+                    <div
+                        style="background: rgba(255,255,255,0.05); padding: 8px 15px; border-radius: 12px; border: 1px solid var(--glass-border); font-size: 0.85rem; display: flex; align-items: center; gap: 8px;">
+                        <i class="bi bi-calendar3" style="color: var(--primary);"></i>
+                        <%= new Date().toLocaleDateString('en-US', { month: 'short' , day: 'numeric' , year: 'numeric'
+                            }) %>
+                    </div>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <%- body %>
+            </div>
+        </main>
+    </div>
+
+    <!-- Floating restore button for mobile/collapsed -->
+    <button id="stripRestoreBtn" title="Show Menu" style="
+        display:none; position:fixed; left:0; top:50%; transform:translateY(-50%);
+        width:24px; height:60px; background:var(--primary); color:#fff;
+        border:none; border-radius:0 12px 12px 0; cursor:pointer;
+        font-size:1rem; z-index:2000; box-shadow:4px 0 15px rgba(0,0,0,0.3);
+    "><i class="bi bi-chevron-right"></i></button>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const navPanel = document.getElementById('navPanel');
+        const stripToggleBtn = document.getElementById('stripToggleBtn');
+        const navPanelClose = document.getElementById('navPanelClose');
+        const stripRestoreBtn = document.getElementById('stripRestoreBtn');
+        const iconStrip = document.querySelector('.icon-strip');
+
+        let navVisible = true;
+
+        function toggleNav(show) {
+            navVisible = show;
+            if (window.innerWidth > 992) {
+                navPanel.style.width = show ? 'var(--nav-panel-w)' : '0';
+                navPanel.style.opacity = show ? '1' : '0';
+                navPanel.style.pointerEvents = show ? 'all' : 'none';
+            } else {
+                navPanel.classList.toggle('show', show);
+            }
+            navPanelClose.innerHTML = show ? '<i class="bi bi-chevron-left"></i>' : '<i class="bi bi-chevron-right"></i>';
+        }
+
+        stripToggleBtn.addEventListener('click', () => {
+            toggleNav(!navVisible);
+        });
+
+        navPanelClose.addEventListener('click', () => {
+            toggleNav(!navVisible);
+        });
+
+        // Initialize state based on screen size
+        if (window.innerWidth <= 992) {
+            navVisible = false;
+        }
+    </script>
+    <%- typeof extraScripts !=='undefined' ? extraScripts : '' %>
+</body>
+
+</html>

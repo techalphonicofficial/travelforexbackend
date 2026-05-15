@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>
+    <%= title %> - Bali Travel
+  </title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    .tf-form-card {
+      background: #fff;
+      border-radius: 20px;
+      border: 0;
+      box-shadow: 0 10px 40px rgba(79, 70, 229, 0.08);
+      margin-bottom: 2rem;
+      overflow: hidden;
+    }
+
+    .tf-form-header {
+      padding: 1.5rem;
+      background: linear-gradient(to right, #f8faff, #ffffff);
+      border-bottom: 1px solid #f0f0fa;
+      font-weight: 700;
+      color: #1e1e4a;
+      display: flex;
+      align-items: center;
+      gap: .8rem;
+      font-size: 1.1rem;
+    }
+
+    .tf-form-body {
+      padding: 2rem;
+    }
+
+    .tf-page-header {
+      background: white;
+      border-radius: 20px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 10px 40px rgba(79, 70, 229, 0.08);
+    }
+
+    .tf-page-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #1e1e4a;
+      margin: 0;
+    }
+
+    .tf-page-sub {
+      color: #6b6b8d;
+      margin: 0;
+      font-size: 0.9rem;
+    }
+
+    .tf-back-btn {
+      width: 40px;
+      height: 40px;
+      background: #f0f0fa;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #4f46e5;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .tf-back-btn:hover {
+      background: #4f46e5;
+      color: white;
+    }
+
+    .btn-add-primary {
+      background: linear-gradient(135deg, #4f46e5, #818cf8);
+      border: none;
+      padding: 0.6rem 1.8rem;
+      border-radius: 12px;
+      color: white;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn-add-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
+    }
+
+    .tf-row-item {
+      background: #ffffff;
+      border: 1px solid #eef0f7;
+      border-radius: 18px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+
+    .tf-row-del {
+      position: absolute;
+      right: 1.2rem;
+      top: 1.2rem;
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: #fff5f5;
+      color: #ff4d4d;
+      border: 1px solid #ffe3e3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 10;
+      transition: all 0.2s;
+    }
+
+    .tf-row-del:hover {
+      background: #ff4d4d;
+      color: #fff;
+    }
+
+    .tf-add-row {
+      background: #f8faff;
+      color: #4f46e5;
+      border: 2px dashed #c7d2fe;
+      border-radius: 14px;
+      padding: 0.8rem;
+      width: 100%;
+      font-weight: 700;
+      transition: all 0.2s;
+    }
+
+    .tf-add-row:hover {
+      background: #eff2ff;
+      border-color: #4f46e5;
+    }
+
+    .day-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+
+    .day-tab-btn {
+      min-width: 70px;
+      padding: 10px 15px;
+      border-radius: 15px;
+      border: 1px solid #e2e8f0;
+      background: #fff;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .day-tab-btn.active {
+      background: #4f46e5;
+      border-color: #4f46e5;
+      color: #fff;
+    }
+
+    .day-tab-btn .d-num {
+      font-weight: 800;
+      font-size: 1.1rem;
+    }
+
+    .day-tab-btn .d-lbl {
+      font-size: 0.7rem;
+    }
+
+    .tf-day-content {
+      display: none;
+    }
+
+    .tf-day-content.active {
+      display: block;
+    }
+
+    .tf-activity-unit {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .days-badge {
+      background: #f0fdf4;
+      color: #16a34a;
+      border: 1px solid #dcfce7;
+      padding: 0.2rem 0.6rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .act-count-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #ef4444;
+      color: #fff;
+      font-size: 0.65rem;
+      padding: 1px 6px;
+      border-radius: 10px;
+      font-weight: 800;
+      display: none;
+    }
+
+    .toast-notification {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .modal-activity {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 10000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-activity.active {
+      display: flex;
+    }
+
+    .modal-content-custom {
+      background: white;
+      border-radius: 20px;
+      padding: 1.5rem;
+      width: 90%;
+      max-width: 450px;
+    }
+
+    .time-slot-badge {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: #e0e7ff;
+      color: #4f46e5;
+    }
+
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.9);
+      z-index: 99999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    /* Gallery Styles */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .gallery-item {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      aspect-ratio: 1;
+      border: 1px solid #e2e8f0;
+      background: #000;
+    }
+
+    .gallery-item img, .gallery-item video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .gallery-item .delete-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      width: 28px;
+      height: 28px;
+      background: rgba(255, 255, 255, 0.9);
+      color: #ef4444;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.2s;
+      border: none;
+    }
+
+    .gallery-item:hover .delete-btn {
+      opacity: 1;
+    }
+
+    .gallery-upload-card {
+      border: 2px dashed #cbd5e1;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      aspect-ratio: 1;
+      color: #64748b;
+    }
+
+    .gallery-upload-card:hover {
+      border-color: #4f46e5;
+      color: #4f46e5;
+      background: #f8fafc;
+    }
+
+    .video-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 2rem;
+      pointer-events: none;
+    }
+    </style>
+</head>
+
+<body class="bg-light">
+
+  <div class="container-fluid" style="max-width: 1400px; margin: 0 auto;">
+    <div class="tf-page-header">
+      <div class="d-flex align-items-center gap-3">
+        <a href="/travel/packages" class="tf-back-btn"><i class="bi bi-chevron-left"></i></a>
+        <div>
+          <p class="tf-page-title">
+            <%= title %>
+          </p>
+          <p class="tf-page-sub">Multi-destination daily activity management</p>
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="/travel/packages" class="btn btn-light px-4 rounded-3 border">Cancel</a>
+        <button class="btn-add-primary px-5" id="savePackageBtn">
+          <i class="bi bi-check2-circle"></i> Save Package
+        </button>
+      </div>
+    </div>
+
+    <div id="notificationToast" class="toast-notification" style="display: none;">
+      <div class="bg-white rounded-3 shadow-lg p-3 d-flex align-items-center gap-3 border-start border-4"
+        id="toastMessage">
+        <i class="bi bi-check-circle-fill text-success fs-4"></i>
+        <span></span>
+      </div>
+    </div>
+
+    <div id="activityModal" class="modal-activity">
+      <div class="modal-content-custom">
+        <h5 class="mb-3"><i class="bi bi-plus-circle me-2"></i> Add Activity</h5>
+        <div class="mb-3">
+          <label class="form-label">Activity Name</label>
+          <input type="text" class="form-control" id="modalActivityName" list="actlist_suggest">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Time Slot</label>
+          <select class="form-select" id="modalTimeSlot">
+            <option value="Full Day">Full Day</option>
+            <option value="Morning">Morning</option>
+            <option value="Noon">Noon</option>
+            <option value="Evening">Evening</option>
+            <option value="Morning to Noon">Morning to Noon</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Description</label>
+          <textarea class="form-control" id="modalDescription" rows="2"></textarea>
+        </div>
+        <div class="d-flex gap-2 justify-content-end">
+          <button class="btn btn-light" id="closeModalBtn">Cancel</button>
+          <button class="btn btn-primary" id="confirmActivityBtn">Add Activity</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-12">
+        <div class="tf-form-card">
+          <div class="tf-form-header"><i class="bi bi-info-circle text-primary"></i> Basic Details</div>
+          <div class="tf-form-body">
+            <div class="row g-3">
+              <div class="col-md-12">
+                <label class="form-label fw-bold">Package Name</label>
+                <input type="text" class="form-control" id="fName">
+              </div>
+              <div class="col-md-12">
+                <div class="form-check form-switch pt-2 pb-2">
+                    <input class="form-check-input" type="checkbox" id="showInHomePage" role="switch">
+                    <label class="form-check-label fw-bold ps-2" for="showInHomePage">Show in Home Page</label>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <label class="form-label fw-bold">Description</label>
+                <textarea class="form-control" id="fDesc" rows="3" placeholder="Package description..."></textarea>
+              </div>
+              <div class="col-md-12">
+                <label class="form-label fw-bold">Duration (Days)</label>
+                <input type="number" class="form-control bg-light" id="fDays" readonly>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tf-form-card">
+          <div class="tf-form-header"><i class="bi bi-geo-alt text-danger"></i> Route & Daily Itinerary</div>
+          <div class="tf-form-body">
+            <div id="stayList"></div>
+            <button class="tf-add-row mt-2" id="addDestinationBtn">
+              <i class="bi bi-plus-lg me-1"></i> Add Stay (Destination)
+            </button>
+          </div>
+        </div>
+
+        <div class="tf-form-card">
+          <div class="tf-form-header"><i class="bi bi-images text-warning"></i> Package Gallery (Images & Videos)</div>
+          <div class="tf-form-body">
+            <div class="gallery-grid" id="packageGallery">
+              <!-- Gallery items will be rendered here -->
+              <div class="gallery-upload-card" onclick="document.getElementById('galleryInput').click()">
+                <i class="bi bi-plus-circle fs-2 mb-2"></i>
+                <span class="small fw-bold">Add Media</span>
+                <input type="file" id="galleryInput" hidden accept="image/*,video/*">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-4">
+          <div class="col-6">
+            <div class="tf-form-card">
+              <div class="tf-form-header"><i class="bi bi-check-circle text-success"></i> Inclusions</div>
+              <div class="tf-form-body">
+                <div id="incList"></div>
+                <div class="input-group mt-2">
+                  <input type="text" class="form-control" id="newInclusion" placeholder="Enter inclusion">
+                  <button class="btn btn-outline-primary" id="addInclusionBtn">Add</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="tf-form-card">
+              <div class="tf-form-header"><i class="bi bi-x-circle text-danger"></i> Exclusions</div>
+              <div class="tf-form-body">
+                <div id="excList"></div>
+                <div class="input-group mt-2">
+                  <input type="text" class="form-control" id="newExclusion" placeholder="Enter exclusion">
+                  <button class="btn btn-outline-primary" id="addExclusionBtn">Add</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <datalist id="actlist_suggest">
+    <% activities.forEach(a=> { %>
+      <option value="<%= a.name %>">
+        <% }) %>
+  </datalist>
+
+  <script>
+    // Server data
+    const PKG_DATA = <%- JSON.stringify(pkg).replace(/</g, '\\u003c') %>;
+    const DESTINATIONS_LIST = <%- JSON.stringify(destinations).replace(/</g, '\\u003c') %>;
+
+    let destinations = [];
+    let inclusions = [];
+    let exclusions = [];
+    let currentDestIdx = null;
+    let currentDayNum = null;
+
+    function showNotification(message, isError = false) {
+      const toast = document.getElementById('notificationToast');
+      const toastMsg = document.getElementById('toastMessage');
+      const icon = toastMsg.querySelector('i');
+
+      if (isError) {
+        icon.className = 'bi bi-x-circle-fill text-danger fs-4';
+        toastMsg.style.borderLeftColor = '#dc2626';
+      } else {
+        icon.className = 'bi bi-check-circle-fill text-success fs-4';
+        toastMsg.style.borderLeftColor = '#10b981';
+      }
+
+      toastMsg.querySelector('span').textContent = message;
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    function generateId() {
+      return Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    }
+
+    function updateTotalDays() {
+      let total = 0;
+      destinations.forEach(dest => { 
+        total += (parseInt(dest.nights) || 0) + 1; 
+      });
+      document.getElementById('fDays').value = total;
+    }
+
+    function renderDestinations() {
+      const container = document.getElementById('stayList');
+      if (!container) return;
+
+      if (destinations.length === 0) {
+        container.innerHTML = '<div class="alert alert-info">No destinations added. Click "Add Destination" to start building your itinerary.</div>';
+        return;
+      }
+
+      let html = '';
+      destinations.forEach((dest, idx) => {
+        const totalDays = (dest.nights || 0) + 1;
+        html += `
+                <div class="tf-row-item" data-dest-idx="${idx}">
+                    <div class="tf-row-del" onclick="removeDestination(${idx})"><i class="bi bi-trash3"></i></div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-5">
+                            <label class="form-label fw-bold">Destination</label>
+                            <select class="form-select dest-select" data-idx="${idx}">
+                                <option value="">Select Destination</option>
+                                ${DESTINATIONS_LIST.map(d => `<option value="${d.id}" ${dest.destinationId == d.id ? 'selected' : ''}>${d.name}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Nights</label>
+                            <input type="number" class="form-control nights-input" data-idx="${idx}" value="${dest.nights || 2}" min="1">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Day Range</label>
+                            <div class="days-badge" id="days_badge_${idx}"><i class="bi bi-sun"></i> ${totalDays} Days</div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label fw-bold">Daily Activities</label>
+                        <div class="day-tabs" id="dayTabs-${idx}"></div>
+                        <div id="dayContents-${idx}"></div>
+                    </div>
+                </div>
+            `;
+      });
+      container.innerHTML = html;
+
+      destinations.forEach((dest, idx) => {
+        attachDestinationEvents(idx);
+        renderDayTabs(idx);
+      });
+      updateTotalDays();
+    }
+
+    function attachDestinationEvents(idx) {
+      const destDiv = document.querySelector(`.tf-row-item[data-dest-idx="${idx}"]`);
+      if (!destDiv) return;
+
+      const destSelect = destDiv.querySelector('.dest-select');
+      const nightsInput = destDiv.querySelector('.nights-input');
+
+      if (destSelect) {
+        destSelect.addEventListener('change', (e) => {
+          destinations[idx].destinationId = parseInt(e.target.value);
+          const selectedDest = DESTINATIONS_LIST.find(d => d.id == e.target.value);
+          if (selectedDest) destinations[idx].destinationName = selectedDest.name;
+          renderDestinations();
+        });
+      }
+
+      if (nightsInput) {
+        nightsInput.addEventListener('change', (e) => {
+          destinations[idx].nights = parseInt(e.target.value) || 1;
+          renderDestinations();
+        });
+      }
+    }
+
+    function renderDayTabs(destIdx) {
+      const dest = destinations[destIdx];
+      if (!dest) return;
+
+      const totalDays = (parseInt(dest.nights) || 0) + 1;
+
+      // Ensure activities object exists and has keys for all days
+      if (!dest.activities) dest.activities = {};
+      for (let i = 1; i <= totalDays; i++) {
+        if (!dest.activities[i]) dest.activities[i] = [];
+        // Ensure every activity has an ID for proper deletion in UI
+        dest.activities[i].forEach(act => {
+          if (!act.id) act.id = generateId();
+        });
+      }
+
+      const tabsContainer = document.getElementById(`dayTabs-${destIdx}`);
+      const contentsContainer = document.getElementById(`dayContents-${destIdx}`);
+      if (!tabsContainer || !contentsContainer) return;
+
+      let tabsHtml = '<div class="d-flex gap-2 flex-wrap">';
+      let contentsHtml = '';
+
+      for (let i = 1; i <= totalDays; i++) {
+        const actCount = (dest.activities[i] || []).length;
+        tabsHtml += `
+                <div class="day-tab-btn ${i === 1 ? 'active' : ''}" onclick="showDay(${destIdx}, ${i})">
+                    <div class="d-lbl">DAY</div>
+                    <div class="d-num">${i}</div>
+                    ${actCount > 0 ? `<span class="act-count-badge" style="display:block">${actCount}</span>` : ''}
+                </div>
+            `;
+
+        contentsHtml += `
+                <div class="tf-day-content ${i === 1 ? 'active' : ''}" id="dayContent-${destIdx}-${i}">
+                    <div class="mb-2">
+                        <button class="btn btn-sm btn-outline-primary" onclick="openActivityModal(${destIdx}, ${i})">
+                            <i class="bi bi-plus"></i> Add Activity
+                        </button>
+                    </div>
+                    <div id="activitiesList-${destIdx}-${i}">
+                        ${renderActivitiesList(dest.activities[i] || [], destIdx, i)}
+                    </div>
+                </div>
+            `;
+      }
+      tabsHtml += '</div>';
+
+      tabsContainer.innerHTML = tabsHtml;
+      contentsContainer.innerHTML = contentsHtml;
+    }
+
+    function renderActivitiesList(activities, destIdx, dayNum) {
+      if (!activities || activities.length === 0) {
+        return '<div class="text-muted small p-3 text-center">No activities added for this day</div>';
+      }
+
+      return activities.map((act, idx) => `
+            <div class="tf-activity-unit d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <strong>${escapeHtml(act.name)}</strong>
+                        <span class="time-slot-badge">${escapeHtml(act.duration || 'Full Day')}</span>
+                        ${act.price ? `<span class="text-muted small">₹${act.price}</span>` : ''}
+                    </div>
+                    ${act.description ? `<div class="text-muted small mt-1">${escapeHtml(act.description)}</div>` : ''}
+                </div>
+                <i class="bi bi-trash3 text-danger remove-activity" style="cursor:pointer" onclick="removeActivity(${destIdx}, ${dayNum}, '${act.id}')"></i>
+            </div>
+        `).join('');
+    }
+
+    function showDay(destIdx, dayNum) {
+      const dest = destinations[destIdx];
+      if (!dest) return;
+      const totalDays = (parseInt(dest.nights) || 0) + 1;
+
+      const tabsContainer = document.getElementById(`dayTabs-${destIdx}`);
+      if (tabsContainer) {
+        const tabs = tabsContainer.querySelectorAll('.day-tab-btn');
+        tabs.forEach((tab, idx) => {
+          if (idx + 1 === dayNum) tab.classList.add('active');
+          else tab.classList.remove('active');
+        });
+      }
+
+      for (let i = 1; i <= totalDays; i++) {
+        const content = document.getElementById(`dayContent-${destIdx}-${i}`);
+        if (content) content.classList.remove('active');
+      }
+      const activeContent = document.getElementById(`dayContent-${destIdx}-${dayNum}`);
+      if (activeContent) activeContent.classList.add('active');
+    }
+
+    function openActivityModal(destIdx, dayNum) {
+      currentDestIdx = destIdx;
+      currentDayNum = dayNum;
+      document.getElementById('modalActivityName').value = '';
+      document.getElementById('modalTimeSlot').value = 'Full Day';
+      document.getElementById('modalDescription').value = '';
+      document.getElementById('activityModal').classList.add('active');
+    }
+
+    function addActivityFromModal() {
+      const name = document.getElementById('modalActivityName').value.trim();
+      if (!name) {
+        showNotification('Please enter activity name', true);
+        return;
+      }
+
+      const newActivity = {
+        id: generateId(),
+        name: name,
+        duration: document.getElementById('modalTimeSlot').value,
+        description: document.getElementById('modalDescription').value.trim(),
+        price: 0
+      };
+
+      if (!destinations[currentDestIdx].activities[currentDayNum]) {
+        destinations[currentDestIdx].activities[currentDayNum] = [];
+      }
+      destinations[currentDestIdx].activities[currentDayNum].push(newActivity);
+      renderDestinations();
+      document.getElementById('activityModal').classList.remove('active');
+      showNotification('Activity added successfully!');
+    }
+
+    function removeActivity(destIdx, dayNum, activityId) {
+      const activities = destinations[destIdx].activities[dayNum];
+      const index = activities.findIndex(a => a.id === activityId);
+      if (index !== -1) {
+        activities.splice(index, 1);
+        renderDestinations();
+        showNotification('Activity removed');
+      }
+    }
+
+    function removeDestination(idx) {
+      destinations.splice(idx, 1);
+      renderDestinations();
+      showNotification('Destination removed');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>]/g, function (m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+      });
+    }
+
+    function renderInclusions() {
+      const container = document.getElementById('incList');
+      if (!container) return;
+      if (inclusions.length === 0) {
+        container.innerHTML = '<div class="text-muted">No inclusions added</div>';
+        return;
+      }
+      container.innerHTML = inclusions.map((inc, idx) => `
+            <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                <span><i class="bi bi-check-circle-fill text-success me-2"></i>${escapeHtml(inc)}</span>
+                <i class="bi bi-trash3 text-danger" style="cursor:pointer" onclick="removeInclusion(${idx})"></i>
+            </div>
+        `).join('');
+    }
+
+    function renderExclusions() {
+      const container = document.getElementById('excList');
+      if (!container) return;
+      if (exclusions.length === 0) {
+        container.innerHTML = '<div class="text-muted">No exclusions added</div>';
+        return;
+      }
+      container.innerHTML = exclusions.map((exc, idx) => `
+            <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                <span><i class="bi bi-x-circle-fill text-danger me-2"></i>${escapeHtml(exc)}</span>
+                <i class="bi bi-trash3 text-danger" style="cursor:pointer" onclick="removeExclusion(${idx})"></i>
+            </div>
+        `).join('');
+    }
+
+    function addInclusion() {
+      const input = document.getElementById('newInclusion');
+      const text = input.value.trim();
+      if (text) {
+        inclusions.push(text);
+        renderInclusions();
+        input.value = '';
+        showNotification('Inclusion added');
+      }
+    }
+
+    function addExclusion() {
+      const input = document.getElementById('newExclusion');
+      const text = input.value.trim();
+      if (text) {
+        exclusions.push(text);
+        renderExclusions();
+        input.value = '';
+        showNotification('Exclusion added');
+      }
+    }
+
+    function removeInclusion(idx) {
+      inclusions.splice(idx, 1);
+      renderInclusions();
+      showNotification('Inclusion removed');
+    }
+
+    function removeExclusion(idx) {
+      exclusions.splice(idx, 1);
+      renderExclusions();
+      showNotification('Exclusion removed');
+    }
+
+    async function savePackage() {
+      const packageName = document.getElementById('fName').value;
+      const description = document.getElementById('fDesc')?.value || '';
+      const showInHomePage = !!document.getElementById('showInHomePage')?.checked;
+      const duration = parseInt(document.getElementById('fDays').value) || 0;
+
+      if (!packageName) {
+        showNotification('Please enter package name', true);
+        return;
+      }
+      if (destinations.length === 0) {
+        showNotification('Please add at least one destination', true);
+        return;
+      }
+
+      const packageData = {
+        id: PKG_DATA ? PKG_DATA.id : null,
+        name: packageName,
+        description: description,
+        show_in_home_page: showInHomePage,
+        duration: duration,
+        destinations: destinations.map(dest => ({
+          destinationId: dest.destinationId,
+          nights: dest.nights,
+          activities: dest.activities
+        })),
+        inclusions: inclusions,
+        exclusions: exclusions
+      };
+
+      try {
+        const response = await fetch('/travel/packages/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(packageData)
+        });
+        const result = await response.json();
+        if (result.success) {
+          showNotification('Package saved successfully!');
+          setTimeout(() => { window.location.href = '/travel/packages'; }, 1500);
+        } else {
+          showNotification('Error: ' + (result.message || 'Unknown error'), true);
+        }
+      } catch (err) {
+        showNotification('Network error: ' + err.message, true);
+      }
+    }
+
+    // ============ AUTO FILL EXISTING DATA ============
+    function autoFillExistingData() {
+      console.log('Auto-filling existing data:', PKG_DATA);
+
+      if (!PKG_DATA) return;
+
+      // Fill package name
+      document.getElementById('fName').value = PKG_DATA.name || '';
+      if (document.getElementById('fDesc')) document.getElementById('fDesc').value = PKG_DATA.description || '';
+      if (document.getElementById('showInHomePage')) document.getElementById('showInHomePage').checked = !!PKG_DATA.show_in_home_page;
+
+      // Fill inclusions
+      if (PKG_DATA.inclusions && PKG_DATA.inclusions.length) {
+        inclusions = PKG_DATA.inclusions.map(i => i.text || i);
+        renderInclusions();
+      }
+
+      // Fill exclusions
+      if (PKG_DATA.exclusions && PKG_DATA.exclusions.length) {
+        exclusions = PKG_DATA.exclusions.map(e => e.text || e);
+        renderExclusions();
+      }
+
+      // Fill stays/destinations with activities
+      if (PKG_DATA.stays && PKG_DATA.stays.length) {
+        destinations = PKG_DATA.stays.map(stay => ({
+          destinationId: stay.id,
+          destinationName: stay.name,
+          nights: parseInt(stay.nights) || 2,
+          activities: stay.activities || {}
+        }));
+      }
+
+      // Render everything
+      renderDestinations();
+    }
+
+    // Gallery Functions
+    function renderGallery() {
+      const gallery = PKG_DATA.gallery || [];
+      const container = document.getElementById('packageGallery');
+      const uploadCard = container.querySelector('.gallery-upload-card');
+      
+      // Clear existing items
+      container.querySelectorAll('.gallery-item').forEach(el => el.remove());
+
+      gallery.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'gallery-item';
+        div.innerHTML = `
+          ${item.media_type === 'video' 
+            ? `<video src="${item.url}"></video><div class="video-overlay"><i class="bi bi-play-circle-fill"></i></div>` 
+            : `<img src="${item.url}" alt="${item.alt_text || ''}">`
+          }
+          <button class="delete-btn" onclick="deleteGalleryItem(${item.id})"><i class="bi bi-trash3-fill"></i></button>
+        `;
+        container.insertBefore(div, uploadCard);
+      });
+    }
+
+    async function handleGalleryUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('media', file);
+
+      try {
+        const response = await fetch(`/travel/packages/${PKG_DATA.id}/gallery`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          if (!PKG_DATA.gallery) PKG_DATA.gallery = [];
+          PKG_DATA.gallery.push(result.media);
+          renderGallery();
+          showNotification('Media uploaded successfully');
+        } else {
+          showNotification(result.message || 'Upload failed', true);
+        }
+      } catch (err) {
+        showNotification('Error uploading file', true);
+      }
+      e.target.value = ''; // Reset input
+    }
+
+    async function deleteGalleryItem(mediaId) {
+      if (!confirm('Are you sure you want to delete this media?')) return;
+
+      try {
+        const response = await fetch(`/travel/packages/${PKG_DATA.id}/gallery/${mediaId}`, {
+          method: 'DELETE'
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          PKG_DATA.gallery = PKG_DATA.gallery.filter(m => m.id !== mediaId);
+          renderGallery();
+          showNotification('Media removed');
+        } else {
+          showNotification(result.message || 'Delete failed', true);
+        }
+      } catch (err) {
+        showNotification('Error deleting file', true);
+      }
+    }
+
+    // Event Listeners
+    document.getElementById('addDestinationBtn')?.addEventListener('click', () => {
+      destinations.push({ destinationId: null, destinationName: '', nights: 2, activities: {} });
+      renderDestinations();
+      showNotification('Destination added');
+    });
+    document.getElementById('addInclusionBtn')?.addEventListener('click', addInclusion);
+    document.getElementById('addExclusionBtn')?.addEventListener('click', addExclusion);
+    document.getElementById('savePackageBtn')?.addEventListener('click', savePackage);
+    document.getElementById('closeModalBtn')?.addEventListener('click', () => {
+      document.getElementById('activityModal').classList.remove('active');
+    });
+    document.getElementById('confirmActivityBtn')?.addEventListener('click', addActivityFromModal);
+    document.getElementById('newInclusion')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') addInclusion(); });
+    document.getElementById('newExclusion')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') addExclusion(); });
+    document.getElementById('galleryInput')?.addEventListener('change', handleGalleryUpload);
+
+    // Initialize with auto-fill
+    autoFillExistingData();
+    renderGallery();
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

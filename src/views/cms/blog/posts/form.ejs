@@ -1,0 +1,130 @@
+<div class="tf-page-header">
+  <div>
+    <h2 class="tf-page-title"><%= post ? 'Edit Post' : 'New Blog Post' %></h2>
+    <p class="tf-page-sub">Write and publish your latest story</p>
+  </div>
+  <a href="/cms/blog/posts" class="btn btn-light border">
+    <i class="bi bi-arrow-left me-2"></i> Back to Posts
+  </a>
+</div>
+
+<form action="<%= post ? '/cms/blog/posts/' + post.id + '/update' : '/cms/blog/posts/save' %>" method="POST" enctype="multipart/form-data">
+  <div class="row g-4">
+    <!-- Left Column: Content -->
+    <div class="col-lg-8">
+      <div class="card tf-form-card mb-4">
+        <div class="tf-form-header">Article Content</div>
+        <div class="tf-form-body">
+          <div class="mb-4">
+            <label class="form-label fw-bold">Post Title</label>
+            <input type="text" name="title" class="form-control form-control-lg" required placeholder="Enter catchy title..." value="<%= post ? post.title : '' %>" oninput="if(!document.getElementsByName('slug')[0].value) document.getElementsByName('slug')[0].value = this.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')">
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-bold">Slug</label>
+            <input type="text" name="slug" class="form-control" required value="<%= post ? post.slug : '' %>">
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-bold">Short Summary</label>
+            <textarea name="summary" class="form-control" rows="2" placeholder="Brief intro for the post..."><%= post ? post.summary : '' %></textarea>
+          </div>
+          <div class="mb-0">
+            <label class="form-label fw-bold">Full Content</label>
+            <textarea name="content" id="editor" class="form-control" rows="15"><%= post ? post.content : '' %></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="card tf-form-card">
+        <div class="tf-form-header">SEO Metadata</div>
+        <div class="tf-form-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">Meta Title</label>
+            <input type="text" name="meta_title" class="form-control" value="<%= post ? post.meta_title : '' %>">
+          </div>
+          <div class="mb-0">
+            <label class="form-label fw-bold">Meta Description</label>
+            <textarea name="meta_description" class="form-control" rows="3"><%= post ? post.meta_description : '' %></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Settings -->
+    <div class="col-lg-4">
+      <div class="card tf-form-card mb-4">
+        <div class="tf-form-header">Publishing Settings</div>
+        <div class="tf-form-body">
+          <div class="mb-4">
+            <label class="form-label fw-bold">Category</label>
+            <select name="category_id" class="form-select" required>
+              <option value="">Select Category</option>
+              <% categories.forEach(cat => { %>
+                <option value="<%= cat.id %>" <%= post && post.category_id === cat.id ? 'selected' : '' %>><%= cat.name %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-bold">Status</label>
+            <select name="status" class="form-select">
+              <option value="draft" <%= post && post.status === 'draft' ? 'selected' : '' %>>Draft</option>
+              <option value="published" <%= post && post.status === 'published' ? 'selected' : '' %>>Published</option>
+              <option value="scheduled" <%= post && post.status === 'scheduled' ? 'selected' : '' %>>Scheduled</option>
+            </select>
+          </div>
+          <div class="mb-0">
+             <div class="form-check form-switch mt-2">
+                <input class="form-check-input" type="checkbox" name="is_featured" value="1" <%= post && post.is_featured ? 'checked' : '' %>>
+                <label class="form-check-label fw-bold">Featured Post</label>
+             </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card tf-form-card mb-4">
+        <div class="tf-form-header">Featured Image</div>
+        <div class="tf-form-body text-center">
+          <div class="mb-3">
+            <% if (post && post.featured_image) { %>
+              <img id="preview" src="<%= post.featured_image %>" class="rounded w-100 shadow-sm" style="max-height: 200px; object-fit: cover;">
+            <% } else { %>
+              <div id="preview-placeholder" class="bg-light rounded border border-dashed p-4">
+                <i class="bi bi-image text-muted display-6"></i>
+              </div>
+              <img id="preview" src="#" class="rounded w-100 shadow-sm d-none" style="max-height: 200px; object-fit: cover;">
+            <% } %>
+          </div>
+          <label class="btn btn-outline-primary btn-sm px-4">
+            Upload Image
+            <input type="file" name="featured_image" class="d-none" onchange="previewImage(this)">
+          </label>
+        </div>
+      </div>
+
+      <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow">
+          <i class="bi bi-check2-circle me-2"></i> Save Post
+        </button>
+      </div>
+    </div>
+  </div>
+</form>
+
+<script>
+  function previewImage(input) {
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById('preview').src = e.target.result;
+        document.getElementById('preview').classList.remove('d-none');
+        if (document.getElementById('preview-placeholder')) document.getElementById('preview-placeholder').classList.add('d-none');
+      }
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+</script>
+
+<style>
+  .tf-form-card { border-radius: 16px; overflow: hidden; border: 1px solid rgba(0,0,0,0.05); }
+  .tf-form-header { background: #f8fafc; padding: 1rem 1.25rem; font-weight: 700; color: #1e1e4a; border-bottom: 1px solid rgba(0,0,0,0.05); }
+  .tf-form-body { padding: 1.5rem; }
+</style>

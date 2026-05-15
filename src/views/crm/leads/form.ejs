@@ -1,0 +1,231 @@
+<div class="tf-page-header">
+  <div class="d-flex align-items-center gap-3">
+    <a href="/crm/leads" class="tf-back-btn"><i class="bi bi-chevron-left"></i></a>
+    <div>
+      <h1 class="tf-page-title"><%= title %></h1>
+      <p class="tf-page-sub">Capture lead information and custom details</p>
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="/crm/leads" class="btn btn-light px-4 rounded-3 border">Cancel</a>
+    <button class="btn-save" id="saveLeadBtn">
+      <i class="bi bi-check2-circle me-1"></i> Save Lead
+    </button>
+  </div>
+</div>
+
+<form id="leadForm">
+  <input type="hidden" name="id" value="<%= lead ? lead.id : '' %>">
+  <div class="row g-4">
+    <div class="col-md-7">
+      <!-- Basic Details -->
+      <div class="tf-form-card">
+        <div class="tf-form-header"><i class="bi bi-person-fill text-primary"></i> Primary Info</div>
+        <div class="tf-form-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-bold">Full Name</label>
+              <input type="text" class="form-control" name="name" value="<%= lead ? lead.name : '' %>" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Email Address</label>
+              <input type="email" class="form-control" name="email" value="<%= lead ? lead.email : '' %>">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Phone Number</label>
+              <input type="text" class="form-control" name="phone" value="<%= lead ? lead.phone : '' %>">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Source</label>
+              <select class="form-select" name="source">
+                <option value="Website" <%= lead && lead.source === 'Website' ? 'selected' : '' %>>Website</option>
+                <option value="WhatsApp" <%= lead && lead.source === 'WhatsApp' ? 'selected' : '' %>>WhatsApp</option>
+                <option value="Facebook" <%= lead && lead.source === 'Facebook' ? 'selected' : '' %>>Facebook</option>
+                <option value="Instagram" <%= lead && lead.source === 'Instagram' ? 'selected' : '' %>>Instagram</option>
+                <option value="Referral" <%= lead && lead.source === 'Referral' ? 'selected' : '' %>>Referral</option>
+                <option value="Other" <%= lead && lead.source === 'Other' ? 'selected' : '' %>>Other</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Assigned To</label>
+              <select class="form-select" name="assigned_to">
+                <option value="">Unassigned</option>
+                <% users.forEach(u => { %>
+                  <option value="<%= u.id %>" <%= lead && lead.assigned_to === u.id ? 'selected' : '' %>><%= u.name %></option>
+                <% }) %>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="tf-form-card shadow-none border">
+        <div class="tf-form-header"><i class="bi bi-sticky text-warning"></i> Internal Notes</div>
+        <div class="tf-form-body">
+          <textarea class="form-control" name="notes" rows="4" placeholder="Enter any extra details..."><%= lead ? lead.notes : '' %></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-5">
+      <!-- Pipeline & Stages -->
+      <div class="tf-form-card mb-4">
+        <div class="tf-form-header"><i class="bi bi-diagram-3 text-success"></i> Pipeline & Stage</div>
+        <div class="tf-form-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">Pipeline</label>
+            <select class="form-select" name="pipeline_id" id="pipelineSelect" onchange="loadPipelineDetails(this.value)">
+              <option value="">-- Select Pipeline --</option>
+              <% pipelines.forEach(p => { %>
+                <option value="<%= p.id %>" <%= (lead && lead.pipeline_id == p.id) || (!lead && defaultPipeline && defaultPipeline.id == p.id) ? 'selected' : '' %>><%= p.name %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="mb-3" id="stageSelectContainer">
+            <label class="form-label fw-bold">Current Stage</label>
+            <select class="form-select" name="stage_id" id="stageSelect">
+              <option value="">-- Select Stage --</option>
+              <% if (defaultPipeline && defaultPipeline.stages) { %>
+                <% defaultPipeline.stages.forEach(s => { %>
+                  <option value="<%= s.id %>" <%= lead && lead.stage_id == s.id ? 'selected' : '' %>><%= s.name %></option>
+                <% }) %>
+              <% } %>
+            </select>
+          </div>
+          <div class="mb-0">
+            <label class="form-label fw-bold">Status</label>
+            <div class="btn-group w-100" role="group">
+              <input type="radio" class="btn-check" name="status" id="statusActive" value="active" <%= !lead || lead.status === 'active' ? 'checked' : '' %>>
+              <label class="btn btn-outline-primary" for="statusActive">Active</label>
+              
+              <input type="radio" class="btn-check" name="status" id="statusWon" value="won" <%= lead && lead.status === 'won' ? 'checked' : '' %>>
+              <label class="btn btn-outline-success" for="statusWon">Won</label>
+              
+              <input type="radio" class="btn-check" name="status" id="statusLost" value="lost" <%= lead && lead.status === 'lost' ? 'checked' : '' %>>
+              <label class="btn btn-outline-danger" for="statusLost">Lost</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dynamic Custom Fields -->
+      <div class="tf-form-card" id="customFieldsCard" style="display: none;">
+        <div class="tf-form-header"><i class="bi bi-grid-3x3 text-indigo"></i> Extra Details</div>
+        <div class="tf-form-body" id="customFieldsContainer">
+          <!-- Populated via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+<style>
+  .btn-save { background: linear-gradient(135deg, #4f46e5, #818cf8); border: none; padding: 0.6rem 2rem; border-radius: 12px; color: white; font-weight: 600; }
+  .tf-back-btn { width: 40px; height: 40px; background: #f0f0fa; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #4f46e5; text-decoration: none; }
+</style>
+
+<script>
+  let ALL_FIELDS = [];
+  let INITIAL_CUSTOM_VALUES = <%- lead ? JSON.stringify(lead.custom_fields || {}) : '{}' %>;
+
+  async function loadPipelineDetails(pipelineId) {
+    if (!pipelineId) {
+      document.getElementById('stageSelectContainer').style.display = 'none';
+      document.getElementById('customFieldsCard').style.display = 'none';
+      return;
+    }
+
+    try {
+      // Load Stages
+      const stageRes = await fetch(`/crm/api/pipeline/${pipelineId}/stages`);
+      const stageData = await stageRes.json();
+      const stageSelect = document.getElementById('stageSelect');
+      stageSelect.innerHTML = stageData.stages.map(s => 
+        `<option value="${s.id}" ${'<%= lead ? lead.stage_id : "" %>' == s.id ? 'selected' : ''}>${s.name}</option>`
+      ).join('');
+      document.getElementById('stageSelectContainer').style.display = 'block';
+
+      // Load Custom Fields
+      const fieldRes = await fetch(`/crm/api/pipeline/${pipelineId}/fields`);
+      const fieldData = await fieldRes.json();
+      ALL_FIELDS = fieldData.fields;
+      renderCustomFields();
+    } catch (err) { console.error('Error loading pipeline details', err); }
+  }
+
+  function renderCustomFields() {
+    const container = document.getElementById('customFieldsContainer');
+    const card = document.getElementById('customFieldsCard');
+    
+    if (ALL_FIELDS.length === 0) {
+      card.style.display = 'none';
+      return;
+    }
+
+    card.style.display = 'block';
+    container.innerHTML = ALL_FIELDS.map(f => {
+      const val = INITIAL_CUSTOM_VALUES[f.field_key] || '';
+      let inputHtml = '';
+      
+      if (f.field_type === 'select') {
+        inputHtml = `<select class="form-select custom-input" data-key="${f.field_key}" ${f.is_required ? 'required' : ''}>
+          <option value="">-- Select --</option>
+          ${f.options.map(opt => `<option value="${opt}" ${val === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+        </select>`;
+      } else if (f.field_type === 'textarea') {
+        inputHtml = `<textarea class="form-control custom-input" data-key="${f.field_key}" rows="2" ${f.is_required ? 'required' : ''}>${val}</textarea>`;
+      } else {
+        inputHtml = `<input type="${f.field_type}" class="form-control custom-input" data-key="${f.field_key}" value="${val}" ${f.is_required ? 'required' : ''}>`;
+      }
+
+      return `<div class="mb-3">
+        <label class="form-label small fw-bold">${f.label}${f.is_required ? ' <span class="text-danger">*</span>' : ''}</label>
+        ${inputHtml}
+      </div>`;
+    }).join('');
+  }
+
+  // Initial load
+  const initialPipelineId = document.getElementById('pipelineSelect').value;
+  if (initialPipelineId) loadPipelineDetails(initialPipelineId);
+
+  document.getElementById('saveLeadBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('saveLeadBtn');
+    const form = document.getElementById('leadForm');
+    const formData = new FormData(form);
+    
+    // Collect custom fields
+    const customFields = {};
+    document.querySelectorAll('.custom-input').forEach(el => {
+      customFields[el.dataset.key] = el.value;
+    });
+
+    const body = {};
+    formData.forEach((value, key) => body[key] = value);
+    body.custom_fields = customFields;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Saving...';
+
+    try {
+      const res = await fetch('/crm/leads/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (data.success) {
+        window.location.href = `/crm/leads/${data.id}`;
+      } else {
+        alert('Error: ' + data.message);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Save Lead';
+      }
+    } catch (err) {
+      alert('Network error');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Save Lead';
+    }
+  });
+</script>

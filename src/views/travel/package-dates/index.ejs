@@ -1,0 +1,271 @@
+<%
+// Safely pass data to JS
+const _dates    = JSON.stringify(dates);
+const _packages = JSON.stringify(packages);
+%>
+
+<!-- HEADER -->
+<div class="tf-page-header">
+  <div>
+    <p class="tf-page-title"><i class="bi bi-calendar-range me-2" style="color:#06b6d4"></i>Package Dates</p>
+    <p class="tf-page-sub">Manage departure slots, pricing, and availability</p>
+  </div>
+  <button class="btn-add-primary" style="background:linear-gradient(135deg,#06b6d4,#22d3ee);box-shadow:0 4px 14px rgba(6,182,212,0.3)" data-bs-toggle="modal" data-bs-target="#modal" onclick="openCreate()">
+    <i class="bi bi-plus-lg"></i> Add Date
+  </button>
+</div>
+
+<!-- STATS -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="tf-stat-card" style="background:linear-gradient(135deg,#06b6d4,#22d3ee);color:#fff">
+      <div class="tf-stat-icon"><i class="bi bi-calendar-range"></i></div>
+      <div><div class="tf-stat-num"><%= dates.length %></div><div class="tf-stat-lbl">Total Slots</div></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="tf-stat-card" style="background:linear-gradient(135deg,#10b981,#34d399);color:#fff">
+      <div class="tf-stat-icon"><i class="bi bi-check-circle"></i></div>
+      <div><div class="tf-stat-num"><%= dates.filter(d=>d.status==='active').length %></div><div class="tf-stat-lbl">Active</div></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="tf-stat-card" style="background:linear-gradient(135deg,#ef4444,#f87171);color:#fff">
+      <div class="tf-stat-icon"><i class="bi bi-x-circle"></i></div>
+      <div><div class="tf-stat-num"><%= dates.filter(d=>d.status==='soldout').length %></div><div class="tf-stat-lbl">Sold Out</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- TOOLBAR -->
+<div class="tf-toolbar">
+  <select class="tf-select" id="statusFilter" onchange="applyFilters()">
+    <option value="">All Status</option>
+    <option value="active">Active</option>
+    <option value="inactive">Inactive</option>
+    <option value="soldout">Sold Out</option>
+  </select>
+  <select class="tf-select" id="pkgFilter" onchange="applyFilters()" style="width:200px">
+    <option value="">All Packages</option>
+    <% packages.forEach(p => { %><option value="<%= p.id %>"><%= p.name %></option><% }) %>
+  </select>
+  <div class="ms-auto d-flex gap-2 align-items-center">
+    <span class="tf-page-info" id="countLabel"></span>
+    <button class="view-btn active" id="vList"  onclick="setView('list')"  title="List"><i class="bi bi-list-ul"></i></button>
+    <button class="view-btn"        id="vCards" onclick="setView('cards')" title="Cards"><i class="bi bi-grid-3x3-gap"></i></button>
+  </div>
+</div>
+
+<!-- LIST VIEW -->
+<div id="listView">
+  <div class="tf-table-wrap">
+    <table class="tf-table">
+      <thead><tr>
+        <th style="width:48px">#</th>
+        <th>Package</th>
+        <th>Travel Period</th>
+        <th>Price</th>
+        <th>Status</th>
+        <th style="width:120px;text-align:right">Actions</th>
+      </tr></thead>
+      <tbody id="listBody"></tbody>
+    </table>
+    <div class="tf-pagination" id="listPag"></div>
+  </div>
+</div>
+
+<!-- CARDS VIEW -->
+<div id="cardsView" style="display:none">
+  <div class="tf-cards" id="cardsBody"></div>
+  <div class="tf-pagination mt-3" style="border-radius:16px;background:#fff;box-shadow:0 4px 16px rgba(6,182,212,.07)" id="cardsPag"></div>
+</div>
+
+<!-- MODAL -->
+<div class="modal fade tf-modal" id="modal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header" style="background:linear-gradient(135deg,#06b6d4,#22d3ee);color:#fff">
+        <h5 class="modal-title fw-bold" id="modalTitle">Add Package Date</h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="fId">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Package <span class="text-danger">*</span></label>
+            <select class="form-select" id="fPkg">
+              <option value="">Select Package</option>
+              <% packages.forEach(p => { %><option value="<%= p.id %>"><%= p.name %></option><% }) %>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label">Start Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="fStart">
+          </div>
+          <div class="col-6">
+            <label class="form-label">End Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="fEnd">
+          </div>
+          <div class="col-6">
+            <label class="form-label">Price (₹) <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" id="fPrice" min="0" step="0.01">
+          </div>
+          <div class="col-6">
+            <label class="form-label">Status</label>
+            <select class="form-select" id="fStatus">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="soldout">Sold Out</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-light px-4 rounded-3" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn-add-primary" style="background:linear-gradient(135deg,#06b6d4,#22d3ee);box-shadow:0 4px 14px rgba(6,182,212,0.3)" onclick="save()"><i class="bi bi-check2 me-1"></i>Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE MODAL -->
+<div class="modal fade tf-modal" id="delModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:380px">
+    <div class="modal-content">
+      <div class="modal-body text-center p-4">
+        <div style="width:60px;height:60px;background:#fef2f2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:1.7rem;color:#ef4444"><i class="bi bi-trash3"></i></div>
+        <h5 class="fw-bold mb-1">Delete Date?</h5>
+        <p class="text-muted" id="delMsg" style="font-size:.88rem"></p>
+        <div class="d-flex gap-2 justify-content-center mt-3">
+          <button class="btn btn-light px-4 rounded-3" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-danger px-4 rounded-3 fw-semibold" id="delBtn">Yes, Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const ALL = <%- _dates %>;
+const PS = 12;
+let view = 'list', page = 1, filtered = [...ALL], delId = null;
+
+function applyFilters() {
+  const status = document.getElementById('statusFilter').value;
+  const pkg = document.getElementById('pkgFilter').value;
+  filtered = ALL.filter(d => {
+    const ms = !status || d.status === status;
+    const mp = !pkg || String(d.package_id) === pkg;
+    return ms && mp;
+  });
+  page = 1; render();
+}
+
+function render() {
+  const tot = filtered.length, pages = Math.max(1, Math.ceil(tot/PS));
+  page = Math.min(page, pages);
+  const s = (page-1)*PS, slice = filtered.slice(s, s+PS);
+  document.getElementById('countLabel').textContent = `${tot} result${tot!==1?'s':''}`;
+  if(view==='list') renderList(slice,s,tot,pages);
+  else              renderCards(slice,s,tot,pages);
+}
+
+function renderList(slice,s,tot,pages) {
+  const body = document.getElementById('listBody');
+  if(!slice.length){ body.innerHTML=emptyRow(6); document.getElementById('listPag').innerHTML=''; return; }
+  body.innerHTML = slice.map((d,i) => {
+    const sDate = new Date(d.start_date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
+    const eDate = new Date(d.end_date).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+    return `<tr>
+      <td><span style="color:#8888bb;font-size:0.82rem">${s+i+1}</span></td>
+      <td><span class="fw-bold" style="color:#4f46e5">${d.package?.name || '—'}</span></td>
+      <td><span style="font-weight:600;color:#1e1e4a">${sDate} – ${eDate}</span></td>
+      <td><span class="fw-bold" style="color:#059669">₹${parseFloat(d.price).toLocaleString()}</span></td>
+      <td><span class="tf-badge pill-${d.status}">${d.status}</span></td>
+      <td style="text-align:right">
+        <a href="/travel/packages/${d.package_id}" class="btn-icon btn-icon-view me-1"><i class="bi bi-eye"></i></a>
+        <button class="btn-icon btn-icon-edit me-1" onclick='openEdit(${JSON.stringify(d)})' data-bs-toggle="modal" data-bs-target="#modal"><i class="bi bi-pencil"></i></button>
+        <button class="btn-icon btn-icon-del" onclick="confirmDel('${d.id}')"><i class="bi bi-trash3"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('listPag').innerHTML = pagHTML(page,pages,tot,s,slice.length);
+}
+
+function renderCards(slice,s,tot,pages) {
+  const body = document.getElementById('cardsBody');
+  if(!slice.length){ body.innerHTML=`<div class="tf-empty" style="grid-column:1/-1">${emptyInner()}</div>`; document.getElementById('cardsPag').innerHTML=''; return; }
+  body.innerHTML = slice.map(d => {
+    const sDate = new Date(d.start_date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
+    const eDate = new Date(d.end_date).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+    return `<div class="tf-card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between">
+        <div class="tf-card-icon" style="background:rgba(6,182,212,0.1);color:#06b6d4"><i class="bi bi-calendar-check"></i></div>
+        <span class="tf-badge pill-${d.status}">${d.status}</span>
+      </div>
+      <div class="tf-card-name" style="font-size:0.9rem">${d.package?.name || '—'}</div>
+      <div class="tf-card-meta">
+        <div class="fw-bold text-dark mb-1">${sDate} – ${eDate}</div>
+        <div class="fs-5 fw-800" style="color:#059669">₹${parseFloat(d.price).toLocaleString()}</div>
+      </div>
+      <div class="tf-card-actions mt-auto">
+        <a href="/travel/packages/${d.package_id}" class="btn-icon btn-icon-view flex-grow-1 justify-content-center"><i class="bi bi-eye me-1"></i> View</a>
+        <button class="btn-icon btn-icon-edit" onclick='openEdit(${JSON.stringify(d)})' data-bs-toggle="modal" data-bs-target="#modal"><i class="bi bi-pencil"></i></button>
+        <button class="btn-icon btn-icon-del" onclick="confirmDel('${d.id}')"><i class="bi bi-trash3"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('cardsPag').innerHTML = pagHTML(page,pages,tot,s,slice.length);
+}
+
+function pagHTML(p,pages,tot,s,len){
+  const prev = `<button onclick="goPage(${p-1})" ${p<=1?'disabled':''}><i class="bi bi-chevron-left"></i></button>`;
+  const next = `<button onclick="goPage(${p+1})" ${p>=pages?'disabled':''}><i class="bi bi-chevron-right"></i></button>`;
+  let nums='';
+  for(let i=1;i<=pages;i++){
+    if(pages<=6||Math.abs(i-p)<=1||i===1||i===pages) nums+=`<button class="${i===p?'active':''}" onclick="goPage(${i})">${i}</button>`;
+    else if(Math.abs(i-p)===2) nums+=`<button disabled style="border:0;background:none;color:#8888bb">…</button>`;
+  }
+  return `<div class="tf-page-info">Showing ${s+1}–${s+len} of ${tot}</div><div class="tf-pages">${prev}${nums}${next}</div>`;
+}
+function emptyRow(cols){ return `<tr><td colspan="${cols}"><div class="tf-empty"><div class="tf-empty-icon"><i class="bi bi-calendar-x"></i></div><p>No dates found.</p></div></td></tr>`; }
+function emptyInner(){ return `<div class="tf-empty-icon"><i class="bi bi-calendar-x"></i></div><p>No dates found.</p>`; }
+function goPage(p){ page=p; render(); }
+function setView(v){
+  view=v;
+  document.getElementById('listView').style.display  = v==='list'?'':'none';
+  document.getElementById('cardsView').style.display = v==='cards'?'':'none';
+  document.getElementById('vList').classList.toggle('active',v==='list');
+  document.getElementById('vCards').classList.toggle('active',v==='cards');
+  render();
+}
+
+function openCreate(){
+  document.getElementById('modalTitle').textContent='Add Date';
+  document.getElementById('fId').value=''; document.getElementById('fPkg').value=''; 
+  document.getElementById('fStart').value=''; document.getElementById('fEnd').value='';
+  document.getElementById('fPrice').value=''; document.getElementById('fStatus').value='active';
+}
+function openEdit(d){
+  document.getElementById('modalTitle').textContent='Edit Date';
+  document.getElementById('fId').value=d.id; document.getElementById('fPkg').value=d.package_id;
+  document.getElementById('fStart').value=d.start_date; document.getElementById('fEnd').value=d.end_date;
+  document.getElementById('fPrice').value=d.price; document.getElementById('fStatus').value=d.status;
+}
+async function save(){
+  const id=document.getElementById('fId').value, package_id=document.getElementById('fPkg').value;
+  const start_date=document.getElementById('fStart').value, end_date=document.getElementById('fEnd').value;
+  const price=parseFloat(document.getElementById('fPrice').value), status=document.getElementById('fStatus').value;
+  if(!package_id || !start_date || !end_date || !price) return alert('All fields required');
+  
+  const url = id ? `/api/v1/packages/${package_id}/dates/${id}` : `/api/v1/packages/${package_id}/dates`;
+  const method = id ? 'PUT' : 'POST';
+  const res = await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify({package_id,start_date,end_date,price,status})});
+  if(res.ok || res.status===201) location.reload(); else alert('Error saving date');
+}
+function confirmDel(id){ delId=id; document.getElementById('delMsg').textContent=`This date slot will be permanently removed.`; new bootstrap.Modal(document.getElementById('delModal')).show(); }
+document.getElementById('delBtn').addEventListener('click',async()=>{
+  await fetch(`/travel/package-dates/${delId}`,{method:'DELETE'}); location.reload();
+});
+render();
+</script>

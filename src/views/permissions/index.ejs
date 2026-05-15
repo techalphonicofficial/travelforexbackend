@@ -1,0 +1,84 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Permission Management</h2>
+        <p class="text-secondary small mb-0">Define granular permissions and assign them to various system modules.</p>
+    </div>
+    <a href="/permissions/create" class="btn btn-primary d-flex align-items-center gap-2">
+        <i class="bi bi-plus-lg"></i> Create New Permission
+    </a>
+</div>
+
+<div class="card shadow-sm border-0 overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4 py-3 text-uppercase small fw-bold text-secondary">Permission Name</th>
+                    <th class="py-3 text-uppercase small fw-bold text-secondary">Module</th>
+                    <th class="py-3 text-uppercase small fw-bold text-secondary">Created At</th>
+                    <th class="pe-4 py-3 text-end text-uppercase small fw-bold text-secondary">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% permissions.forEach(permission => { %>
+                <tr>
+                    <td class="ps-4">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-2 me-3">
+                                <i class="bi bi-key"></i>
+                            </div>
+                            <code class="fw-semibold text-dark"><%= permission.name %></code>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary-subtle text-secondary py-2 px-3 rounded-pill fw-medium">
+                            <i class="bi bi-folder-fill me-1"></i> <%= permission.module_name %>
+                        </span>
+                    </td>
+                    <td class="text-secondary small"><%= new Date(permission.created_at).toLocaleDateString() %></td>
+                    <td class="pe-4 text-end">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="/permissions/<%= permission.id %>/edit" class="btn btn-sm btn-outline-primary" title="Edit Permission">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <button onclick="deletePermission('<%= permission.id %>')" class="btn btn-sm btn-outline-danger" title="Delete Permission">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                <% }) %>
+                <% if (permissions.length === 0) { %>
+                <tr>
+                    <td colspan="4" class="text-center py-5 text-secondary">
+                        <i class="bi bi-shield-slash fs-1 d-block mb-2 op-30"></i>
+                        No permissions found. Define granular access levels.
+                    </td>
+                </tr>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+async function deletePermission(id) {
+    if (confirm('Are you sure you want to delete this permission? It will be removed from all assigned roles.')) {
+        try {
+            const response = await fetch(`/permissions/${id}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            if (data.status === 'success') {
+                window.location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An unexpected error occurred.');
+        }
+    }
+}
+</script>

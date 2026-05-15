@@ -1,0 +1,113 @@
+<!-- HEADER -->
+<div class="tf-page-header">
+  <div>
+    <p class="tf-page-title"><i class="bi bi-file-earmark-richtext me-2" style="color:#4f46e5"></i>Website Pages</p>
+    <p class="tf-page-sub">Manage your website content, SEO, and dynamic sections</p>
+  </div>
+  <a href="/cms/pages/create" class="btn-add-primary" style="background:linear-gradient(135deg,#4f46e5,#818cf8);box-shadow:0 4px 14px rgba(79,70,229,0.3)">
+    <i class="bi bi-plus-lg"></i> Add New Page
+  </a>
+</div>
+
+<!-- STATS -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="tf-stat-card" style="background:linear-gradient(135deg,#4f46e5,#818cf8);color:#fff">
+      <div class="tf-stat-icon"><i class="bi bi-files"></i></div>
+      <div>
+        <div class="tf-stat-num"><%= pages.length %></div>
+        <div class="tf-stat-lbl">Total Pages</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOOLBAR -->
+<div class="tf-toolbar">
+  <div class="tf-search">
+    <i class="bi bi-search tf-si"></i>
+    <input type="text" id="pageSearch" placeholder="Search pages..." onkeyup="filterPages()">
+  </div>
+</div>
+
+<!-- PAGE LIST -->
+<div class="tf-table-wrap">
+  <table class="tf-table">
+    <thead>
+      <tr>
+        <th style="width:48px">#</th>
+        <th style="width:60px">Image</th>
+        <th>Page Details</th>
+        <th>SEO Preview</th>
+        <th style="width:100px;text-align:right">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="pageTableBody">
+      <% if (pages && pages.length > 0) { %>
+        <% pages.forEach((page, index) => { %>
+          <tr class="page-row" data-title="<%= page.title.toLowerCase() %>">
+            <td><span style="color:#8888bb;font-size:0.82rem"><%= index + 1 %></span></td>
+            <td>
+              <% if (page.feature_image) { %>
+                <img src="<%= page.feature_image %>" class="rounded-3" style="width:44px;height:44px;object-fit:cover;border:1px solid #eee">
+              <% } else { %>
+                <div class="rounded-3 d-flex align-items-center justify-content-center" style="width:44px;height:44px;background:#f8faff;color:#c7d2fe;border:1px solid #eef2ff">
+                  <i class="bi bi-image"></i>
+                </div>
+              <% } %>
+            </td>
+            <td>
+              <div class="fw-bold" style="color:#1e1e4a"><%= page.title %></div>
+              <div class="text-muted small"><%= page.description ? (page.description.length > 60 ? page.description.substring(0, 60) + '...' : page.description) : 'No description' %></div>
+            </td>
+            <td>
+              <div class="small fw-semibold text-primary"><%= page.meta_title || '—' %></div>
+              <div class="text-muted" style="font-size:0.75rem"><%= page.slug %></div>
+            </td>
+            <td style="text-align:right">
+              <a href="/cms/pages/<%= page.id %>/edit" class="btn-icon btn-icon-edit me-1" title="Edit"><i class="bi bi-pencil"></i></a>
+              <button class="btn-icon btn-icon-del" onclick="confirmDelete('<%= page.id %>', '<%= page.title.replace(/'/g, "\\'") %>')" title="Delete"><i class="bi bi-trash3"></i></button>
+            </td>
+          </tr>
+        <% }) %>
+      <% } else { %>
+        <tr>
+          <td colspan="5" class="text-center py-5">
+            <div class="tf-empty">
+              <div class="tf-empty-icon"><i class="bi bi-file-earmark-richtext"></i></div>
+              <p>No pages found. Start by creating one!</p>
+              <a href="/cms/pages/create" class="btn btn-sm btn-primary mt-2">Create First Page</a>
+            </div>
+          </td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  function filterPages() {
+    const q = document.getElementById('pageSearch').value.toLowerCase();
+    const rows = document.querySelectorAll('.page-row');
+    rows.forEach(row => {
+      const title = row.getAttribute('data-title');
+      row.style.display = title.includes(q) ? '' : 'none';
+    });
+  }
+
+  async function confirmDelete(id, title) {
+    if (confirm(`Are you sure you want to delete the page "${title}"?`)) {
+      try {
+        const res = await fetch(`/cms/pages/${id}`, { method: 'DELETE' });
+        const result = await res.json();
+        if (result.success) {
+          location.reload();
+        } else {
+          alert('Error: ' + result.message);
+        }
+      } catch (err) {
+        alert('Failed to delete page');
+      }
+    }
+  }
+</script>

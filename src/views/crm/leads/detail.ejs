@@ -1,0 +1,231 @@
+<div class="tf-page-header">
+  <div class="d-flex align-items-center gap-3">
+    <a href="/crm/leads" class="tf-back-btn"><i class="bi bi-chevron-left"></i></a>
+    <div>
+      <h1 class="tf-page-title"><%= lead.name %></h1>
+      <p class="tf-page-sub text-uppercase small fw-bold">
+        <span class="text-primary"><%= pipeline ? pipeline.name : 'No Pipeline' %></span> 
+        <i class="bi bi-chevron-right mx-1"></i> 
+        <span style="color: <%= lead.stage ? lead.stage.color : '#64748b' %>"><%= lead.stage ? lead.stage.name : 'No Stage' %></span>
+      </p>
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="/crm/leads/<%= lead.id %>/edit" class="btn btn-light px-4 rounded-3 border fw-bold text-primary">
+      <i class="bi bi-pencil me-1"></i> Edit Lead
+    </a>
+    <button class="btn btn-primary px-4 rounded-3 fw-bold" data-bs-toggle="modal" data-bs-target="#followUpModal">
+      <i class="bi bi-calendar-plus me-1"></i> Schedule Follow-up
+    </button>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-4">
+    <!-- Contact Card -->
+    <div class="tf-form-card mb-4">
+      <div class="tf-form-header"><i class="bi bi-person-badge text-primary"></i> Contact Information</div>
+      <div class="tf-form-body">
+        <div class="d-flex flex-column gap-3">
+          <div class="d-flex align-items-center gap-3">
+            <div class="avatar-circle-lg bg-soft-primary text-primary"><%= lead.name[0] %></div>
+            <div>
+              <h5 class="mb-0 fw-bold"><%= lead.name %></h5>
+              <span class="badge <%= lead.status === 'active' ? 'pill-active' : (lead.status === 'won' ? 'bg-success' : 'bg-danger') %> rounded-pill">
+                <%= lead.status.toUpperCase() %>
+              </span>
+            </div>
+          </div>
+          <hr class="my-1 opacity-5">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-envelope text-muted"></i>
+            <span><%= lead.email || 'No email' %></span>
+            <% if (lead.email) { %><a href="mailto:<%= lead.email %>" class="ms-auto btn-icon"><i class="bi bi-send text-primary"></i></a><% } %>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-phone text-muted"></i>
+            <span><%= lead.phone || 'No phone' %></span>
+            <% if (lead.phone) { %><a href="tel:<%= lead.phone %>" class="ms-auto btn-icon"><i class="bi bi-telephone"></i></a><% } %>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-bullseye text-muted"></i>
+            <span class="small">Source: <strong><%= lead.source %></strong></span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-person-check text-muted"></i>
+            <span class="small">Assigned to: <strong><%= lead.assignee ? lead.assignee.name : 'Unassigned' %></strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Fields Card -->
+    <% if (lead.custom_fields && Object.keys(lead.custom_fields).length > 0) { %>
+      <div class="tf-form-card">
+        <div class="tf-form-header"><i class="bi bi-grid-3x3 text-indigo"></i> Profile Details</div>
+        <div class="tf-form-body p-0">
+          <ul class="list-group list-group-flush">
+            <% Object.entries(lead.custom_fields).forEach(([key, value]) => { %>
+              <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                <span class="text-muted small fw-bold text-uppercase"><%= key.replace(/_/g, ' ') %></span>
+                <span class="fw-bold"><%= value || '—' %></span>
+              </li>
+            <% }) %>
+          </ul>
+        </div>
+      </div>
+    <% } %>
+  </div>
+
+  <div class="col-md-8">
+    <div class="tf-form-card h-100">
+      <div class="tf-form-header d-flex justify-content-between">
+        <span><i class="bi bi-activity text-success"></i> Timeline & Follow-ups</span>
+      </div>
+      <div class="tf-form-body">
+        <% if (followUps.length === 0) { %>
+          <div class="text-center py-5">
+            <i class="bi bi-chat-dots fs-1 text-muted opacity-25"></i>
+            <p class="text-muted">No interactions recorded yet.</p>
+          </div>
+        <% } else { %>
+          <div class="timeline">
+            <% followUps.forEach(fw => { %>
+              <div class="timeline-item mb-4 pb-2 border-bottom">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <div class="d-flex align-items-center gap-2">
+                    <% 
+                      let icon = 'bi-telephone';
+                      let color = 'bg-primary';
+                      if (fw.follow_up_type === 'email') { icon = 'bi-envelope'; color = 'bg-info'; }
+                      if (fw.follow_up_type === 'meeting') { icon = 'bi-people'; color = 'bg-success'; }
+                      if (fw.follow_up_type === 'whatsapp') { icon = 'bi-whatsapp'; color = 'bg-success'; }
+                    %>
+                    <div class="icon-sq <%= color %> text-white"><i class="bi <%= icon %>"></i></div>
+                    <div>
+                      <h6 class="mb-0 fw-bold text-capitalize"><%= fw.follow_up_type %> Scheduled</h6>
+                      <span class="small text-muted"><%= new Date(fw.follow_up_date).toLocaleDateString() %> <%= fw.follow_up_time || '' %></span>
+                    </div>
+                  </div>
+                  <div class="d-flex align-items-center gap-2">
+                    <% if (fw.status === 'pending') { %>
+                      <button class="btn btn-sm btn-outline-success border-pill" onclick="updateFollowUpStatus(<%= fw.id %>, 'done')">Mark as Done</button>
+                    <% } else { %>
+                      <span class="badge bg-soft-success text-success rounded-pill px-3">COMPLETED</span>
+                    <% } %>
+                    <button class="btn btn-icon btn-icon-del" onclick="deleteFollowUp(<%= fw.id %>)"><i class="bi bi-trash3"></i></button>
+                  </div>
+                </div>
+                <div class="bg-light p-3 rounded-3 ms-5 shadow-sm small">
+                  <%= fw.notes || 'No details provided.' %>
+                  <div class="mt-2 text-end text-muted opacity-75">
+                    Added by <%= fw.creator ? fw.creator.name : 'System' %>
+                  </div>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Follow-up Modal -->
+<div class="modal fade tf-modal" id="followUpModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold">Schedule Activity</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="followUpForm">
+          <input type="hidden" name="lead_id" value="<%= lead.id %>">
+          <div class="row g-3">
+            <div class="col-md-12">
+              <label class="form-label">Activity Type</label>
+              <div class="d-flex gap-2 flex-wrap">
+                <input type="radio" class="btn-check" name="follow_up_type" id="typeCall" value="call" checked>
+                <label class="btn btn-outline-primary" for="typeCall"><i class="bi bi-telephone"></i> Call</label>
+                
+                <input type="radio" class="btn-check" name="follow_up_type" id="typeEmail" value="email">
+                <label class="btn btn-outline-info" for="typeEmail"><i class="bi bi-envelope"></i> Email</label>
+                
+                <input type="radio" class="btn-check" name="follow_up_type" id="typeMeeting" value="meeting">
+                <label class="btn btn-outline-success" for="typeMeeting"><i class="bi bi-people"></i> Meeting</label>
+                
+                <input type="radio" class="btn-check" name="follow_up_type" id="typeWA" value="whatsapp">
+                <label class="btn btn-outline-success" for="typeWA"><i class="bi bi-whatsapp"></i> WhatsApp</label>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Date</label>
+              <input type="date" class="form-control" name="follow_up_date" required value="<%= new Date().toISOString().split('T')[0] %>">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Time (Optional)</label>
+              <input type="time" class="form-control" name="follow_up_time">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Next Steps / Notes</label>
+              <textarea class="form-control" name="notes" rows="3" placeholder="What needs to be discussed?"></textarea>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light border px-4" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary px-4" id="saveFollowUpBtn">Schedule Now</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .tf-back-btn { width: 40px; height: 40px; background: #f0f0fa; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #4f46e5; text-decoration: none; }
+  .avatar-circle-lg { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; border: 4px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+  .bg-soft-primary { background-color: rgba(79, 70, 229, 0.1); }
+  .icon-sq { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+  .border-pill { border-radius: 50px; }
+</style>
+
+<script>
+  document.getElementById('saveFollowUpBtn').addEventListener('click', async () => {
+    const form = document.getElementById('followUpForm');
+    const formData = new FormData(form);
+    const body = {};
+    formData.forEach((value, key) => body[key] = value);
+
+    try {
+      const res = await fetch('/crm/follow-ups/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (data.success) location.reload();
+      else alert('Error: ' + data.message);
+    } catch (err) { alert('Network error'); }
+  });
+
+  async function updateFollowUpStatus(id, status) {
+    try {
+      const res = await fetch(`/crm/follow-ups/${id}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      const data = await res.json();
+      if (data.success) location.reload();
+    } catch (err) { alert('Network error'); }
+  }
+
+  async function deleteFollowUp(id) {
+    if (confirm('Delete this follow-up?')) {
+      const res = await fetch(`/crm/follow-ups/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) location.reload();
+    }
+  }
+</script>

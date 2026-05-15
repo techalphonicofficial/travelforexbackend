@@ -1,0 +1,134 @@
+<div class="tf-page-header">
+  <div>
+    <h2 class="tf-page-title"><%= banner ? 'Edit Banner' : 'Add New Banner' %></h2>
+    <p class="tf-page-sub">Configure banner content and display settings</p>
+  </div>
+  <a href="/cms/banners" class="btn btn-light border">
+    <i class="bi bi-arrow-left me-2"></i> Back to Banners
+  </a>
+</div>
+
+<form action="<%= banner ? '/cms/banners/' + banner.id + '/update' : '/cms/banners/save' %>" method="POST" enctype="multipart/form-data">
+  <div class="row g-4">
+    <!-- Left Column: Content -->
+    <div class="col-lg-8">
+      <div class="card tf-form-card mb-4">
+        <div class="tf-form-header">
+          <i class="bi bi-megaphone me-2"></i> Banner Content
+        </div>
+        <div class="tf-form-body">
+          <div class="row">
+            <div class="col-md-12 mb-4">
+              <label class="form-label fw-bold">Banner Title</label>
+              <input type="text" name="title" class="form-control" placeholder="e.g. Summer Collection Sale" value="<%= banner ? banner.title : '' %>">
+            </div>
+            <div class="col-md-12 mb-4">
+              <label class="form-label fw-bold">Subtitle / Description</label>
+              <textarea name="subtitle" class="form-control" rows="3" placeholder="Short description of the offer..."><%= banner ? banner.subtitle : '' %></textarea>
+            </div>
+            <div class="col-md-6 mb-4">
+              <label class="form-label fw-bold">CTA Text (Button)</label>
+              <input type="text" name="cta_text" class="form-control" placeholder="e.g. Shop Now" value="<%= banner ? banner.cta_text : '' %>">
+            </div>
+            <div class="col-md-6 mb-4">
+              <label class="form-label fw-bold">CTA Link (URL)</label>
+              <input type="text" name="cta_link" class="form-control" placeholder="e.g. /products/sale" value="<%= banner ? banner.cta_link : '' %>">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card tf-form-card">
+        <div class="tf-form-header">
+          <i class="bi bi-image me-2"></i> Banner Media
+        </div>
+        <div class="tf-form-body text-center py-5">
+           <div class="mb-4">
+              <% if (banner && banner.image_path) { %>
+                <img id="preview" src="<%= banner.image_path %>" class="rounded shadow-sm mb-3" style="max-width: 100%; max-height: 300px;">
+              <% } else { %>
+                <div id="preview-placeholder" class="bg-light rounded border border-dashed p-5 mb-3">
+                  <i class="bi bi-cloud-arrow-up display-4 text-muted"></i>
+                  <p class="mt-2 text-muted">No image selected</p>
+                </div>
+                <img id="preview" src="#" class="rounded shadow-sm mb-3 d-none" style="max-width: 100%; max-height: 300px;">
+              <% } %>
+           </div>
+           <label class="btn btn-outline-primary px-4">
+              <i class="bi bi-upload me-2"></i> Select Image File
+              <input type="file" name="image" class="d-none" onchange="previewImage(this)">
+           </label>
+           <p class="small text-muted mt-2">Recommended size: 1920x600px for hero banners</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Settings -->
+    <div class="col-lg-4">
+      <div class="card tf-form-card mb-4">
+        <div class="tf-form-header">
+          <i class="bi bi-gear me-2"></i> Settings
+        </div>
+        <div class="tf-form-body">
+          <div class="mb-4">
+            <label class="form-label fw-bold">Display Position</label>
+            <select name="position" class="form-select">
+              <option value="top" <%= banner && banner.position === 'top' ? 'selected' : '' %>>Top (Hero)</option>
+              <option value="middle" <%= banner && banner.position === 'middle' ? 'selected' : '' %>>Middle Section</option>
+              <option value="sidebar" <%= banner && banner.position === 'sidebar' ? 'selected' : '' %>>Sidebar</option>
+              <option value="footer" <%= banner && banner.position === 'footer' ? 'selected' : '' %>>Footer</option>
+            </select>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-bold">Target Device</label>
+            <select name="device" class="form-select">
+              <option value="all" <%= banner && banner.device === 'all' ? 'selected' : '' %>>All Devices</option>
+              <option value="desktop" <%= banner && banner.device === 'desktop' ? 'selected' : '' %>>Desktop Only</option>
+              <option value="mobile" <%= banner && banner.device === 'mobile' ? 'selected' : '' %>>Mobile Only</option>
+            </select>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-bold">Sort Order</label>
+            <input type="number" name="sort_order" class="form-control" value="<%= banner ? banner.sort_order : '0' %>">
+          </div>
+          <div class="mb-0">
+            <label class="form-label fw-bold d-block">Visibility Status</label>
+            <div class="form-check form-switch mt-2">
+              <input class="form-check-input" type="checkbox" name="status" value="1" <%= !banner || banner.status ? 'checked' : '' %>>
+              <label class="form-check-label">Publish this banner</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow">
+          <i class="bi bi-check-circle me-2"></i> Save Banner
+        </button>
+      </div>
+    </div>
+  </div>
+</form>
+
+<style>
+  .tf-form-card { border-radius: 16px; overflow: hidden; border: 1px solid rgba(0,0,0,0.05); }
+  .tf-form-header { background: #f8fafc; padding: 1rem 1.25rem; font-weight: 700; color: #1e1e4a; border-bottom: 1px solid rgba(0,0,0,0.05); }
+  .tf-form-body { padding: 1.5rem; }
+  .border-dashed { border-style: dashed !important; border-width: 2px !important; }
+</style>
+
+<script>
+  function previewImage(input) {
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById('preview').src = e.target.result;
+        document.getElementById('preview').classList.remove('d-none');
+        if (document.getElementById('preview-placeholder')) {
+          document.getElementById('preview-placeholder').classList.add('d-none');
+        }
+      }
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+</script>

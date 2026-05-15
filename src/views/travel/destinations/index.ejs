@@ -1,0 +1,611 @@
+<%
+// Safely pass data to JS
+const _destinations = JSON.stringify(destinations).replace(/</g, '\\u003c');
+const _categories   = JSON.stringify(categories).replace(/</g, '\\u003c');
+const _continents   = JSON.stringify(continents).replace(/</g, '\\u003c');
+%>
+
+<style>
+  .design-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+    margin-bottom: 2rem;
+  }
+  .table-minimal {
+    border-collapse: separate;
+    border-spacing: 0 0.5rem;
+  }
+  .table-minimal thead th {
+    border-bottom: 0;
+    color: #111827;
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-transform: capitalize;
+    padding-bottom: 0.5rem;
+  }
+  .table-minimal tbody tr {
+    background-color: transparent;
+  }
+  .table-minimal tbody td {
+    border: none;
+    padding: 0.75rem 0.5rem;
+    color: #4b5563;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+  .btn-create {
+    background-color: #8b5cf6;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.4rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+  .btn-create:hover { background-color: #7c3aed; color: #fff; }
+  
+  .filter-input {
+    background-color: #f9fafb;
+    border: 1px solid #f3f4f6;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: #4b5563;
+  }
+  .filter-input:focus {
+    background-color: #fff;
+    border-color: #d1d5db;
+    box-shadow: none;
+  }
+  .btn-group-toggle .btn {
+    border: 1px solid #e5e7eb;
+    background-color: #fff;
+    color: #4b5563;
+    font-size: 0.82rem;
+    padding: 0.35rem 0.75rem;
+    font-weight: 500;
+  }
+  .btn-group-toggle .btn.active {
+    background-color: #f3f4f6;
+    color: #111827;
+    box-shadow: none;
+  }
+
+  /* bulk select custom styles */
+  .custom-checkbox {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1.5px solid #d1d5db;
+    appearance: none;
+    outline: none;
+    cursor: pointer;
+    position: relative;
+    background-color: #fff;
+    transition: all 0.2s;
+    margin: 0;
+    vertical-align: middle;
+  }
+  .custom-checkbox:checked {
+    background-color: #22c55e;
+    border-color: #22c55e;
+  }
+  .custom-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .table-minimal tbody tr td:first-child {
+    padding-left: 1rem;
+    border-left: 3px solid transparent;
+  }
+  .table-minimal tbody tr.row-selected td:first-child {
+    border-left-color: #22c55e;
+  }
+  .table-minimal tbody tr.row-selected td {
+    background-color: #f8fafc;
+  }
+  .bulk-delete-bar {
+    display: none;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+
+  /* Gallery Styles */
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .gallery-item {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    aspect-ratio: 1;
+    border: 1px solid #e2e8f0;
+    background: #000;
+  }
+
+  .gallery-item img, .gallery-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .gallery-item .delete-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 24px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #ef4444;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+    border: none;
+    padding: 0;
+  }
+
+  .gallery-item:hover .delete-btn {
+    opacity: 1;
+  }
+
+  .gallery-upload-card {
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    aspect-ratio: 1;
+    color: #64748b;
+  }
+
+  .gallery-upload-card:hover {
+    border-color: #f59e0b;
+    color: #f59e0b;
+    background: #fffbeb;
+  }
+
+  .video-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 1.5rem;
+    pointer-events: none;
+  }
+</style>
+
+<div class="design-card">
+  <!-- HEADER ROW -->
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+    <div>
+      <h3 class="fw-bold mb-1" style="color: #111827;">Destinations</h3>
+      <p class="text-muted mb-0" style="font-size: 0.85rem;">Manage travel spots, types, and their geographic mappings.</p>
+    </div>
+    <div class="d-flex gap-3 align-items-center">
+      <div class="btn-group btn-group-toggle shadow-sm" role="group">
+        <button type="button" class="btn active d-flex align-items-center gap-2" id="vList" onclick="setView('list')">
+          <i class="bi bi-list-ul"></i> List
+        </button>
+        <button type="button" class="btn d-flex align-items-center gap-2" id="vCards" onclick="setView('cards')">
+          <i class="bi bi-person-vcard"></i> Cards
+        </button>
+      </div>
+      <a href="/travel/destinations/create" class="btn-create shadow-sm text-decoration-none d-inline-flex align-items-center gap-2">
+        <i class="bi bi-plus-lg"></i> Add Destination
+      </a>
+    </div>
+  </div>
+
+  <hr style="border-color: #e5e7eb; margin: 1.25rem -1.5rem;">
+
+  <!-- TOOLBAR ROW -->
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 mt-2">
+    <div class="d-flex gap-2">
+      <div class="position-relative" style="width: 260px;">
+        <i class="bi bi-search position-absolute text-muted" style="left: 12px; top: 50%; transform: translateY(-50%); font-size: 0.85rem;"></i>
+        <input type="text" id="searchInput" class="form-control form-control-sm filter-input ps-5 py-2" placeholder="Search destination..." oninput="applyFilters()">
+      </div>
+      
+      <select id="contFilter" class="form-select form-select-sm filter-input py-2" style="width: 160px;" onchange="applyFilters()">
+        <option value="">All Continents</option>
+        <% continents.forEach(c => { %><option value="<%= c.id %>"><%= c.name %></option><% }) %>
+      </select>
+      
+      <select id="catFilter" class="form-select form-select-sm filter-input py-2" style="width: 160px;" onchange="applyFilters()">
+        <option value="">All Categories</option>
+        <% categories.forEach(c => { %><option value="<%= c.id %>"><%= c.name %></option><% }) %>
+      </select>
+    </div>
+    <div>
+      <span class="text-muted fw-bold" id="countLabel" style="font-size: 0.85rem;"></span>
+    </div>
+  </div>
+
+  <!-- BULK ACTIONS BAR -->
+  <div id="bulkActionsBar" class="bulk-delete-bar align-items-center justify-content-between">
+    <div>
+      <button class="btn btn-danger btn-sm px-3 py-2 d-inline-flex align-items-center gap-2" style="background-color: #ef4444; border:none; border-radius:6px; font-weight:600;" onclick="confirmBulkDelete()">
+        <i class="bi bi-trash3"></i> Delete selected
+      </button>
+    </div>
+    <div>
+      <span id="selectedCountMsg" class="fw-bold" style="color: #4b5563; font-size:0.9rem;">0 records selected</span>
+    </div>
+  </div>
+
+  <!-- LIST VIEW -->
+  <div id="listView">
+    <div class="table-responsive" style="border: none; box-shadow: none; overflow: visible;">
+      <table class="table table-minimal w-100">
+        <thead>
+          <tr>
+            <th style="width:30px">
+              <input type="checkbox" class="custom-checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()">
+            </th>
+            <th style="width:40px">#</th>
+            <th>Destination</th>
+            <th>Type</th>
+            <th>Categories</th>
+            <th>Geography</th>
+            <th style="width:100px;text-align:right">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="listBody"></tbody>
+      </table>
+      <div id="listPag"></div>
+    </div>
+  </div>
+
+<!-- CARDS VIEW -->
+<div id="cardsView" style="display:none">
+  <div class="tf-cards" id="cardsBody"></div>
+  <div class="tf-pagination mt-3" style="border-radius:16px;background:#fff;box-shadow:0 4px 16px rgba(79,70,229,.07)" id="cardsPag"></div>
+</div>
+
+
+
+<!-- DELETE MODAL -->
+<div class="modal fade tf-modal" id="delModal" tabindex="-1">
+  <!-- ... existing delete modal content ... -->
+</div>
+
+<!-- ACTIVITIES OFFCANVAS -->
+<div class="offcanvas offcanvas-end tf-offcanvas" tabindex="-1" id="activityOffcanvas" style="width:500px;border-left:0;box-shadow:-10px 0 30px rgba(0,0,0,0.1)">
+  <div class="offcanvas-header" style="background:#4f46e5;color:#fff;padding:1.5rem">
+    <div>
+      <h5 class="offcanvas-title fw-bold" id="actTitle">Destination Activities</h5>
+      <p class="mb-0 opacity-75" style="font-size:0.85rem" id="actSub"></p>
+    </div>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body p-4" style="background:#f8fafc">
+    <div class="tf-form-card mb-4">
+      <div class="tf-form-header"><i class="bi bi-plus-circle me-1"></i> Add New Activity</div>
+      <div class="tf-form-body">
+        <input type="hidden" id="actId">
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Activity Name</label>
+          <input type="text" id="actNameInput" class="form-control form-control-sm" placeholder="e.g. Scuba Diving, Temple Visit">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Description (Optional)</label>
+          <textarea id="actDescInput" class="form-control form-control-sm" rows="2"></textarea>
+        </div>
+        <button class="btn btn-primary btn-sm w-100 fw-bold py-2" onclick="saveActivity()">Save Activity</button>
+      </div>
+    </div>
+
+    <div class="fw-bold mb-2 text-dark border-bottom pb-2">Existing Activities</div>
+    <div id="activityList" class="d-flex flex-column gap-2"></div>
+  </div>
+</div>
+
+<script>
+const ALL = <%- _destinations %>;
+const CATS = <%- _categories %>;
+const PS = 10;
+let view = 'list', page = 1, filtered = [...ALL], delId = null;
+let selectedIds = new Set();
+
+function applyFilters() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const cont = document.getElementById('contFilter').value;
+  const cat = document.getElementById('catFilter').value;
+  
+  filtered = ALL.filter(d => {
+    const mn = d.name.toLowerCase().includes(q);
+    const mapping = d.mappings && d.mappings[0];
+    const mc = !cont || (mapping && String(mapping.continent_id) === cont);
+    const mk = !cat || (d.categories && d.categories.some(c => String(c.id) === cat));
+    return mn && mc && mk;
+  });
+  page = 1; render();
+}
+
+function render() {
+  const tot = filtered.length, pages = Math.max(1, Math.ceil(tot/PS));
+  page = Math.min(page, pages);
+  const s = (page-1)*PS, slice = filtered.slice(s, s+PS);
+  document.getElementById('countLabel').textContent = `${tot} result${tot!==1?'s':''}`;
+  if(view==='list') renderList(slice,s,tot,pages);
+  else              renderCards(slice,s,tot,pages);
+  evaluateSelectionState();
+}
+
+function renderList(slice,s,tot,pages) {
+  const body = document.getElementById('listBody');
+  if(!slice.length){ body.innerHTML=emptyRow(7); document.getElementById('listPag').innerHTML=''; return; }
+  body.innerHTML = slice.map((d,i) => {
+    const mapping = d.mappings && d.mappings[0];
+    const checked = selectedIds.has(d.id.toString()) ? 'checked' : '';
+    const rowClass = checked ? 'row-selected' : '';
+    return `<tr class="${rowClass}">
+      <td><input type="checkbox" class="custom-checkbox row-checkbox" value="${d.id}" onchange="toggleRowSelection(this)" ${checked}></td>
+      <td style="color:#6b7280;">${s+i+1}</td>
+      <td style="font-weight:600;color:#111827;">${d.name}</td>
+      <td>${d.type ? `<span class="px-2 py-1 rounded-pill" style="background:#f3f4f6;font-size:0.75rem;font-weight:600;color:#d97706">${d.type}</span>` : '—'}</td>
+      <td>
+        <div class="d-flex flex-wrap gap-1">
+          ${(d.categories && d.categories.length) ? d.categories.map(c => `<span class="px-2 py-1 rounded-pill" style="background:#f3f4f6;font-size:0.75rem;font-weight:600;color:#4f46e5">${c.name}</span>`).join('') : '<span class="text-muted">—</span>'}
+        </div>
+      </td>
+      <td style="font-size:0.81rem;line-height:1.4">
+        ${mapping ? `
+          <div class="d-flex align-items-center gap-1"><i class="bi bi-globe2 text-muted"></i> ${mapping.city?.country?.continent?.name || '—'}</div>
+          <div class="d-flex align-items-center gap-1"><i class="bi bi-flag text-muted"></i> ${mapping.city?.country?.name || '—'}</div>
+        ` : '<span class="text-muted">Not mapped</span>'}
+      </td>
+      <td style="text-align:right">
+        <a href="/travel/destinations/${d.id}/gallery" class="btn btn-sm btn-light border me-1 rounded-circle p-1" style="width:26px;height:26px;line-height:1;display:inline-flex;align-items:center;justify-content:center" title="Manage Gallery"><i class="bi bi-images" style="font-size:0.8rem;color:#f59e0b;"></i></a>
+        <button class="btn btn-sm btn-light border me-1 rounded-circle p-1" style="width:26px;height:26px;line-height:1;" onclick="openActivities('${d.id}', '${d.name.replace(/'/g,"\\'")}')" title="Manage Activities"><i class="bi bi-calendar-event" style="font-size:0.8rem;color:#0ea5e9;"></i></button>
+        <a href="/travel/destinations/${d.id}/edit" class="btn btn-sm btn-light border me-1 rounded-circle p-1" style="width:26px;height:26px;line-height:1;display:inline-flex;align-items:center;justify-content:center" title="Edit Destination"><i class="bi bi-pencil" style="font-size:0.8rem;color:#4b5563;"></i></a>
+        <button class="btn btn-sm btn-light border rounded-circle p-1" style="width:26px;height:26px;line-height:1;" onclick="confirmDel('${d.id}','${d.name.replace(/'/g,"\\'")}', event)"><i class="bi bi-trash3" style="font-size:0.8rem;color:#ef4444;"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('listPag').innerHTML = pagHTML(page,pages,tot,s,slice.length);
+}
+
+function renderCards(slice,s,tot,pages) {
+  const body = document.getElementById('cardsBody');
+  if(!slice.length){ body.innerHTML=`<div class="tf-empty" style="grid-column:1/-1">${emptyInner()}</div>`; document.getElementById('cardsPag').innerHTML=''; return; }
+  body.innerHTML = slice.map(d => {
+    const mapping = d.mappings && d.mappings[0];
+    return `<div class="tf-card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between">
+        <div class="tf-card-icon" style="background:rgba(245,158,11,0.1);color:#f59e0b"><i class="bi bi-geo-alt"></i></div>
+        ${d.type ? `<span class="tf-badge" style="background:rgba(245,158,11,0.1);color:#d97706">${d.type}</span>` : ''}
+      </div>
+      <div class="tf-card-name">${d.name}</div>
+      <div class="tf-card-meta">
+        ${mapping ? `
+          <div class="mb-1"><i class="bi bi-globe me-1"></i>${mapping.city?.country?.continent?.name || '—'}</div>
+          <div><i class="bi bi-flag me-1"></i>${mapping.city?.country?.name || '—'}</div>
+        ` : 'Not mapped'}
+      </div>
+      <div class="d-flex flex-wrap gap-1 mt-1">
+        ${(d.categories && d.categories.length) ? d.categories.slice(0,3).map(c => `<span class="tf-badge" style="font-size:0.7rem;background:rgba(79,70,229,0.06);color:#4f46e5">${c.name}</span>`).join('') : ''}
+      </div>
+      <div class="tf-card-actions mt-auto">
+        <a href="/travel/destinations/${d.id}/gallery" class="btn-icon" style="color:#f59e0b;background:rgba(245,158,11,0.1);text-decoration:none"><i class="bi bi-images me-1"></i>Gallery</a>
+        <button class="btn-icon btn-icon-view" onclick="openActivities('${d.id}', '${d.name.replace(/'/g,"\\'")}')"><i class="bi bi-calendar-event me-1"></i>Activities</button>
+        <a href="/travel/destinations/${d.id}/edit" class="btn-icon btn-icon-edit" style="text-decoration:none"><i class="bi bi-pencil"></i></a>
+        <button class="btn-icon btn-icon-del" onclick="confirmDel('${d.id}','${d.name.replace(/'/g,"\\'")}')"><i class="bi bi-trash3"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('cardsPag').innerHTML = pagHTML(page,pages,tot,s,slice.length);
+}
+
+function pagHTML(p,pages,tot,s,len){
+  const prev = `<button onclick="goPage(${p-1})" ${p<=1?'disabled':''}><i class="bi bi-chevron-left"></i></button>`;
+  const next = `<button onclick="goPage(${p+1})" ${p>=pages?'disabled':''}><i class="bi bi-chevron-right"></i></button>`;
+  let nums='';
+  for(let i=1;i<=pages;i++){
+    if(pages<=6||Math.abs(i-p)<=1||i===1||i===pages) nums+=`<button class="${i===p?'active':''}" onclick="goPage(${i})">${i}</button>`;
+    else if(Math.abs(i-p)===2) nums+=`<button disabled style="border:0;background:none;color:#8888bb">…</button>`;
+  }
+  return `<div class="tf-page-info">Showing ${s+1}–${s+len} of ${tot}</div><div class="tf-pages">${prev}${nums}${next}</div>`;
+}
+function emptyRow(cols){ return `<tr><td colspan="${cols}"><div class="tf-empty"><div class="tf-empty-icon"><i class="bi bi-geo-alt"></i></div><p>No destinations found.</p></div></td></tr>`; }
+function emptyInner(){ return `<div class="tf-empty-icon"><i class="bi bi-geo-alt"></i></div><p>No destinations found.</p>`; }
+function goPage(p){ page=p; render(); }
+function setView(v){
+  view=v;
+  document.getElementById('listView').style.display  = v==='list'?'':'none';
+  document.getElementById('cardsView').style.display = v==='cards'?'':'none';
+  document.getElementById('vList').classList.toggle('active',v==='list');
+  document.getElementById('vCards').classList.toggle('active',v==='cards');
+  render();
+}
+
+
+
+
+function confirmDel(id,name,event){ if(event) event.stopPropagation(); delId=id; document.getElementById('delMsg').textContent=`"${name}" will be permanently removed.`; document.getElementById('delBtn').onclick = executeSingleDelete; new bootstrap.Modal(document.getElementById('delModal')).show(); }
+
+async function executeSingleDelete(){
+  const res=await fetch(`/api/v1/destinations/${delId}`,{method:'DELETE'}); const j=await res.json();
+  if(j.success) location.reload(); else alert(j.message);
+}
+
+// BULK DELETE API HOOKS
+function toggleSelectAll() {
+  const mainCheckbox = document.getElementById('selectAllCheckbox');
+  const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+  const checked = mainCheckbox.checked;
+
+  rowCheckboxes.forEach(cb => {
+    cb.checked = checked;
+    const tr = cb.closest('tr');
+    if(checked) {
+      tr.classList.add('row-selected');
+      selectedIds.add(cb.value);
+    } else {
+      tr.classList.remove('row-selected');
+      selectedIds.delete(cb.value);
+    }
+  });
+  updateBulkActionBar();
+}
+
+function toggleRowSelection(cb) {
+  const tr = cb.closest('tr');
+  if(cb.checked) {
+    tr.classList.add('row-selected');
+    selectedIds.add(cb.value);
+  } else {
+    tr.classList.remove('row-selected');
+    selectedIds.delete(cb.value);
+    document.getElementById('selectAllCheckbox').checked = false;
+  }
+  updateBulkActionBar();
+}
+
+function evaluateSelectionState() {
+   const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+   if(!rowCheckboxes.length) {
+     document.getElementById('selectAllCheckbox').checked = false;
+     return;
+   }
+
+   let allChecked = true;
+   rowCheckboxes.forEach(cb => { if(!cb.checked) allChecked = false; });
+   document.getElementById('selectAllCheckbox').checked = allChecked;
+}
+
+function updateBulkActionBar() {
+  const bar = document.getElementById('bulkActionsBar');
+  const msg = document.getElementById('selectedCountMsg');
+  if(selectedIds.size > 0) {
+    bar.style.display = 'flex';
+    msg.textContent = `${selectedIds.size} records selected`;
+  } else {
+    bar.style.display = 'none';
+    document.getElementById('selectAllCheckbox').checked = false;
+  }
+}
+
+function confirmBulkDelete() {
+  document.getElementById('delMsg').textContent = `Are you sure you want to permanently delete the ${selectedIds.size} selected destinations?`;
+  document.getElementById('delBtn').onclick = executeBulkDelete;
+  new bootstrap.Modal(document.getElementById('delModal')).show();
+}
+
+async function executeBulkDelete() {
+  const ids = Array.from(selectedIds);
+  const res = await fetch(`/api/v1/destinations/bulk-delete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids })
+  });
+  const j = await res.json();
+  if(j.success) location.reload(); else alert(j.message);
+}
+// --- ACTIVITY MANAGEMENT ---
+let currentDestId = null;
+let actCanvas = null;
+
+async function openActivities(id, name) {
+  currentDestId = id;
+  if (!actCanvas) actCanvas = new bootstrap.Offcanvas(document.getElementById('activityOffcanvas'));
+  document.getElementById('actSub').textContent = `Manage activities for: ${name}`;
+  resetActivityForm();
+  await loadActivities();
+  actCanvas.show();
+}
+
+async function loadActivities() {
+  const res = await fetch(`/api/v1/activities/by-destination/${currentDestId}`);
+  const data = await res.json();
+  const list = document.getElementById('activityList');
+  if(!data.length) { list.innerHTML = '<div class="text-center text-muted py-4 small">No activities mapped yet.</div>'; return; }
+  
+  list.innerHTML = data.map(a => `
+    <div class="tf-row-item shadow-sm bg-white border">
+      <div class="d-flex justify-content-between">
+        <div>
+          <div class="fw-bold text-dark" style="font-size:0.9rem">${a.name}</div>
+          <div class="text-muted small">${a.description || 'No description'}</div>
+        </div>
+        <div class="d-flex gap-1">
+          <button class="btn btn-sm text-primary" onclick="editActivity('${a.id}', '${a.name.replace(/'/g,"\\'")}', '${(a.description||'').replace(/'/g,"\\'")}')"><i class="bi bi-pencil"></i></button>
+          <button class="btn btn-sm text-danger" onclick="deleteActivity('${a.id}')"><i class="bi bi-trash"></i></button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function resetActivityForm() {
+  document.getElementById('actId').value = '';
+  document.getElementById('actNameInput').value = '';
+  document.getElementById('actDescInput').value = '';
+}
+
+function editActivity(id, name, desc) {
+  document.getElementById('actId').value = id;
+  document.getElementById('actNameInput').value = name;
+  document.getElementById('actDescInput').value = desc || '';
+}
+
+async function saveActivity() {
+  const id = document.getElementById('actId').value;
+  const name = document.getElementById('actNameInput').value.trim();
+  const description = document.getElementById('actDescInput').value.trim();
+  
+  if(!name) return alert('Name required');
+  
+  const res = await fetch('/api/v1/activities/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, name, description, destination_id: currentDestId })
+  });
+  
+  const j = await res.json();
+  if(j.success) {
+    resetActivityForm();
+    await loadActivities();
+  } else {
+    alert(j.message);
+  }
+}
+
+async function deleteActivity(id) {
+  if(!confirm('Are you sure you want to delete this activity?')) return;
+  const res = await fetch(`/api/v1/activities/${id}`, { method: 'DELETE' });
+  const j = await res.json();
+  if(j.success) await loadActivities(); else alert(j.message);
+}
+
+// Event Listeners
+
+
+// Ensure the page renders data upon initial load
+render();
+</script>
+</div>

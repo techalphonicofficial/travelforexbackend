@@ -1,0 +1,75 @@
+<div class="tf-page-header">
+  <div>
+    <h2 class="tf-page-title">Blog Posts</h2>
+    <p class="tf-page-sub">Manage your blog content and articles</p>
+  </div>
+  <a href="/cms/blog/posts/create" class="btn btn-add-primary">
+    <i class="bi bi-plus-lg me-2"></i> New Post
+  </a>
+</div>
+
+<div class="tf-table-wrap">
+  <table class="tf-table">
+    <thead>
+      <tr>
+        <th>Post</th>
+        <th>Category</th>
+        <th>Status</th>
+        <th>Featured</th>
+        <th class="text-end">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% posts.forEach(post => { %>
+        <tr id="post-<%= post.id %>">
+          <td>
+            <div class="d-flex align-items-center gap-3">
+              <% if (post.featured_image) { %>
+                <img src="<%= post.featured_image %>" class="rounded" style="width: 50px; height: 50px; object-fit: cover;">
+              <% } else { %>
+                <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                  <i class="bi bi-journal-text text-muted"></i>
+                </div>
+              <% } %>
+              <div>
+                <div class="fw-bold"><%= post.title %></div>
+                <div class="small text-muted">/blog/<%= post.slug %></div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="badge bg-light text-dark border"><%= post.category ? post.category.name : 'Uncategorized' %></span>
+          </td>
+          <td>
+            <% let statusClass = post.status === 'published' ? 'bg-success-subtle text-success' : (post.status === 'draft' ? 'bg-warning-subtle text-warning' : 'bg-info-subtle text-info'); %>
+            <span class="tf-badge <%= statusClass %>">
+              <%= post.status.toUpperCase() %>
+            </span>
+          </td>
+          <td>
+            <% if (post.is_featured) { %>
+              <i class="bi bi-star-fill text-warning"></i>
+            <% } else { %>
+              <i class="bi bi-star text-muted opacity-50"></i>
+            <% } %>
+          </td>
+          <td class="text-end">
+            <div class="d-flex justify-content-end gap-2">
+              <a href="/cms/blog/posts/<%= post.id %>/edit" class="btn-icon btn-icon-edit"><i class="bi bi-pencil"></i></a>
+              <button onclick="deletePost(<%= post.id %>)" class="btn-icon btn-icon-del"><i class="bi bi-trash"></i></button>
+            </div>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  async function deletePost(id) {
+    if (!confirm('Are you sure you want to delete this post?')) return;
+    const res = await fetch(`/cms/blog/posts/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) document.getElementById(`post-${id}`).remove();
+  }
+</script>

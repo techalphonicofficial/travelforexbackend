@@ -1,0 +1,114 @@
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <p style="color: var(--nav-muted); font-size: 0.95rem;">Manage your travel offerings and itineraries</p>
+    <a href="/vendor/packages/create" class="glass-card" style="padding: 0.7rem 1.5rem; background: var(--primary); border: none; color: white; border-radius: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; text-decoration: none; font-size: 0.9rem; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);">
+        <i class="fas fa-plus"></i> Create New Package
+    </a>
+</div>
+
+<div class="glass-card" style="padding: 0; overflow: hidden;">
+    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+        <thead>
+            <tr style="background: rgba(79, 70, 229, 0.03); border-bottom: 1px solid var(--glass-border);">
+                <th style="padding: 1.2rem 1rem; color: var(--nav-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Package Name</th>
+                <th style="padding: 1.2rem 1rem; color: var(--nav-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Destinations</th>
+                <th style="padding: 1.2rem 1rem; color: var(--nav-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Duration</th>
+                <th style="padding: 1.2rem 1rem; color: var(--nav-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Price</th>
+                <th style="padding: 1.2rem 1rem; color: var(--nav-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Status</th>
+                <th style="padding: 1.2rem 1rem; color: var(--nav-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (packages.length > 0) { %>
+                <% packages.forEach(pkg => { %>
+                    <tr style="border-bottom: 1px solid var(--glass-border); transition: all 0.2s;" onmouseover="this.style.background='rgba(79, 70, 229, 0.02)'" onmouseout="this.style.background='transparent'">
+                        <td style="padding: 1.2rem 1rem;">
+                            <p style="font-weight: 600; color: var(--nav-text);"><%= pkg.name %></p>
+                            <p style="font-size: 0.7rem; color: var(--nav-muted);">ID: #<%= pkg.id %></p>
+                        </td>
+                        <td style="padding: 1.2rem 1rem;">
+                            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                                <% if (pkg.destinations && pkg.destinations.length > 0) { %>
+                                    <% pkg.destinations.forEach(dest => { %>
+                                        <span style="background: rgba(79, 70, 229, 0.08); color: var(--primary); padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; border: 1px solid rgba(79, 70, 229, 0.1);">
+                                            <%= dest.destination ? dest.destination.name : 'N/A' %>
+                                        </span>
+                                    <% }) %>
+                                <% } else { %>
+                                    <span style="color: var(--nav-muted); font-size: 0.75rem; font-style: italic;">No destinations</span>
+                                <% } %>
+                            </div>
+                        </td>
+                        <td style="padding: 1.2rem 1rem; color: var(--nav-text); font-weight: 500;"><%= pkg.duration_days %> Days</td>
+                        <td style="padding: 1.2rem 1rem; font-weight: 700; color: var(--nav-text);">₹<%= pkg.price || '0' %></td>
+                        <td style="padding: 1.2rem 1rem;">
+                            <span style="background: <%= pkg.status ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)' %>; color: <%= pkg.status ? '#10b981' : '#f59e0b' %>; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+                                <i class="bi <%= pkg.status ? 'bi-check-circle-fill' : 'bi-clock-history' %>"></i>
+                                <%= pkg.status ? 'Active' : 'Pending Approval' %>
+                            </span>
+                        </td>
+                        <td style="padding: 1.2rem 1rem;">
+                            <div style="display: flex; gap: 8px;">
+                                <a href="/vendor/packages/<%= pkg.id %>/edit" title="Edit" style="width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: rgba(79, 70, 229, 0.05); color: var(--primary); text-decoration: none; transition: all 0.2s;" onmouseover="this.style.background='var(--primary)'; this.style.color='white'" onmouseout="this.style.background='rgba(79, 70, 229, 0.05)'; this.style.color='var(--primary)'">
+                                    <i class="fas fa-pen-to-square" style="font-size: 0.85rem;"></i>
+                                </a>
+                                <button onclick="deletePackage(<%= pkg.id %>)" title="Delete" style="width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: rgba(239, 68, 68, 0.05); color: #ef4444; border: none; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='white'" onmouseout="this.style.background='rgba(239, 68, 68, 0.05)'; this.style.color='#ef4444'">
+                                    <i class="fas fa-trash" style="font-size: 0.85rem;"></i>
+                                </button>
+                                <button title="Preview" style="width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: rgba(14, 165, 233, 0.05); color: #0ea5e9; border: none; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#0ea5e9'; this.style.color='white'" onmouseout="this.style.background='rgba(14, 165, 233, 0.05)'; this.style.color='#0ea5e9'">
+                                    <i class="fas fa-eye" style="font-size: 0.85rem;"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                <% }) %>
+            <% } else { %>
+                <tr>
+                    <td colspan="6" style="padding: 4rem 2rem; text-align: center;">
+                        <div style="opacity: 0.3; margin-bottom: 1rem;">
+                            <i class="fas fa-box-open" style="font-size: 3rem; color: var(--nav-muted);"></i>
+                        </div>
+                        <p style="color: var(--nav-muted); font-size: 0.9rem;">You haven't created any packages yet.</p>
+                        <a href="/vendor/packages/create" style="display: inline-block; margin-top: 1rem; color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.9rem;">Create your first package</a>
+                    </td>
+                </tr>
+            <% } %>
+        </tbody>
+    </table>
+</div>
+
+<% if (totalPages > 1) { %>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem;">
+    <p style="color: var(--nav-muted); font-size: 0.85rem;">Showing page <strong><%= currentPage %></strong> of <strong><%= totalPages %></strong></p>
+    <div style="display: flex; gap: 6px;">
+        <% if (currentPage > 1) { %>
+            <a href="?page=<%= currentPage - 1 %>" class="glass-card" style="padding: 0.5rem 0.8rem; text-decoration: none; color: var(--nav-text); font-size: 0.8rem; font-weight: 600;">Previous</a>
+        <% } %>
+        
+        <% for(let i = 1; i <= totalPages; i++) { %>
+            <a href="?page=<%= i %>" class="glass-card" style="padding: 0.5rem 0.9rem; text-decoration: none; color: <%= currentPage === i ? 'white' : 'var(--nav-text)' %>; background: <%= currentPage === i ? 'var(--primary)' : 'transparent' %>; font-size: 0.8rem; font-weight: 700; <%= currentPage === i ? 'border-color: var(--primary)' : '' %>"><%= i %></a>
+        <% } %>
+
+        <% if (currentPage < totalPages) { %>
+            <a href="?page=<%= currentPage + 1 %>" class="glass-card" style="padding: 0.5rem 0.8rem; text-decoration: none; color: var(--nav-text); font-size: 0.8rem; font-weight: 600;">Next</a>
+        <% } %>
+    </div>
+</div>
+<% } %>
+
+<script>
+    async function deletePackage(id) {
+        if (!confirm('Are you sure you want to delete this package?')) return;
+
+        try {
+            const res = await fetch(`/vendor/packages/${id}`, { method: 'DELETE' });
+            const result = await res.json();
+            if (result.success) {
+                window.location.reload();
+            } else {
+                alert('Error deleting package: ' + result.message);
+            }
+        } catch (err) {
+            alert('Server error deleting package');
+        }
+    }
+</script>

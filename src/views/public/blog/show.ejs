@@ -1,0 +1,54 @@
+<article class="py-5">
+    <!-- Header -->
+    <header class="container pt-5 mb-5 text-center">
+        <div class="mb-3">
+            <span class="badge bg-indigo-light text-indigo px-4 rounded-pill fw-bold">
+                <%= post.category ? post.category.name : 'General' %>
+            </span>
+        </div>
+        <h1 class="display-3 fw-extrabold mb-4" style="font-family: 'Outfit', sans-serif;"><%= post.title %></h1>
+        <p class="lead text-muted mx-auto" style="max-width: 800px; font-style: italic;">
+            <%= post.summary %>
+        </p>
+    </header>
+
+    <!-- Featured Image -->
+    <% if (post.featured_image) { %>
+        <div class="container mb-5">
+            <img src="<%= post.featured_image %>" class="w-100 rounded-5 shadow-lg object-fit-cover" style="max-height: 500px;">
+        </div>
+    <% } %>
+
+    <!-- Content -->
+    <div class="container pb-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="blog-content prose">
+                    <%- post.content %>
+                </div>
+
+                <hr class="my-5 opacity-10">
+
+                <!-- Author Info or Newsletter -->
+                <div class="bg-indigo-light p-5 rounded-5 text-center">
+                    <h4 class="fw-bold mb-3">Enjoyed this article?</h4>
+                    <p class="text-muted mb-4">Stay updated with the latest trends and stories from our workshop.</p>
+                    <div class="d-flex gap-2 justify-content-center mx-auto" style="max-width: 400px;">
+                        <input type="email" class="form-control rounded-pill px-4" placeholder="your@email.com">
+                        <button class="btn btn-primary rounded-pill px-4">Join</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</article>
+
+<style>
+    .fw-extrabold { font-weight: 800; }
+    .prose { font-size: 1.15rem; line-height: 1.8; color: #334155; }
+    .prose h2, .prose h3 { margin-top: 2.5rem; margin-bottom: 1.25rem; font-weight: 700; color: #0f172a; }
+    .prose p { margin-bottom: 1.5rem; }
+    .prose ul, .prose ol { margin-bottom: 1.5rem; padding-left: 1.5rem; }
+    .prose li { margin-bottom: 0.5rem; }
+    .prose strong { color: #0f172a; }
+</style>

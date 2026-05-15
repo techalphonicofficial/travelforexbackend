@@ -1,0 +1,10 @@
+node_modules/
+*.log
+database.sqlite
+.env
+.DS_Store
+dist/
+build/
+*.zip
+public/uploads/
+laravel_extracted/

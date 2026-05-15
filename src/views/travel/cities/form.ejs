@@ -1,0 +1,118 @@
+<style>
+/* Page Specific Styling */
+.city-form-card { background: #fff; border-radius: 24px; border: 1px solid #edf2f7; box-shadow: 0 10px 40px rgba(79,70,229,0.04); overflow: hidden; }
+.city-form-header { padding: 1.5rem; background: #f8fafc; border-bottom: 1px solid #edf2f7; display: flex; align-items: center; gap: 0.8rem; }
+.city-form-body { padding: 2rem; }
+
+.geo-badge { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: #f1f5f9; border-radius: 12px; font-size: 0.85rem; font-weight: 600; color: #475569; }
+.geo-badge.country { background: rgba(79, 70, 229, 0.08); color: #4f46e5; }
+.geo-badge.continent { background: rgba(16, 185, 129, 0.08); color: #059669; }
+</style>
+
+<div class="tf-page-header align-items-center">
+  <div class="d-flex align-items-center gap-3">
+    <a href="/travel/cities" class="tf-back-btn"><i class="bi bi-chevron-left"></i></a>
+    <div>
+      <p class="tf-page-title"><%= city ? 'Edit City' : 'Create New City' %></p>
+      <p class="tf-page-sub">Manage travel base locations and their parent geography</p>
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="/travel/cities" class="btn btn-light px-4 rounded-3 border">Cancel</a>
+    <button class="btn-add-primary px-5" style="background:linear-gradient(135deg,#4f46e5,#818cf8);box-shadow: 0 4px 15px rgba(79,70,229,0.25)" onclick="saveAll()">
+      <i class="bi bi-check2-circle"></i> Save City
+    </button>
+  </div>
+</div>
+
+<div class="row g-4 justify-content-center">
+  <div class="col-lg-7">
+    <div class="city-form-card">
+      <div class="city-form-header">
+        <div class="tf-stat-icon" style="background:#eef2ff;color:#4f46e5;width:40px;height:40px;font-size:1rem"><i class="bi bi-buildings"></i></div>
+        <h5 class="fw-bold m-0 text-dark">City Details</h5>
+      </div>
+      <div class="city-form-body">
+        <input type="hidden" id="fId" value="<%= city ? city.id : '' %>">
+        
+        <div class="mb-4">
+          <label class="form-label fw-bold small text-uppercase" style="letter-spacing:0.5px">Name <span class="text-danger">*</span></label>
+          <input type="text" class="form-control form-control-lg border-2 shadow-none" id="fName" value="<%= city ? city.name : '' %>" placeholder="Enter city name (e.g. Munnar, Interlaken, Ubud)" autofocus>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-bold small text-uppercase" style="letter-spacing:0.5px">Parent Country <span class="text-danger">*</span></label>
+          <select class="form-select form-select-lg border-2 shadow-none" id="fCountry" onchange="updateGeoHints()">
+            <option value="">Select Country</option>
+            <% countries.forEach(c => { %>
+              <option value="<%= c.id %>" data-continent="<%= c.continent?.name %>" <%= (city && city.country_id === c.id) ? 'selected' : '' %>><%= c.name %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div id="geoPreview" class="mt-4 p-3 rounded-4 border d-flex gap-3 align-items-center bg-light" style="<%= (city && city.country) ? '' : 'display:none!important' %>">
+            <div class="small fw-bold text-muted text-uppercase">Geographic Pipeline:</div>
+            <div id="hintCountry" class="geo-badge country"><i class="bi bi-flag"></i> <%= city && city.country ? city.country.name : '' %></div>
+            <div class="text-muted"><i class="bi bi-chevron-right"></i></div>
+            <div id="hintContinent" class="geo-badge continent"><i class="bi bi-globe"></i> <%= city && city.country && city.country.continent ? city.country.continent.name : '' %></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="tf-form-card" style="background:#eef2ff; border-color:#c7d2fe">
+      <div class="tf-form-body">
+        <h6 class="fw-bold text-indigo mb-3"><i class="bi bi-lightbulb me-2"></i>Quick Tips</h6>
+        <ul class="text-muted small ps-3 mb-0" style="list-style: square;">
+          <li class="mb-2">Enter the standard English spelling for the city.</li>
+          <li class="mb-2">Selecting a country will automatically link the city to its correct continent.</li>
+          <li class="mb-2">This city will be available for mapping destinations and building package itineraries.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function updateGeoHints() {
+    const sel = document.getElementById('fCountry');
+    const opt = sel.options[sel.selectedIndex];
+    const preview = document.getElementById('geoPreview');
+    const hCountry = document.getElementById('hintCountry');
+    const hContinent = document.getElementById('hintContinent');
+
+    if(sel.value) {
+        preview.style.display = 'flex';
+        hCountry.innerHTML = `<i class="bi bi-flag"></i> ${opt.text}`;
+        hContinent.innerHTML = `<i class="bi bi-globe"></i> ${opt.dataset.continent || 'N/A'}`;
+    } else {
+        preview.style.display = 'none';
+    }
+}
+
+async function saveAll() {
+  const payload = {
+    id: document.getElementById('fId').value || null,
+    name: document.getElementById('fName').value.trim(),
+    country_id: document.getElementById('fCountry').value
+  };
+
+  if(!payload.name || !payload.country_id) {
+      alert('Please fill in all required fields!');
+      return;
+  }
+
+  const res = await fetch('/travel/cities/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const resJ = await res.json();
+  if(resJ.success) {
+      window.location.href = '/travel/cities';
+  } else {
+      alert(resJ.message || 'Error saving city');
+  }
+}
+</script>

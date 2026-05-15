@@ -1,0 +1,484 @@
+<style>
+  .design-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+    margin-bottom: 2rem;
+  }
+  .table-minimal {
+    border-collapse: separate;
+    border-spacing: 0 0.5rem;
+  }
+  .table-minimal thead th {
+    border-bottom: 0;
+    color: #111827;
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-transform: capitalize;
+    padding-bottom: 0.5rem;
+  }
+  .table-minimal tbody tr {
+    background-color: transparent;
+  }
+  .table-minimal tbody td {
+    border: none;
+    padding: 0.75rem 0.5rem;
+    color: #4b5563;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+  .table-minimal tbody tr td:first-child {
+    padding-left: 1rem;
+  }
+  .table-minimal tbody tr td:last-child {
+    padding-right: 1rem;
+  }
+  .btn-create {
+    background-color: #8b5cf6;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.4rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+  .btn-create:hover { background-color: #7c3aed; color: #fff; }
+  
+  .filter-input {
+    background-color: #f9fafb;
+    border: 1px solid #f3f4f6;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: #4b5563;
+  }
+  .filter-input:focus {
+    background-color: #fff;
+    border-color: #d1d5db;
+    box-shadow: none;
+  }
+  .btn-group-toggle .btn {
+    border: 1px solid #e5e7eb;
+    background-color: #fff;
+    color: #4b5563;
+    font-size: 0.82rem;
+    padding: 0.35rem 0.75rem;
+    font-weight: 500;
+  }
+  .btn-group-toggle .btn.active {
+    background-color: #f3f4f6;
+    color: #111827;
+    box-shadow: none;
+  }
+
+  /* bulk select custom styles */
+  .custom-checkbox {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1.5px solid #d1d5db;
+    appearance: none;
+    outline: none;
+    cursor: pointer;
+    position: relative;
+    background-color: #fff;
+    transition: all 0.2s;
+    margin: 0;
+    vertical-align: middle;
+  }
+  .custom-checkbox:checked {
+    background-color: #22c55e;
+    border-color: #22c55e;
+  }
+  .custom-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .table-minimal tbody tr td:first-child {
+    padding-left: 1rem;
+    border-left: 3px solid transparent;
+  }
+  .table-minimal tbody tr.row-selected td:first-child {
+    border-left-color: #22c55e;
+  }
+  .table-minimal tbody tr.row-selected td {
+    background-color: #f8fafc;
+  }
+  .bulk-delete-bar {
+    display: none;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+</style>
+
+<div class="design-card">
+  <!-- HEADER ROW -->
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+    <div>
+      <h3 class="fw-bold mb-1" style="color: #111827;">Cities</h3>
+      <p class="text-muted mb-0" style="font-size: 0.85rem;">Manage and track travel base locations efficiently.</p>
+    </div>
+    <div class="d-flex gap-3 align-items-center">
+      <div class="btn-group btn-group-toggle shadow-sm" role="group">
+        <button type="button" class="btn active d-flex align-items-center gap-2" id="vList" onclick="setView('list')">
+          <i class="bi bi-list-ul"></i> List
+        </button>
+        <button type="button" class="btn d-flex align-items-center gap-2" id="vCards" onclick="setView('cards')">
+          <i class="bi bi-person-vcard"></i> Cards
+        </button>
+      </div>
+      <a href="/travel/cities/create" class="btn-create shadow-sm">
+        <i class="bi bi-plus-lg me-1"></i> Create City
+      </a>
+    </div>
+  </div>
+
+  <hr style="border-color: #e5e7eb; margin: 1.25rem -1.5rem;">
+
+  <!-- TOOLBAR ROW -->
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 mt-2">
+    <div class="d-flex flex-grow-1 gap-2 align-items-center">
+      <div class="position-relative" style="width: 260px;">
+        <i class="bi bi-search position-absolute text-muted" style="left: 12px; top: 50%; transform: translateY(-50%); font-size: 0.85rem;"></i>
+        <input type="text" id="searchInput" class="form-control form-control-sm filter-input ps-5 py-2" placeholder="Search city name...">
+      </div>
+      
+      <select id="continentFilter" class="form-select form-select-sm filter-input py-2" style="width: 160px;" onchange="onContinentChange()">
+        <option value="">All Continents</option>
+        <% continents.forEach(function(c) { %>
+          <option value="<%= c.id %>"><%= c.name %></option>
+        <% }); %>
+      </select>
+      
+      <select id="countryFilter" class="form-select form-select-sm filter-input py-2" style="width: 160px;">
+        <option value="">All Countries</option>
+        <% countries.forEach(function(c) { %>
+          <option value="<%= c.id %>" data-continent="<%= c.continent_id %>"><%= c.name %></option>
+        <% }); %>
+      </select>
+    </div>
+    
+    <div class="d-flex gap-2">
+      <button class="btn btn-sm btn-dark px-4 py-2" style="border-radius: 6px; font-weight: 500;" onclick="applyFilters()">Filter</button>
+      <button class="btn btn-sm btn-light px-4 py-2 border" style="border-radius: 6px; font-weight: 500; background: #fff;" onclick="resetFilters()">Reset</button>
+    </div>
+  </div>
+
+  <!-- BULK ACTIONS BAR -->
+  <div id="bulkActionsBar" class="bulk-delete-bar align-items-center justify-content-between">
+    <div>
+      <button class="btn btn-danger btn-sm px-3 py-2 d-inline-flex align-items-center gap-2" style="background-color: #ef4444; border:none; border-radius:6px; font-weight:600;" onclick="confirmBulkDelete()">
+        <i class="bi bi-trash3"></i> Delete selected
+      </button>
+    </div>
+    <div>
+      <span id="selectedCountMsg" class="fw-bold" style="color: #4b5563; font-size:0.9rem;">0 records selected</span>
+    </div>
+  </div>
+
+  <!-- LIST VIEW -->
+  <div id="listView">
+    <div class="table-responsive" style="border: none; box-shadow: none; overflow: visible;">
+      <table class="table table-minimal w-100">
+        <thead>
+          <tr>
+            <th style="width:30px">
+              <input type="checkbox" class="custom-checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()">
+            </th>
+            <th style="width:40px">#</th>
+            <th>City Name</th>
+            <th>Country</th>
+            <th>Continent</th>
+            <th style="width:80px;text-align:right">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="listBody"></tbody>
+      </table>
+      <div id="listPag"></div>
+    </div>
+  </div>
+
+<!-- CARDS VIEW -->
+<div id="cardsView" style="display:none">
+  <div class="tf-cards" id="cardsBody"></div>
+  <div class="tf-pagination mt-3" style="border-radius:16px;background:#fff;box-shadow:0 4px 16px rgba(139,92,246,.07)" id="cardsPag"></div>
+</div>
+
+
+
+<!-- DELETE MODAL -->
+<div class="modal fade tf-modal" id="delModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:380px">
+    <div class="modal-content">
+      <div class="modal-body text-center p-4">
+        <div
+          style="width:60px;height:60px;background:#fef2f2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:1.7rem;color:#ef4444">
+          <i class="bi bi-trash3"></i></div>
+        <h5 class="fw-bold mb-1">Delete Location?</h5>
+        <p class="text-muted" id="delMsg" style="font-size:.88rem"></p>
+        <div class="d-flex gap-2 justify-content-center mt-3">
+          <button class="btn btn-light px-4 rounded-3" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-danger px-4 rounded-3 fw-semibold" id="delBtn">Yes, Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  let view = 'list', page = 1, delId = null, loading = false, totalCount = 0;
+  let selectedIds = new Set();
+  const PS = 20;
+
+  async function loadData(reset = false) {
+    if (loading) return;
+    if (reset) page = 1;
+    
+    loading = true;
+    const q = document.getElementById('searchInput').value;
+    const contId = document.getElementById('continentFilter').value;
+    const countId = document.getElementById('countryFilter').value;
+
+    try {
+      const res = await fetch(`/travel/api/v1/cities/paginated?page=${page}&limit=${PS}&search=${encodeURIComponent(q)}&continentId=${contId}&countryId=${countId}`);
+      const { success, data } = await res.json();
+      
+      if (success) {
+        totalCount = data.count;
+        const totalPages = Math.max(1, Math.ceil(totalCount / PS));
+        
+        if (data.rows.length === 0) {
+           document.getElementById('listBody').innerHTML = emptyRow(6);
+           document.getElementById('cardsBody').innerHTML = `<div class="tf-empty" style="grid-column:1/-1">${emptyInner()}</div>`;
+           document.getElementById('listPag').innerHTML = '';
+           document.getElementById('cardsPag').innerHTML = '';
+        } else {
+           renderList(data.rows, (page - 1) * PS);
+           renderCards(data.rows);
+           
+           const pagContent = pagHTML(page, totalPages, totalCount, (page - 1) * PS, data.rows.length);
+           document.getElementById('listPag').innerHTML = pagContent;
+           document.getElementById('cardsPag').innerHTML = pagContent;
+        }
+
+        // re-evaluate select all state based on loaded items
+        evaluateSelectionState();
+      }
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    } finally {
+      loading = false;
+    }
+  }
+
+  function applyFilters() {
+    loadData(true);
+  }
+
+  function resetFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('continentFilter').value = '';
+    document.getElementById('countryFilter').value = '';
+    
+    // Reset country dropdown visibility
+    const countrySelect = document.getElementById('countryFilter');
+    const options = countrySelect.querySelectorAll('option:not([value=""])');
+    options.forEach(opt => opt.style.display = '');
+
+    loadData(true);
+  }
+
+  function onContinentChange() {
+    const contId = document.getElementById('continentFilter').value;
+    const countrySelect = document.getElementById('countryFilter');
+    const options = countrySelect.querySelectorAll('option:not([value=""])');
+
+    options.forEach(opt => {
+      if (!contId || opt.dataset.continent === contId) {
+        opt.style.display = '';
+      } else {
+        opt.style.display = 'none';
+        if (opt.selected) {
+          opt.selected = false;
+          countrySelect.value = '';
+        }
+      }
+    });
+
+    applyFilters();
+  }
+
+  function renderList(slice, s) {
+    const body = document.getElementById('listBody');
+    body.innerHTML = slice.map((c, i) => {
+      const checked = selectedIds.has(c.id.toString()) ? 'checked' : '';
+      const rowClass = checked ? 'row-selected' : '';
+      return `<tr class="${rowClass}">
+    <td><input type="checkbox" class="custom-checkbox row-checkbox" value="${c.id}" onchange="toggleRowSelection(this)" ${checked}></td>
+    <td style="color:#6b7280;">${s + i + 1}</td>
+    <td style="font-weight:600;color:#111827;">${c.name}</td>
+    <td>${c.country?.name || '—'}</td>
+    <td><span class="px-2 py-1 rounded-pill" style="background:#f3f4f6;font-size:0.75rem;font-weight:600;color:#4b5563;">${c.country?.continent?.name || '—'}</span></td>
+    <td style="text-align:right">
+      <a href="/travel/cities/${c.id}/edit" class="btn btn-sm btn-light border me-1 rounded-circle p-1" style="width:26px;height:26px;line-height:1;"><i class="bi bi-pencil" style="font-size:0.8rem;color:#4b5563;"></i></a>
+      <button class="btn btn-sm btn-light border rounded-circle p-1" style="width:26px;height:26px;line-height:1;" onclick="confirmDel('${c.id}','${c.name.replace(/'/g, "\\'")}', event)"><i class="bi bi-trash3" style="font-size:0.8rem;color:#ef4444;"></i></button>
+    </td>
+  </tr>`;
+    }).join('');
+  }
+
+  function renderCards(slice) {
+    const body = document.getElementById('cardsBody');
+    body.innerHTML = slice.map(c => `<div class="tf-card">
+    <div class="tf-card-icon" style="background:rgba(79,70,229,0.1);color:#4f46e5"><i class="bi bi-buildings"></i></div>
+    <div class="tf-card-name">${c.name}</div>
+    <div class="tf-card-meta">
+      <div class="mb-1"><i class="bi bi-flag me-1"></i>${c.country?.name || '—'}</div>
+      <div><i class="bi bi-globe me-1"></i>${c.country?.continent?.name || '—'}</div>
+    </div>
+    <div class="tf-card-actions mt-auto">
+      <a href="/travel/cities/${c.id}/edit" class="btn-icon btn-icon-edit flex-grow-1 justify-content-center"><i class="bi bi-pencil me-1"></i>Edit</a>
+      <button class="btn-icon btn-icon-del" onclick="confirmDel('${c.id}','${c.name.replace(/'/g, "\\'")}')"><i class="bi bi-trash3"></i></button>
+    </div>
+  </div>`).join('');
+  }
+
+  function pagHTML(p, pages, tot, s, len) {
+    const prev = `<button onclick="goPage(${p - 1})" ${p <= 1 ? 'disabled' : ''}><i class="bi bi-chevron-left"></i></button>`;
+    const next = `<button onclick="goPage(${p + 1})" ${p >= pages ? 'disabled' : ''}><i class="bi bi-chevron-right"></i></button>`;
+    let nums = '';
+    for (let i = 1; i <= pages; i++) {
+      if (pages <= 6 || Math.abs(i - p) <= 1 || i === 1 || i === pages) nums += `<button class="${i === p ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
+      else if (Math.abs(i - p) === 2) nums += `<button disabled style="border:0;background:none;color:#8888bb">…</button>`;
+    }
+    return `<div class="tf-page-info">Showing ${s + 1}–${s + len} of ${tot}</div><div class="tf-pages">${prev}${nums}${next}</div>`;
+  }
+
+  function goPage(p) { 
+    page = p; 
+    loadData(); 
+  }
+
+  function emptyRow(cols) { return `<tr><td colspan="${cols}"><div class="tf-empty"><div class="tf-empty-icon"><i class="bi bi-buildings"></i></div><p>No locations found.</p></div></td></tr>`; }
+  function emptyInner() { return `<div class="tf-empty-icon"><i class="bi bi-buildings"></i></div><p>No locations found.</p>`; }
+
+  function setView(v) {
+    view = v;
+    document.getElementById('listView').style.display = v === 'list' ? '' : 'none';
+    document.getElementById('cardsView').style.display = v === 'cards' ? '' : 'none';
+    
+    document.getElementById('vList').classList.toggle('active', v === 'list');
+    document.getElementById('vCards').classList.toggle('active', v === 'cards');
+  }
+
+  function confirmDel(id, name, event) { 
+    if(event) event.stopPropagation();
+    delId = id; 
+    document.getElementById('delMsg').textContent = `"${name}" will be permanently removed.`; 
+    document.getElementById('delBtn').onclick = executeSingleDelete;
+    new bootstrap.Modal(document.getElementById('delModal')).show(); 
+  }
+
+  async function executeSingleDelete() {
+    await fetch(`/travel/api/v1/cities/${delId}`, { method: 'DELETE' }); 
+    loadData(true);
+    const modal = bootstrap.Modal.getInstance(document.getElementById('delModal'));
+    if(modal) modal.hide();
+  }
+
+  // BULK DELETE API HOOKS
+  function toggleSelectAll() {
+    const mainCheckbox = document.getElementById('selectAllCheckbox');
+    const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+    const checked = mainCheckbox.checked;
+
+    rowCheckboxes.forEach(cb => {
+      cb.checked = checked;
+      const tr = cb.closest('tr');
+      if(checked) {
+        tr.classList.add('row-selected');
+        selectedIds.add(cb.value);
+      } else {
+        tr.classList.remove('row-selected');
+        selectedIds.delete(cb.value);
+      }
+    });
+
+    updateBulkActionBar();
+  }
+
+  function toggleRowSelection(cb) {
+    const tr = cb.closest('tr');
+    if(cb.checked) {
+      tr.classList.add('row-selected');
+      selectedIds.add(cb.value);
+    } else {
+      tr.classList.remove('row-selected');
+      selectedIds.delete(cb.value);
+      document.getElementById('selectAllCheckbox').checked = false;
+    }
+    updateBulkActionBar();
+  }
+
+  function evaluateSelectionState() {
+     const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+     if(!rowCheckboxes.length) {
+       document.getElementById('selectAllCheckbox').checked = false;
+       return;
+     }
+
+     let allChecked = true;
+     rowCheckboxes.forEach(cb => {
+        if(!cb.checked) allChecked = false;
+     });
+     document.getElementById('selectAllCheckbox').checked = allChecked;
+  }
+
+  function updateBulkActionBar() {
+    const bar = document.getElementById('bulkActionsBar');
+    const msg = document.getElementById('selectedCountMsg');
+    if(selectedIds.size > 0) {
+      bar.style.display = 'flex';
+      msg.textContent = `${selectedIds.size} records selected`;
+    } else {
+      bar.style.display = 'none';
+      document.getElementById('selectAllCheckbox').checked = false;
+    }
+  }
+
+  function confirmBulkDelete() {
+    document.getElementById('delMsg').textContent = `Are you sure you want to permanently delete the ${selectedIds.size} selected records?`;
+    document.getElementById('delBtn').onclick = executeBulkDelete;
+    new bootstrap.Modal(document.getElementById('delModal')).show();
+  }
+
+  async function executeBulkDelete() {
+    const ids = Array.from(selectedIds);
+    await fetch(`/travel/api/v1/cities/bulk-delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids })
+    });
+    
+    selectedIds.clear();
+    updateBulkActionBar();
+    const modal = bootstrap.Modal.getInstance(document.getElementById('delModal'));
+    if(modal) modal.hide();
+    loadData(true);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadData(true);
+  });
+</script>
+</div>

@@ -1,0 +1,325 @@
+<div class="tf-page-header">
+  <div>
+    <h1 class="tf-page-title">Leads Dashboard</h1>
+    <p class="tf-page-sub">Manage your customer inquiries across pipelines</p>
+  </div>
+  <div class="d-flex gap-3 align-items-center">
+    <% if (todayFollowUpCount > 0) { %>
+      <a href="/crm/follow-ups" class="btn btn-soft-danger rounded-pill px-3">
+        <i class="bi bi-bell-fill me-1"></i> <%= todayFollowUpCount %> Follow-ups Today
+      </a>
+    <% } %>
+    <div class="tf-view-toggle">
+      <button id="viewKanban" class="active" onclick="toggleView('kanban')"><i class="bi bi-kanban-fill"></i></button>
+      <button id="viewTable" onclick="toggleView('table')"><i class="bi bi-table"></i></button>
+    </div>
+    <a href="/crm/leads/create" class="btn-add-primary"><i class="bi bi-plus-lg"></i> Add Lead</a>
+  </div>
+</div>
+
+<!-- FILTERS & PIPELINE SELECTOR -->
+<div class="tf-toolbar mb-4">
+  <div class="tf-search me-3">
+    <i class="bi bi-search tf-si"></i>
+    <input type="text" id="leadSearch" placeholder="Search leads..." onkeyup="filterLeads()">
+  </div>
+  
+  <div class="d-flex align-items-center gap-2">
+    <span class="small fw-bold text-muted text-uppercase">Pipeline:</span>
+    <select class="tf-select" id="pipelineFilter" onchange="changePipeline(this.value)">
+      <% pipelines.forEach(p => { %>
+        <option value="<%= p.id %>" <%= p.id == selectedPipelineId ? 'selected' : '' %>><%= p.name %></option>
+      <% }) %>
+    </select>
+  </div>
+</div>
+
+<div id="leadsContainer"></div>
+
+<style>
+  /* Kanban Styles */
+  .kanban-board {
+    display: flex;
+    gap: 1.5rem;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+    min-height: 70vh;
+  }
+  .kanban-column {
+    min-width: 300px;
+    width: 300px;
+    background: #f8fafc;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 250px);
+  }
+  .kanban-header {
+    padding: 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid rgba(0,0,0,0.03);
+  }
+  .kanban-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .kanban-count {
+    background: rgba(0,0,0,0.05);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .kanban-cards {
+    padding: 1rem;
+    flex-grow: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .lead-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    border: 1px solid #f1f5f9;
+    cursor: grab;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .lead-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.05);
+  }
+  .lead-card .name {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #1e1e4a;
+    margin-bottom: 0.25rem;
+  }
+  .lead-card .source {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .lead-card .meta {
+    font-size: 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #94a3b8;
+  }
+  .assignee-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: #4f46e5;
+  }
+  .kanban-cards.drag-over {
+    background: rgba(79, 70, 229, 0.05);
+    border-radius: 12px;
+  }
+  
+  /* View Toggle */
+  .tf-view-toggle {
+    display: flex;
+    background: #f0f0fa;
+    padding: 0.25rem;
+    border-radius: 12px;
+  }
+  .tf-view-toggle button {
+    border: none;
+    background: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 10px;
+    color: #8888bb;
+    transition: all 0.2s;
+  }
+  .tf-view-toggle button.active {
+    background: white;
+    color: #4f46e5;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  }
+</style>
+
+<script>
+  let LEADS = <%- JSON.stringify(leads) %>;
+  let STAGES = <%- pipeline ? JSON.stringify(pipeline.stages) : '[]' %>;
+  let filteredLeads = [...LEADS];
+  let currentView = 'kanban';
+
+  function render() {
+    const container = document.getElementById('leadsContainer');
+    if (currentView === 'table') {
+      renderTable(container);
+    } else {
+      renderKanban(container);
+    }
+  }
+
+  function renderTable(container) {
+    container.innerHTML = `
+      <div class="tf-table-wrap">
+        <table class="tf-table">
+          <thead>
+            <tr>
+              <th>Lead Name</th>
+              <th>Contact</th>
+              <th>Stage</th>
+              <th>Assigned To</th>
+              <th>Source</th>
+              <th>Last Updated</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredLeads.map(l => `
+              <tr>
+                <td>
+                  <a href="/crm/leads/${l.id}" class="text-decoration-none fw-bold text-dark">${l.name}</a>
+                </td>
+                <td>
+                  <div class="small">${l.email || ''}</div>
+                  <div class="small text-muted">${l.phone || ''}</div>
+                </td>
+                <td>
+                  <span class="tf-badge" style="background: ${l.stage?.color}15; color: ${l.stage?.color}">
+                    ${l.stage?.name || 'No Stage'}
+                  </span>
+                </td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="assignee-avatar">${l.assignee ? l.assignee.name[0] : '?'}</div>
+                    <span class="small">${l.assignee ? l.assignee.name : 'Unassigned'}</span>
+                  </div>
+                </td>
+                <td><span class="small">${l.source}</span></td>
+                <td class="small text-muted">${new Date(l.updated_at).toLocaleDateString()}</td>
+                <td class="text-end">
+                  <div class="d-flex justify-content-end gap-1">
+                    <a href="/crm/leads/${l.id}/edit" class="btn-icon btn-icon-edit"><i class="bi bi-pencil"></i></a>
+                    <button onclick="deleteLead(${l.id})" class="btn-icon btn-icon-del"><i class="bi bi-trash3"></i></button>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function renderKanban(container) {
+    if (STAGES.length === 0) {
+      container.innerHTML = `<div class="alert alert-warning">Please define stages for this pipeline first.</div>`;
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="kanban-board">
+        ${STAGES.sort((a,b) => a.order - b.order).map(stage => {
+          const stageLeads = filteredLeads.filter(l => l.stage_id == stage.id);
+          return `
+            <div class="kanban-column" data-stage-id="${stage.id}">
+              <div class="kanban-header">
+                <h5 class="kanban-title"><span style="color: ${stage.color}">●</span> ${stage.name}</h5>
+                <span class="kanban-count">${stageLeads.length}</span>
+              </div>
+              <div class="kanban-cards" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, ${stage.id})">
+                ${stageLeads.map(l => `
+                  <div class="lead-card" draggable="true" ondragstart="drag(event, ${l.id})" onclick="window.location.href='/crm/leads/${l.id}'">
+                    <div class="name">${l.name}</div>
+                    <div class="source"><i class="bi bi-bullseye"></i> ${l.source}</div>
+                    <div class="meta">
+                      <span><i class="bi bi-clock me-1"></i>${new Date(l.updated_at).toLocaleDateString()}</span>
+                      <div class="assignee-avatar" title="${l.assignee ? l.assignee.name : 'Unassigned'}">
+                        ${l.assignee ? l.assignee.name[0] : '?'}
+                      </div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  function toggleView(view) {
+    currentView = view;
+    document.getElementById('viewKanban').classList.toggle('active', view === 'kanban');
+    document.getElementById('viewTable').classList.toggle('active', view === 'table');
+    render();
+  }
+
+  function filterLeads() {
+    const q = document.getElementById('leadSearch').value.toLowerCase();
+    filteredLeads = LEADS.filter(l => 
+      l.name.toLowerCase().includes(q) || 
+      (l.email && l.email.toLowerCase().includes(q)) ||
+      (l.phone && l.phone.includes(q))
+    );
+    render();
+  }
+
+  function changePipeline(id) {
+    window.location.href = `/crm/leads?pipeline_id=${id}`;
+  }
+
+  // Drag and Drop
+  function allowDrop(ev) {
+    ev.preventDefault();
+    ev.currentTarget.classList.add('drag-over');
+  }
+  function dragLeave(ev) {
+    ev.currentTarget.classList.remove('drag-over');
+  }
+  function drag(ev, id) {
+    ev.dataTransfer.setData("leadId", id);
+  }
+  async function drop(ev, stageId) {
+    ev.preventDefault();
+    ev.currentTarget.classList.remove('drag-over');
+    const id = ev.dataTransfer.getData("leadId");
+    
+    try {
+      const res = await fetch(`/crm/leads/${id}/move-stage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stage_id: stageId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Optimistic UI update or reload
+        location.reload();
+      }
+    } catch (err) { alert('Error moving lead'); }
+  }
+
+  async function deleteLead(id) {
+    if (confirm('Delete this lead?')) {
+      const res = await fetch(`/crm/leads/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) location.reload();
+    }
+  }
+
+  render();
+</script>

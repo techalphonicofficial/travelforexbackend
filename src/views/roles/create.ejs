@@ -1,0 +1,46 @@
+<div class="mb-4">
+    <h2 class="fw-bold mb-1">Create New Role</h2>
+    <p class="text-secondary small mb-0">Define a new system role and assign permissions to it.</p>
+</div>
+
+<div class="card shadow-sm border-0 mb-4 p-4">
+    <form action="/roles" method="POST">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="name" class="form-label fw-semibold text-secondary small">Role Name</label>
+                <input type="text" class="form-control p-2 shadow-none border-secondary-subtle" id="name" name="name" placeholder="e.g. System Admin" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="description" class="form-label fw-semibold text-secondary small">Description</label>
+                <input type="text" class="form-control p-2 shadow-none border-secondary-subtle" id="description" name="description" placeholder="Short role overview">
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label fw-bold d-block mb-3 border-bottom pb-2">Assign Permissions</label>
+            <div class="row row-cols-1 row-cols-md-3 g-3">
+                <% permissions.forEach(permission => { %>
+                <div class="col">
+                    <div class="form-check p-3 border rounded h-100 hover-shadow transition-all">
+                        <input class="form-check-input ms-0 me-3" type="checkbox" name="permissions" value="<%= permission.id %>" id="perm_<%= permission.id %>">
+                        <label class="form-check-label w-100" for="perm_<%= permission.id %>">
+                            <span class="d-block fw-semibold text-dark"><%= permission.name %></span>
+                        </label>
+                    </div>
+                </div>
+                <% }) %>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-3 pt-3 mt-3 border-top">
+            <a href="/roles" class="btn btn-light px-4">Cancel</a>
+            <button type="submit" class="btn btn-primary px-4 fw-bold">Create Role</button>
+        </div>
+    </form>
+</div>
+
+<style>
+.hover-shadow:hover { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-color: var(--primary) !important; cursor: pointer; }
+.transition-all { transition: all 0.2s ease; }
+.form-check-input { float: none; margin-top: 0.3rem; scale: 1.2; }
+</style>

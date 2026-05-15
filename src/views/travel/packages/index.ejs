@@ -1,0 +1,171 @@
+<div class="tf-page-header">
+  <div>
+    <h1 class="tf-page-title">Tour Packages</h1>
+    <p class="tf-page-sub">Manage holiday itineraries and routing</p>
+  </div>
+  <div class="d-flex gap-3">
+    <div class="tf-view-toggle">
+      <button class="active" id="viewList" onclick="toggleView('list')"><i class="bi bi-list-ul"></i></button>
+      <button id="viewGrid" onclick="toggleView('grid')"><i class="bi bi-grid-3x3-gap-fill"></i></button>
+    </div>
+    <a href="/travel/packages/create" class="btn-add-primary"><i class="bi bi-plus-lg"></i> Create New Package</a>
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="input-group">
+      <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+      <input type="text" class="form-control border-start-0 ps-0" id="searchPkg" placeholder="Search package name..."
+        onkeyup="filterData()">
+    </div>
+  </div>
+
+</div>
+
+<div id="packageListContent"></div>
+<div id="pagination" class="mt-4"></div>
+
+
+<script>
+  let ALL_DATA = <%- JSON.stringify(packages).replace(/</g, '\\u003c') %>;
+  let filtered = [...ALL_DATA];
+  let currentView = 'list';
+  let currentPage = 1;
+  const itemsPerPage = 8;
+
+  function render() {
+    const container = document.getElementById('packageListContent');
+
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const paginated = filtered.slice(start, end);
+
+    if (currentView === 'list') {
+      container.innerHTML = `
+      <div class="tf-table-card">
+        <table class="table align-middle mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th class="ps-4">Package Details</th>
+
+              <th>Route (Stay Duration)</th>
+
+              <th class="text-end pe-4">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${paginated.map(p => `
+              <tr>
+                <td class="ps-4">
+                  <div class="fw-bold text-dark d-flex align-items-center gap-2">
+                    ${p.name}
+                    ${p.show_in_home_page ? '<span class="badge" style="background-color:#d1fae5; color:#065f46; font-size:0.65rem; border-radius:12px; padding:2px 6px;">Home Page</span>' : ''}
+                  </div>
+                  <div class="text-muted small">${p.duration_days} Days / ${Math.max(0, p.duration_days - 1)} Nights</div>
+                </td>
+                <td><div class="text-muted small" style="max-width:280px">${formatStaysJS(p.destinations)}</div></td>
+
+                <td class="text-end pe-4">
+                  <div class="d-flex justify-content-end gap-2">
+                    <a href="/travel/packages/${p.id}/edit" class="btn-icon btn-icon-edit"><i class="bi bi-pencil"></i></a>
+                    <a href="/travel/packages/${p.id}" class="btn-icon btn-icon-view"><i class="bi bi-eye"></i></a>
+                    <button class="btn-icon btn-icon-del" onclick="deletePkg('${p.id}')"><i class="bi bi-trash3"></i></button>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+    } else {
+      container.innerHTML = `<div class="row g-4">${paginated.map(p => `
+      <div class="col-md-3">
+        <div class="tf-card h-100">
+          <div class="d-flex justify-content-between mb-2">
+            <span class="tf-badge pill-active">${p.duration_days} Days</span>
+           
+          </div>
+          <h6 class="fw-bold text-dark mb-1 d-flex justify-content-between align-items-start gap-2">
+            <span>${p.name}</span>
+            ${p.show_in_home_page ? '<i class="bi bi-house-door-fill text-success" style="font-size: 0.9rem;" title="Shown on Home Page"></i>' : ''}
+          </h6>
+          <div class="text-muted small mb-3">
+             <i class="bi bi-geo-alt me-1"></i> ${formatStaysJS(p.destinations)}
+          </div>
+          <div class="mt-auto d-flex justify-content-between align-items-center">
+
+            <div class="d-flex gap-1">
+              <a href="/travel/packages/${p.id}/edit" class="btn-icon btn-icon-edit btn-sm"><i class="bi bi-pencil"></i></a>
+              <button class="btn-icon btn-icon-del btn-sm" onclick="deletePkg('${p.id}')"><i class="bi bi-trash3"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `).join('')}</div>`;
+    }
+    renderPagination();
+  }
+
+  // JS Helpers for dynamic rendering
+  function formatStaysJS(items) {
+    if (!items || items.length === 0) return 'Route TBD';
+    return items
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+      .map(pd => `${pd.destination?.name || 'Unknown'} (${pd.nights || 0}N)`)
+      .join(' → ');
+  }
+
+
+  function filterData() {
+    const query = document.getElementById('searchPkg').value.toLowerCase();
+    filtered = ALL_DATA.filter(p => {
+      const mSearch = p.name.toLowerCase().includes(query);
+      return mSearch;
+    });
+    currentPage = 1;
+    render();
+  }
+
+  function toggleView(v) {
+    currentView = v;
+    document.getElementById('viewList').classList.toggle('active', v === 'list');
+    document.getElementById('viewGrid').classList.toggle('active', v === 'grid');
+    render();
+  }
+
+  function renderPagination() {
+    const totalPages = Math.ceil(filtered.length / itemsPerPage);
+    let html = `<nav><ul class="pagination justify-content-center">`;
+    for (let i = 1; i <= totalPages; i++) {
+      html += `<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link" href="#" onclick="currentPage=${i}; render(); return false;">${i}</a></li>`;
+    }
+    html += `</ul></nav>`;
+    document.getElementById('pagination').innerHTML = totalPages > 1 ? html : '';
+  }
+
+  async function deletePkg(id) {
+    if (confirm('Are you sure you want to delete this package?')) {
+      try {
+        const res = await fetch(`/api/v1/packages/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        const data = await res.json();
+        if (data.success) {
+          location.reload();
+        } else {
+          alert('Error: ' + (data.message || 'Failed to delete'));
+        }
+      } catch (err) {
+        alert('Network Error: ' + err.message);
+      }
+    }
+  }
+
+  render();
+</script>

@@ -1,0 +1,470 @@
+<style>
+  .design-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+    margin-bottom: 2rem;
+  }
+  .table-minimal {
+    border-collapse: separate;
+    border-spacing: 0 0.5rem;
+  }
+  .table-minimal thead th {
+    border-bottom: 0;
+    color: #111827;
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-transform: capitalize;
+    padding-bottom: 0.5rem;
+  }
+  .table-minimal tbody tr {
+    background-color: transparent;
+  }
+  .table-minimal tbody td {
+    border: none;
+    padding: 0.75rem 0.5rem;
+    color: #4b5563;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+  .btn-create {
+    background-color: #8b5cf6;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.4rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+  .btn-create:hover { background-color: #7c3aed; color: #fff; }
+  
+  .filter-input {
+    background-color: #f9fafb;
+    border: 1px solid #f3f4f6;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: #4b5563;
+  }
+  .filter-input:focus {
+    background-color: #fff;
+    border-color: #d1d5db;
+    box-shadow: none;
+  }
+  .btn-group-toggle .btn {
+    border: 1px solid #e5e7eb;
+    background-color: #fff;
+    color: #4b5563;
+    font-size: 0.82rem;
+    padding: 0.35rem 0.75rem;
+    font-weight: 500;
+  }
+  .btn-group-toggle .btn.active {
+    background-color: #f3f4f6;
+    color: #111827;
+    box-shadow: none;
+  }
+
+  /* bulk select custom styles */
+  .custom-checkbox {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1.5px solid #d1d5db;
+    appearance: none;
+    outline: none;
+    cursor: pointer;
+    position: relative;
+    background-color: #fff;
+    transition: all 0.2s;
+    margin: 0;
+    vertical-align: middle;
+  }
+  .custom-checkbox:checked {
+    background-color: #22c55e;
+    border-color: #22c55e;
+  }
+  .custom-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .table-minimal tbody tr td:first-child {
+    padding-left: 1rem;
+    border-left: 3px solid transparent;
+  }
+  .table-minimal tbody tr.row-selected td:first-child {
+    border-left-color: #22c55e;
+  }
+  .table-minimal tbody tr.row-selected td {
+    background-color: #f8fafc;
+  }
+  .bulk-delete-bar {
+    display: none;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+</style>
+
+<div class="design-card">
+  <!-- HEADER ROW -->
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+    <div>
+      <h3 class="fw-bold mb-1" style="color: #111827;">Continents</h3>
+      <p class="text-muted mb-0" style="font-size: 0.85rem;">Manage all global continents.</p>
+    </div>
+    <div class="d-flex gap-3 align-items-center">
+      <div class="btn-group btn-group-toggle shadow-sm" role="group">
+        <button type="button" class="btn active d-flex align-items-center gap-2" id="viewList" onclick="setView('list')">
+          <i class="bi bi-list-ul"></i> List
+        </button>
+        <button type="button" class="btn d-flex align-items-center gap-2" id="viewCards" onclick="setView('cards')">
+          <i class="bi bi-person-vcard"></i> Cards
+        </button>
+      </div>
+      <button class="btn-create shadow-sm" data-bs-toggle="modal" data-bs-target="#continentModal" onclick="openCreate()">
+        <i class="bi bi-plus-lg me-1"></i> Add Continent
+      </button>
+    </div>
+  </div>
+
+  <hr style="border-color: #e5e7eb; margin: 1.25rem -1.5rem;">
+
+  <!-- TOOLBAR ROW -->
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 mt-2">
+    <div class="d-flex gap-2">
+      <div class="position-relative" style="width: 260px;">
+        <i class="bi bi-search position-absolute text-muted" style="left: 12px; top: 50%; transform: translateY(-50%); font-size: 0.85rem;"></i>
+        <input type="text" id="searchInput" class="form-control form-control-sm filter-input ps-5 py-2" placeholder="Search continent..." oninput="applyFilters()">
+      </div>
+    </div>
+    <div>
+      <span class="text-muted fw-bold" id="countLabel" style="font-size: 0.85rem;"></span>
+    </div>
+  </div>
+
+  <!-- BULK ACTIONS BAR -->
+  <div id="bulkActionsBar" class="bulk-delete-bar align-items-center justify-content-between">
+    <div>
+      <button class="btn btn-danger btn-sm px-3 py-2 d-inline-flex align-items-center gap-2" style="background-color: #ef4444; border:none; border-radius:6px; font-weight:600;" onclick="confirmBulkDelete()">
+        <i class="bi bi-trash3"></i> Delete selected
+      </button>
+    </div>
+    <div>
+      <span id="selectedCountMsg" class="fw-bold" style="color: #4b5563; font-size:0.9rem;">0 records selected</span>
+    </div>
+  </div>
+
+  <!-- LIST VIEW -->
+  <div id="listView">
+    <div class="table-responsive" style="border: none; box-shadow: none; overflow: visible;">
+      <table class="table table-minimal w-100">
+        <thead>
+          <tr>
+            <th style="width:30px">
+              <input type="checkbox" class="custom-checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()">
+            </th>
+            <th style="width:40px">#</th>
+            <th>Continent Name</th>
+            <th>Created</th>
+            <th style="width:80px;text-align:right">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="listBody"></tbody>
+      </table>
+      <div id="listPagination"></div>
+    </div>
+  </div>
+
+<!-- ═══════════ CARD VIEW ═══════════ -->
+<div id="cardsView" style="display:none">
+    <div class="tf-cards" id="cardsBody"></div>
+    <div class="tf-pagination mt-3" style="border-radius:16px;box-shadow:0 4px 16px rgba(79,70,229,0.07)" id="cardsPagination"></div>
+</div>
+
+<!-- ═══════════ MODAL ═══════════ -->
+<div class="modal fade tf-modal" id="continentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:440px">
+        <div class="modal-content">
+            <div class="modal-header" style="background:linear-gradient(135deg,#4f46e5,#818cf8);color:#fff">
+                <h5 class="modal-title fw-bold" id="modalTitle">Add Continent</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="continentId">
+                <div class="mb-3">
+                    <label class="form-label">Continent Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="continentName" placeholder="e.g. Asia, Europe, Africa…">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-light px-4 rounded-3" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn-add-primary" onclick="saveContinent()"><i class="bi bi-check2 me-1"></i>Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade tf-modal" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:380px">
+        <div class="modal-content">
+            <div class="modal-body text-center p-4">
+                <div style="width:64px;height:64px;background:#fef2f2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:1.8rem;color:#ef4444">
+                    <i class="bi bi-trash3"></i>
+                </div>
+                <h5 class="fw-bold mb-1">Delete Continent?</h5>
+                <p class="text-muted" id="deleteMsg" style="font-size:0.88rem"></p>
+                <div class="d-flex gap-2 justify-content-center mt-3">
+                    <button class="btn btn-light px-4 rounded-3" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-danger px-4 rounded-3 fw-semibold" id="confirmDeleteBtn">Yes, Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ─── Data ────────────────────────────────────────
+const ALL_DATA = <%- JSON.stringify(continents) %>;
+const COLORS   = ['#4f46e5','#0ea5e9','#10b981','#f59e0b','#ec4899','#8b5cf6'];
+const PAGE_SIZE = 8;
+let currentView = 'list';
+let currentPage = 1;
+let filtered    = [...ALL_DATA];
+let deleteId    = null;
+let selectedIds = new Set();
+
+// ─── Filters ─────────────────────────────────────
+function applyFilters() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    filtered = ALL_DATA.filter(c => c.name.toLowerCase().includes(q));
+    currentPage = 1;
+    render();
+}
+
+// ─── Render ──────────────────────────────────────
+function render() {
+    const total  = filtered.length;
+    const pages  = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    currentPage  = Math.min(currentPage, pages);
+    const start  = (currentPage - 1) * PAGE_SIZE;
+    const slice  = filtered.slice(start, start + PAGE_SIZE);
+
+    document.getElementById('countLabel').textContent = `${total} result${total !== 1 ? 's' : ''}`;
+
+    if (currentView === 'list') renderList(slice, start, total, pages);
+    else                         renderCards(slice, start, total, pages);
+    evaluateSelectionState();
+}
+
+function renderList(slice, start, total, pages) {
+    const tbody = document.getElementById('listBody');
+    if (!slice.length) {
+        tbody.innerHTML = `<tr><td colspan="5"><div class="text-center p-4 text-muted"><p>No continents found.</p></div></td></tr>`;
+        document.getElementById('listPagination').innerHTML = '';
+        return;
+    }
+    tbody.innerHTML = slice.map((c, i) => {
+        const color = COLORS[c.id % COLORS.length];
+        const date  = c.created_at ? new Date(c.created_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+        const checked = selectedIds.has(c.id.toString()) ? 'checked' : '';
+        const rowClass = checked ? 'row-selected' : '';
+        return `<tr class="${rowClass}">
+            <td><input type="checkbox" class="custom-checkbox row-checkbox" value="${c.id}" onchange="toggleRowSelection(this)" ${checked}></td>
+            <td style="color:#6b7280;">${start+i+1}</td>
+            <td>
+                <div style="display:flex;align-items:center;gap:0.7rem">
+                    <div style="width:28px;height:28px;border-radius:10px;background:${color}20;display:flex;align-items:center;justify-content:center;color:${color};font-size:0.8rem"><i class="bi bi-globe"></i></div>
+                    <span style="font-weight:600;color:#1e1e4a">${c.name}</span>
+                </div>
+            </td>
+            <td><span style="color:#8888bb;font-size:0.82rem">${date}</span></td>
+            <td style="text-align:right">
+                <button class="btn btn-sm btn-light border me-1 rounded-circle p-1" style="width:26px;height:26px;line-height:1;" onclick="openEdit('${c.id}')" data-bs-toggle="modal" data-bs-target="#continentModal" title="Edit"><i class="bi bi-pencil" style="font-size:0.8rem;color:#4b5563;"></i></button>
+                <button class="btn btn-sm btn-light border rounded-circle p-1" style="width:26px;height:26px;line-height:1;" onclick="confirmDelete('${c.id}','${c.name.replace(/'/g,"\\'")}')"><i class="bi bi-trash3" style="font-size:0.8rem;color:#ef4444;"></i></button>
+            </td>
+        </tr>`;
+    }).join('');
+    document.getElementById('listPagination').innerHTML = paginationHTML(currentPage, pages, total, start, slice.length);
+}
+
+function renderCards(slice, start, total, pages) {
+    const body = document.getElementById('cardsBody');
+    if (!slice.length) {
+        body.innerHTML = `<div class="tf-empty" style="grid-column:1/-1"><div class="tf-empty-icon"><i class="bi bi-globe2"></i></div><p>No continents found.</p></div>`;
+        document.getElementById('cardsPagination').innerHTML = '';
+        return;
+    }
+    body.innerHTML = slice.map(c => {
+        const color = COLORS[c.id % COLORS.length];
+        const date  = c.created_at ? new Date(c.created_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+        return `<div class="tf-card">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+                <div class="tf-card-icon" style="background:${color}18;color:${color}"><i class="bi bi-globe2"></i></div>
+                <span style="font-size:0.72rem;color:#8888bb">${date}</span>
+            </div>
+            <div class="tf-card-name">${c.name}</div>
+            <div class="tf-card-actions mt-auto">
+                <button class="btn-icon btn-icon-edit flex-grow-1 justify-content-center" onclick="openEdit('${c.id}')" data-bs-toggle="modal" data-bs-target="#continentModal"><i class="bi bi-pencil me-1"></i> Edit</button>
+                <button class="btn-icon btn-icon-del" onclick="confirmDelete('${c.id}','${c.name.replace(/'/g,"\\'")}')"><i class="bi bi-trash3"></i></button>
+            </div>
+        </div>`;
+    }).join('');
+    document.getElementById('cardsPagination').innerHTML = paginationHTML(currentPage, pages, total, start, slice.length);
+}
+
+function paginationHTML(page, pages, total, start, len) {
+    const prev = `<button onclick="goPage(${page-1})" ${page<=1?'disabled':''}><i class="bi bi-chevron-left"></i></button>`;
+    const next = `<button onclick="goPage(${page+1})" ${page>=pages?'disabled':''}><i class="bi bi-chevron-right"></i></button>`;
+    let nums = '';
+    for (let p = 1; p <= pages; p++) {
+        if (pages <= 7 || Math.abs(p - page) <= 1 || p === 1 || p === pages) {
+            nums += `<button class="${p===page?'active':''}" onclick="goPage(${p})">${p}</button>`;
+        } else if (Math.abs(p - page) === 2) {
+            nums += `<button disabled style="border:0;background:none;color:#8888bb">…</button>`;
+        }
+    }
+    return `
+        <div class="tf-page-info">Showing ${start+1}–${start+len} of ${total}</div>
+        <div class="tf-pages">${prev}${nums}${next}</div>`;
+}
+
+function goPage(p) { currentPage = p; render(); }
+
+// ─── View toggle ──────────────────────────────────
+function setView(v) {
+    currentView = v;
+    document.getElementById('listView').style.display  = v==='list'  ? '' : 'none';
+    document.getElementById('cardsView').style.display = v==='cards' ? '' : 'none';
+    document.getElementById('viewList').classList.toggle('active', v==='list');
+    document.getElementById('viewCards').classList.toggle('active', v==='cards');
+    render();
+}
+
+// ─── CRUD ─────────────────────────────────────────
+function openCreate() {
+    document.getElementById('modalTitle').textContent = 'Add Continent';
+    document.getElementById('continentId').value = '';
+    document.getElementById('continentName').value = '';
+}
+function openEdit(id) {
+    const d = ALL_DATA.find(x => String(x.id) === String(id));
+    if(!d) return;
+    document.getElementById('modalTitle').textContent = 'Edit Continent';
+    document.getElementById('continentId').value   = d.id;
+    document.getElementById('continentName').value = d.name;
+}
+async function saveContinent() {
+    const id   = document.getElementById('continentId').value;
+    const name = document.getElementById('continentName').value.trim();
+    if (!name) return alert('Name is required');
+    const res  = await fetch(id ? `/api/v1/continents/${id}` : '/api/v1/continents', {
+        method: id ? 'PUT' : 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({ name })
+    });
+    const j = await res.json();
+    if (j.success) location.reload(); else alert(j.message || 'Error');
+}
+function confirmDelete(id, name) {
+    deleteId = id;
+    document.getElementById('deleteMsg').textContent = `"${name}" will be permanently removed.`;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+    const res  = await fetch(`/api/v1/continents/${deleteId}`, { method:'DELETE' });
+    const j    = await res.json();
+    if (j.success) location.reload(); else alert(j.message);
+});
+
+// BULK DELETE API HOOKS
+function toggleSelectAll() {
+  const mainCheckbox = document.getElementById('selectAllCheckbox');
+  const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+  const checked = mainCheckbox.checked;
+
+  rowCheckboxes.forEach(cb => {
+    cb.checked = checked;
+    const tr = cb.closest('tr');
+    if(checked) {
+      tr.classList.add('row-selected');
+      selectedIds.add(cb.value);
+    } else {
+      tr.classList.remove('row-selected');
+      selectedIds.delete(cb.value);
+    }
+  });
+
+  updateBulkActionBar();
+}
+
+function toggleRowSelection(cb) {
+  const tr = cb.closest('tr');
+  if(cb.checked) {
+    tr.classList.add('row-selected');
+    selectedIds.add(cb.value);
+  } else {
+    tr.classList.remove('row-selected');
+    selectedIds.delete(cb.value);
+    document.getElementById('selectAllCheckbox').checked = false;
+  }
+  updateBulkActionBar();
+}
+
+function evaluateSelectionState() {
+   const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+   if(!rowCheckboxes.length) {
+     document.getElementById('selectAllCheckbox').checked = false;
+     return;
+   }
+
+   let allChecked = true;
+   rowCheckboxes.forEach(cb => {
+      if(!cb.checked) allChecked = false;
+   });
+   document.getElementById('selectAllCheckbox').checked = allChecked;
+}
+
+function updateBulkActionBar() {
+  const bar = document.getElementById('bulkActionsBar');
+  const msg = document.getElementById('selectedCountMsg');
+  if(selectedIds.size > 0) {
+    bar.style.display = 'flex';
+    msg.textContent = `${selectedIds.size} records selected`;
+  } else {
+    bar.style.display = 'none';
+    document.getElementById('selectAllCheckbox').checked = false;
+  }
+}
+
+function confirmBulkDelete() {
+  document.getElementById('deleteMsg').textContent = `Are you sure you want to permanently delete the ${selectedIds.size} selected continent records?`;
+  document.getElementById('confirmDeleteBtn').onclick = executeBulkDelete;
+  new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+async function executeBulkDelete() {
+  const ids = Array.from(selectedIds);
+  const res = await fetch(`/api/v1/continents/bulk-delete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids })
+  });
+  const j = await res.json();
+  if(j.success) location.reload(); else alert(j.message);
+}
+
+// ─── Init ─────────────────────────────────────────
+render();
+</script>

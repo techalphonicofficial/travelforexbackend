@@ -1,0 +1,70 @@
+<div class="tf-page-header">
+  <div>
+    <h2 class="tf-page-title">Blog Categories</h2>
+    <p class="tf-page-sub">Organize your blog posts into categories</p>
+  </div>
+  <button class="btn btn-add-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+    <i class="bi bi-plus-lg me-2"></i> Add Category
+  </button>
+</div>
+
+<div class="tf-table-wrap">
+  <table class="tf-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Slug</th>
+        <th>Status</th>
+        <th class="text-end">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% categories.forEach(cat => { %>
+        <tr>
+          <td><div class="fw-bold"><%= cat.name %></div></td>
+          <td><code><%= cat.slug %></code></td>
+          <td>
+            <span class="tf-badge <%= cat.status ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger' %>">
+              <%= cat.status ? 'Active' : 'Inactive' %>
+            </span>
+          </td>
+          <td class="text-end">
+            <div class="d-flex justify-content-end gap-2">
+              <button class="btn-icon btn-icon-edit"><i class="bi bi-pencil"></i></button>
+            </div>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<!-- Add Category Modal -->
+<div class="modal fade tf-modal" id="addCategoryModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form action="/cms/blog/categories" method="POST" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Add New Category</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Category Name</label>
+          <input type="text" name="name" class="form-control" required oninput="document.getElementById('slug_input').value = this.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Slug</label>
+          <input type="text" name="slug" id="slug_input" class="form-control" required>
+        </div>
+        <div class="mb-0">
+          <label class="form-label">Description</label>
+          <textarea name="description" class="form-control" rows="3"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light border px-4" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary px-4 rounded-pill">Create Category</button>
+      </div>
+    </form>
+  </div>
+</div>

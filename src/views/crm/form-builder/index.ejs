@@ -1,0 +1,199 @@
+<div class="tf-page-header">
+  <div>
+    <h1 class="tf-page-title">CRM Form Builder</h1>
+    <p class="tf-page-sub">Define custom fields for each lead pipeline</p>
+  </div>
+  <button class="btn btn-primary rounded-pill px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#addFieldModal">
+    <i class="bi bi-plus-lg me-1"></i> Add Custom Field
+  </button>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-3">
+    <!-- Pipeline Selector -->
+    <div class="tf-form-card">
+      <div class="tf-form-header small fw-bold text-uppercase text-muted">Select Pipeline</div>
+      <div class="list-group list-group-flush">
+        <% pipelines.forEach(p => { %>
+          <a href="/crm/form-builder?pipeline_id=<%= p.id %>" class="list-group-item list-group-item-action border-0 px-4 py-3 d-flex justify-content-between align-items-center <%= p.id == selectedPipelineId ? 'active fw-bold' : '' %>" style="<%= p.id == selectedPipelineId ? 'background-color: rgba(79, 70, 229, 0.08); color: #4f46e5;' : '' %>">
+            <%= p.name %>
+            <% if (p.id == selectedPipelineId) { %><i class="bi bi-chevron-right"></i><% } %>
+          </a>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-9">
+    <div class="tf-form-card shadow-sm border-0">
+      <div class="tf-form-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-ui-checks text-primary"></i> Fields for <%= pipeline ? pipeline.name : 'Pipeline' %></span>
+      </div>
+      <div class="tf-form-body">
+        <% if (!pipeline || !pipeline.formFields || pipeline.formFields.length === 0) { %>
+          <div class="text-center py-5">
+            <i class="bi bi-ui-radios fs-1 text-muted opacity-25"></i>
+            <p class="text-muted mt-3">No custom fields defined. Base fields (Name, Email, etc.) are included by default.</p>
+          </div>
+        <% } else { %>
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead class="bg-light">
+                <tr>
+                  <th style="width: 50px;">Order</th>
+                  <th>Label</th>
+                  <th>Key</th>
+                  <th>Type</th>
+                  <th>Required</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% pipeline.formFields.sort((a,b) => a.order - b.order).forEach(field => { %>
+                  <tr>
+                    <td><span class="badge bg-light text-dark fw-bold"><%= field.order %></span></td>
+                    <td class="fw-bold"><%= field.label %></td>
+                    <td><code><%= field.field_key %></code></td>
+                    <td><span class="badge bg-soft-info text-info"><%= field.field_type.toUpperCase() %></span></td>
+                    <td>
+                      <% if (field.is_required) { %>
+                        <span class="text-danger small"><i class="bi bi-check-circle-fill"></i> Yes</span>
+                      <% } else { %>
+                        <span class="text-muted small">No</span>
+                      <% } %>
+                    </td>
+                    <td class="text-end">
+                      <div class="d-flex justify-content-end gap-2">
+                        <button class="btn-icon btn-icon-edit" onclick="editField(<%= JSON.stringify(field) %>)"><i class="bi bi-pencil"></i></button>
+                        <button class="btn-icon btn-icon-del" onclick="deleteField(<%= field.id %>)"><i class="bi bi-trash3"></i></button>
+                      </div>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Field Modal -->
+<div class="modal fade tf-modal" id="addFieldModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold" id="fieldModalTitle">Add Custom Field</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="fieldForm">
+          <input type="hidden" name="id" id="fieldId">
+          <input type="hidden" name="pipeline_id" value="<%= selectedPipelineId %>">
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Field Label</label>
+            <input type="text" class="form-control" name="label" id="fieldLabel" required placeholder="e.g., Destination Country">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Field Key (Unique Identifier)</label>
+            <input type="text" class="form-control" name="field_key" id="fieldKey" placeholder="Auto-generated if blank">
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Input Type</label>
+              <select class="form-select" name="field_type" id="fieldType" onchange="toggleOptions(this.value)">
+                <option value="text">Text Input</option>
+                <option value="number">Number</option>
+                <option value="email">Email</option>
+                <option value="phone">Phone</option>
+                <option value="select">Dropdown (Select)</option>
+                <option value="textarea">Text Area</option>
+                <option value="date">Date Picker</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Display Order</label>
+              <input type="number" class="form-control" name="order" id="fieldOrder" value="0">
+            </div>
+          </div>
+          <div class="mb-3" id="optionsContainer" style="display: none;">
+            <label class="form-label small fw-bold">Options (Comma separated)</label>
+            <textarea class="form-control" name="options_raw" id="fieldOptions" placeholder="Gold, Silver, Bronze"></textarea>
+          </div>
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" name="is_required" id="fieldRequired">
+            <label class="form-check-label small fw-bold" for="fieldRequired">Always Required</label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary px-4 fw-bold" id="saveFieldBtn">Save Field</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .btn-icon { width: 32px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; }
+  .bg-soft-info { background-color: rgba(13, 202, 240, 0.1); }
+</style>
+
+<script>
+  function toggleOptions(type) {
+    document.getElementById('optionsContainer').style.display = type === 'select' ? 'block' : 'none';
+  }
+
+  function editField(field) {
+    document.getElementById('fieldModalTitle').innerText = 'Edit Field';
+    document.getElementById('fieldId').value = field.id;
+    document.getElementById('fieldLabel').value = field.label;
+    document.getElementById('fieldKey').value = field.field_key;
+    document.getElementById('fieldType').value = field.field_type;
+    document.getElementById('fieldOrder').value = field.order;
+    document.getElementById('fieldRequired').checked = field.is_required;
+    document.getElementById('fieldOptions').value = (field.options || []).join(', ');
+    toggleOptions(field.field_type);
+    new bootstrap.Modal(document.getElementById('addFieldModal')).show();
+  }
+
+  document.getElementById('saveFieldBtn').addEventListener('click', async () => {
+    const form = document.getElementById('fieldForm');
+    const formData = new FormData(form);
+    const body = {};
+    formData.forEach((value, key) => body[key] = value);
+    
+    // Process options
+    if (body.field_type === 'select') {
+      body.options = body.options_raw ? body.options_raw.split(',').map(s => s.trim()).filter(Boolean) : [];
+    }
+
+    try {
+      const res = await fetch('/crm/form-builder/save-field', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (data.success) location.reload();
+      else alert('Error: ' + data.message);
+    } catch (err) { alert('Network error'); }
+  });
+
+  async function deleteField(id) {
+    if (confirm('Delete this custom field? Existing lead data for this field will be hidden.')) {
+      const res = await fetch(`/crm/form-builder/field/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) location.reload();
+    }
+  }
+
+  // Reset modal on close
+  document.getElementById('addFieldModal').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('fieldForm').reset();
+    document.getElementById('fieldId').value = '';
+    document.getElementById('fieldModalTitle').innerText = 'Add Custom Field';
+    toggleOptions('text');
+  });
+</script>

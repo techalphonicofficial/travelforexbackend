@@ -1,0 +1,22 @@
+<div class="mb-4">
+    <h2 class="fw-bold mb-1">Create New Module</h2>
+    <p class="text-secondary small mb-0">Create a new organizational module for grouping system permissions.</p>
+</div>
+
+<div class="card shadow-sm border-0 mb-4 p-4 max-w-lg">
+    <form action="/modules" method="POST">
+        <div class="mb-3">
+            <label for="name" class="form-label fw-semibold text-secondary small">Module Name</label>
+            <input type="text" class="form-control p-2 shadow-none border-secondary-subtle" id="name" name="name" placeholder="e.g. Travel, Forex, HR" required>
+        </div>
+
+        <div class="d-flex justify-content-end gap-3 pt-3 mt-4 border-top">
+            <a href="/modules" class="btn btn-light px-4">Cancel</a>
+            <button type="submit" class="btn btn-primary px-4 fw-bold">Create Module</button>
+        </div>
+    </form>
+</div>
+
+<style>
+.max-w-lg { max-width: 600px; }
+</style>

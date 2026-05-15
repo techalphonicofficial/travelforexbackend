@@ -1,0 +1,326 @@
+<style>
+  .form-container {
+    padding: 2.5rem;
+    background: #f8fafc;
+    min-height: calc(100vh - 64px);
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 2.5rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+  }
+
+  .form-header {
+    margin-bottom: 2.5rem;
+    border-bottom: 2px solid #f1f5f9;
+    padding-bottom: 1.5rem;
+  }
+
+  .form-header h2 {
+    font-weight: 800;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-header p {
+    color: #64748b;
+    font-size: 0.95rem;
+  }
+
+  .form-label {
+    font-weight: 700;
+    color: #475569;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.75rem;
+  }
+
+  .form-control,
+  .form-select {
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    border: 1.5px solid #e2e8f0;
+    background: #fff;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
+    background: #fff;
+  }
+
+  .category-container {
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 1.5rem;
+    border: 1.5px solid #e2e8f0;
+  }
+
+  .category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+  }
+
+  .category-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: white;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .category-checkbox:hover {
+    border-color: #fbbf24;
+    background: #fffbeb;
+  }
+
+  .category-checkbox input {
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .category-checkbox input:checked+span {
+    color: #b45309;
+    font-weight: 600;
+  }
+
+  .category-checkbox.selected {
+    border-color: #f59e0b;
+    background: #fffbeb;
+  }
+
+  .btn-submit {
+    background: linear-gradient(135deg, #f59e0b, #fbbf24);
+    color: white;
+    border: none;
+    padding: 1rem 2.5rem;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 1rem;
+    transition: all 0.3s;
+    box-shadow: 0 10px 20px rgba(245, 158, 11, 0.2);
+  }
+
+  .btn-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 30px rgba(245, 158, 11, 0.3);
+    color: white;
+  }
+
+  .btn-cancel {
+    background: white;
+    color: #64748b;
+    border: 1.5px solid #e2e8f0;
+    padding: 1rem 2rem;
+    border-radius: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .btn-cancel:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+  }
+
+  .input-icon {
+    position: relative;
+  }
+
+  .input-icon i {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+  }
+
+  .input-icon input {
+    padding-left: 2.75rem;
+  }
+</style>
+
+<div class="form-container">
+  <div class="container maxWidth-800">
+    <div class="glass-card">
+      <div class="form-header">
+        <h2>
+          <%= destination ? 'Edit Destination' : 'Add New Destination' %>
+        </h2>
+        <p>
+          <%= destination ? 'Keep your travel spot details up to date.'
+            : 'Introduce a new breathtaking location to your catalog.' %>
+        </p>
+      </div>
+
+      <form id="destinationForm" onsubmit="handleSave(event)">
+        <input type="hidden" name="id" value="<%= destination ? destination.id : '' %>">
+
+        <div class="row g-4">
+          <div class="col-md-8">
+            <label class="form-label">Destination Name <span class="text-danger">*</span></label>
+            <div class="input-icon">
+              <i class="bi bi-geo-alt"></i>
+              <input type="text" name="name" class="form-control" value="<%= destination ? destination.name : '' %>"
+                placeholder="e.g. Santorini, Paris, Ubud" required>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Type / Vibe</label>
+            <div class="input-icon">
+              <i class="bi bi-tag"></i>
+              <input type="text" name="type" class="form-control" value="<%= destination ? destination.type : '' %>"
+                placeholder="e.g. Beach, Heritage, City">
+            </div>
+          </div>
+
+          <div class="col-12 mt-2">
+            <div class="d-flex gap-4 p-3 bg-light rounded-4 border border-dashed">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" name="is_trending" id="isTrending" <%= destination && destination.is_trending ? 'checked' : '' %>>
+                    <label class="form-check-label fw-bold text-dark" for="isTrending">🔥 Trending Destination</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" name="is_visa_free" id="isVisaFree" <%= destination && destination.is_visa_free ? 'checked' : '' %>>
+                    <label class="form-check-label fw-bold text-dark" for="isVisaFree">🛂 Visa Free Destination</label>
+                </div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">Categories</label>
+            <div class="category-container">
+              <div class="category-grid">
+                <% categories.forEach(cat=> { %>
+                  <% const isChecked=destination && destination.categories && destination.categories.some(c=> c.id ===
+                    cat.id);
+                    %>
+                    <label class="category-checkbox <%= isChecked ? 'selected' : '' %>">
+                      <input type="checkbox" name="categories[]" value="<%= cat.id %>" <%=isChecked ? 'checked' : '' %>
+                      onchange="updateTagStyle(this)">
+                      <span>
+                        <%= cat.name %>
+                      </span>
+                    </label>
+                    <% }) %>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 mt-4">
+            <h5 class="mb-3 text-dark font-weight-bold">SEO Settings</h5>
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label">Meta Title</label>
+                <div class="input-icon">
+                  <i class="bi bi-fonts"></i>
+                  <input type="text" name="meta_title" class="form-control"
+                    value="<%= destination ? destination.meta_title : '' %>"
+                    placeholder="SEO Title (e.g. Best Beaches in Santorini)">
+                </div>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Meta Description</label>
+                <textarea name="meta_description" class="form-control" rows="3"
+                  placeholder="A short summary of the destination for search results..."><%= destination ? destination.meta_description : '' %></textarea>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Meta Keyword</label>
+                <textarea name="meta_keyword" class="form-control" rows="3"
+                  placeholder="Keywords separated by comma..."><%= destination ? destination.meta_keyword : '' %></textarea>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Schema</label>
+                <textarea name="schema" class="form-control" rows="3"
+                  placeholder="JSON-LD Schema Markup..."><%= destination ? destination.schema : '' %></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 mt-5">
+            <div class="d-flex justify-content-between align-items-center">
+              <a href="/travel/destinations" class="btn-cancel">Cancel</a>
+              <button type="submit" class="btn-submit">
+                <i class="bi bi-check2-circle me-1"></i>
+                <%= destination ? 'Update Destination' : 'Save Destination' %>
+              </button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function updateTagStyle(cb) {
+    if (cb.checked) cb.closest('.category-checkbox').classList.add('selected');
+    else cb.closest('.category-checkbox').classList.remove('selected');
+  }
+
+  async function handleSave(e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalContent = btn.innerHTML;
+
+    // Prepare data
+    const formData = new FormData(e.target);
+    const data = {
+      id: formData.get('id'),
+      name: formData.get('name'),
+      type: formData.get('type'),
+      meta_title: formData.get('meta_title'),
+      meta_description: formData.get('meta_description'),
+      meta_keyword: formData.get('meta_keyword'),
+      schema: formData.get('schema'),
+      is_trending: formData.get('is_trending') === 'on',
+      is_visa_free: formData.get('is_visa_free') === 'on',
+      categories: [...formData.getAll('categories[]')]
+    };
+
+    try {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+
+      const response = await fetch('/travel/destinations/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        window.location.href = '/travel/destinations';
+      } else {
+        alert('Error: ' + (result.message || 'Failed to save destination'));
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Network error occurred');
+      btn.disabled = false;
+      btn.innerHTML = originalContent;
+    }
+  }
+</script>

@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= title %>
+    </title>
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;800&display=swap"
+        rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #6366f1;
+            --icon-strip-bg: #e8e8f4;
+            --nav-panel-bg: #f0f0fa;
+            --nav-text: #2d2d6e;
+            --nav-muted: #8888bb;
+            --nav-active-bg: #e0e0f5;
+            --nav-hover-bg: #e4e4f7;
+            --icon-strip-w: 62px;
+            --nav-panel-w: 220px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f4f5fb;
+            overflow-x: hidden;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* ── Layout ── */
+        .layout-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ── Icon Strip ── */
+        .icon-strip {
+            width: var(--icon-strip-w);
+            background: var(--icon-strip-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem 0;
+            gap: 0.4rem;
+            flex-shrink: 0;
+            z-index: 1001;
+            border-right: 1px solid rgba(79, 70, 229, 0.1);
+        }
+
+        .icon-strip .strip-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            color: var(--nav-muted);
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .icon-strip .strip-icon:hover {
+            background: var(--nav-active-bg);
+            color: var(--primary);
+        }
+
+        .icon-strip .strip-icon.active {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .icon-strip .strip-divider {
+            width: 28px;
+            height: 1px;
+            background: rgba(79, 70, 229, 0.15);
+            margin: 0.3rem 0;
+        }
+
+        .icon-strip .strip-toggle {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            background: none;
+            border: none;
+            color: var(--nav-muted);
+            font-size: 1.15rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .icon-strip .strip-toggle:hover {
+            background: var(--nav-active-bg);
+            color: var(--primary);
+        }
+
+
+        /* ── Nav Panel ── */
+        .nav-panel {
+            width: var(--nav-panel-w);
+            background: var(--nav-panel-bg);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            z-index: 1000;
+            border-right: 1px solid rgba(79, 70, 229, 0.08);
+            overflow-y: auto;
+        }
+
+        .nav-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 0.9rem;
+            border-bottom: 1px solid rgba(79, 70, 229, 0.1);
+        }
+
+        .nav-company {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+        }
+
+        .nav-company-logo {
+            width: 30px;
+            height: 30px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 0.9rem;
+        }
+
+        .nav-company-name {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--nav-text);
+        }
+
+        .nav-panel-toggle {
+            color: var(--nav-muted);
+            border: none;
+            background: none;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        /* Nav items */
+        .nav-menu {
+            padding: 0.6rem 0;
+            flex-grow: 1;
+        }
+
+        .nav-link-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.55rem 0.9rem;
+            color: var(--nav-text);
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 0.08rem 0.45rem;
+            font-size: 0.88rem;
+            font-weight: 500;
+            transition: background 0.18s, color 0.18s;
+            cursor: pointer;
+        }
+
+        .nav-link-item .nav-label-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .nav-link-item i.nav-icon {
+            font-size: 1rem;
+            color: var(--nav-muted);
+            width: 18px;
+            text-align: center;
+            transition: color 0.18s;
+        }
+
+        .nav-link-item:hover {
+            background: var(--nav-hover-bg);
+            color: var(--primary);
+        }
+
+        .nav-link-item:hover i.nav-icon {
+            color: var(--primary);
+        }
+
+        .nav-link-item.active {
+            background: var(--nav-active-bg);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .nav-link-item.active i.nav-icon {
+            color: var(--primary);
+        }
+
+        .nav-link-item .chevron {
+            font-size: 0.7rem;
+            color: var(--nav-muted);
+            transition: transform 0.2s;
+        }
+
+        .nav-link-item[aria-expanded="true"] .chevron {
+            transform: rotate(180deg);
+        }
+
+        .nav-sub {
+            list-style: none;
+            padding: 0.2rem 0 0.2rem 2.3rem;
+        }
+
+        .nav-sub .nav-link-item {
+            font-size: 0.83rem;
+            color: var(--nav-muted);
+            margin: 0 0.45rem 0 0;
+        }
+
+        .nav-sub .nav-link-item:hover,
+        .nav-sub .nav-link-item.active {
+            color: var(--primary);
+            background: var(--nav-active-bg);
+        }
+
+        .nav-panel-footer {
+            padding: 0.7rem 0.9rem;
+            border-top: 1px solid rgba(79, 70, 229, 0.1);
+        }
+
+        .user-chip {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.45rem 0.55rem;
+            border-radius: 10px;
+            background: rgba(79, 70, 229, 0.08);
+        }
+
+        .user-chip img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .user-chip-info {
+            overflow: hidden;
+            flex-grow: 1;
+        }
+
+        .user-chip-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--nav-text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-chip-role {
+            font-size: 0.68rem;
+            color: var(--nav-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-chip-logout {
+            color: #e53e3e;
+            font-size: 0.95rem;
+            text-decoration: none;
+            flex-shrink: 0;
+        }
+
+        .user-chip-logout:hover {
+            color: #c53030;
+        }
+
+        /* ── Main Content ── */
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            min-width: 0;
+        }
+
+        .topbar {
+            height: 62px;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            border-bottom: 1px solid #ebebf5;
+            box-shadow: 0 1px 4px rgba(79, 70, 229, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .topbar-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1e1e4a;
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .topbar-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f0fa;
+            color: var(--nav-text);
+            border: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background 0.2s;
+        }
+
+        .topbar-btn:hover {
+            background: var(--nav-active-bg);
+            color: var(--primary);
+        }
+
+        .page-content {
+            padding: 2rem;
+            flex-grow: 1;
+        }
+
+        /* ── Helpers ── */
+        .card {
+            border: 0;
+            box-shadow: 0 4px 16px rgba(79, 70, 229, 0.07);
+            border-radius: 1rem;
+        }
+
+        .table-responsive {
+            border-radius: 1rem;
+            overflow: hidden;
+            background: #fff;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.06);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-light);
+            border-color: var(--primary-light);
+        }
+
+        /* ══════════════════════════════════════════════
+           SHARED PREMIUM TRAVEL UI STYLES
+        ══════════════════════════════════════════════ */
+        .tf-page-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem
+        }
+
+        .tf-page-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #1e1e4a;
+            margin: 0
+        }
+
+        .tf-page-sub {
+            font-size: 0.83rem;
+            color: #8888bb;
+            margin: 0
+        }
+
+        /* stat cards */
+        .tf-stat-card {
+            border-radius: 16px;
+            padding: 1.1rem 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+            border: 0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+            transition: transform .2s, box-shadow .2s
+        }
+
+        .tf-stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.13)
+        }
+
+        .tf-stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, .22)
+        }
+
+        .tf-stat-num {
+            font-size: 1.8rem;
+            font-weight: 800;
+            line-height: 1
+        }
+
+        .tf-stat-lbl {
+            font-size: 0.77rem;
+            opacity: .85
+        }
+
+        /* toolbar */
+        .tf-toolbar {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: .5rem;
+            margin-bottom: 1rem
+        }
+
+        .tf-search {
+            position: relative
+        }
+
+        .tf-search input {
+            padding: .45rem .8rem .45rem 2.1rem;
+            border-radius: 10px;
+            border: 1.5px solid #e5e7f0;
+            background: #fafafa;
+            font-size: .87rem;
+            width: 230px;
+            transition: border .2s, box-shadow .2s
+        }
+
+        .tf-search input:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, .1);
+            outline: none
+        }
+
+        .tf-search .tf-si {
+            position: absolute;
+            left: .65rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8888bb;
+            font-size: .9rem;
+            pointer-events: none
+        }
+
+        .view-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1.5px solid #e5e7f0;
+            background: #fff;
+            color: #8888bb;
+            cursor: pointer;
+            transition: all .15s;
+            font-size: .95rem
+        }
+
+        .view-btn.active,
+        .view-btn:hover {
+            background: #4f46e5;
+            border-color: #4f46e5;
+            color: #fff
+        }
+
+        .tf-select {
+            border-radius: 10px;
+            border: 1.5px solid #e5e7f0;
+            background: #fafafa;
+            font-size: .85rem;
+            padding: .42rem .8rem;
+            color: #333;
+            cursor: pointer;
+            transition: border .2s
+        }
+
+        .tf-select:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, .1);
+            outline: none
+        }
+
+        /* table */
+        .tf-table-wrap {
+            border-radius: 16px;
+            overflow: hidden;
+            background: #fff;
+            box-shadow: 0 4px 24px rgba(79, 70, 229, .07)
+        }
+
+        .tf-table {
+            width: 100%;
+            border-collapse: collapse
+        }
+
+        .tf-table thead tr {
+            background: linear-gradient(90deg, #f0f0fa, #e8e8f5)
+        }
+
+        .tf-table thead th {
+            padding: .8rem 1rem;
+            font-size: .75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: #5555aa;
+            border: 0
+        }
+
+        .tf-table tbody tr {
+            border-bottom: 1px solid #f4f4fb;
+            transition: background .15s
+        }
+
+        .tf-table tbody tr:last-child {
+            border-bottom: 0
+        }
+
+        .tf-table tbody tr:hover {
+            background: #fafafe
+        }
+
+        .tf-table tbody td {
+            padding: .8rem 1rem;
+            font-size: .875rem;
+            color: #333;
+            vertical-align: middle
+        }
+
+        /* cards */
+        .tf-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+            gap: 1rem
+        }
+
+        .tf-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 1.3rem;
+            box-shadow: 0 4px 16px rgba(79, 70, 229, .07);
+            border: 1.5px solid transparent;
+            transition: all .2s;
+            display: flex;
+            flex-direction: column;
+            gap: .55rem
+        }
+
+        .tf-card:hover {
+            border-color: #4f46e5;
+            box-shadow: 0 8px 28px rgba(79, 70, 229, .14);
+            transform: translateY(-2px)
+        }
+
+        .tf-card-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem
+        }
+
+        .tf-card-name {
+            font-weight: 700;
+            font-size: .95rem;
+            color: #1e1e4a
+        }
+
+        .tf-card-meta {
+            font-size: .77rem;
+            color: #8888bb
+        }
+
+        .tf-card-actions {
+            display: flex;
+            gap: .4rem;
+            margin-top: .3rem
+        }
+
+        /* action buttons */
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .83rem;
+            border: 1.5px solid transparent;
+            cursor: pointer;
+            transition: all .15s;
+            background: none
+        }
+
+        .btn-icon-edit {
+            border-color: #c7d2fe;
+            background: #eef2ff;
+            color: #4f46e5
+        }
+
+        .btn-icon-edit:hover {
+            background: #4f46e5;
+            color: #fff;
+            border-color: #4f46e5
+        }
+
+        .btn-icon-del {
+            border-color: #fecaca;
+            background: #fef2f2;
+            color: #ef4444
+        }
+
+        .btn-icon-del:hover {
+            background: #ef4444;
+            color: #fff;
+            border-color: #ef4444
+        }
+
+        .btn-icon-view {
+            border-color: #bae6fd;
+            background: #f0f9ff;
+            color: #0ea5e9
+        }
+
+        .btn-icon-view:hover {
+            background: #0ea5e9;
+            color: #fff;
+            border-color: #0ea5e9
+        }
+
+        /* badge */
+        .tf-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: .3rem;
+            padding: 3px 11px;
+            border-radius: 20px;
+            font-size: .77rem;
+            font-weight: 600
+        }
+
+        /* pagination */
+        .tf-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: .5rem;
+            padding: .9rem 1.1rem;
+            background: #fff;
+            border-top: 1px solid #f0f0fa
+        }
+
+        .tf-page-info {
+            font-size: .81rem;
+            color: #8888bb
+        }
+
+        .tf-pages {
+            display: flex;
+            gap: .28rem
+        }
+
+        .tf-pages button {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1.5px solid #e5e7f0;
+            background: #fff;
+            color: #4444aa;
+            font-size: .82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .15s
+        }
+
+        .tf-pages button.active {
+            background: #4f46e5;
+            border-color: #4f46e5;
+            color: #fff;
+            box-shadow: 0 3px 10px rgba(79, 70, 229, .3)
+        }
+
+        .tf-pages button:hover:not(.active):not(:disabled) {
+            background: #f0f0fa;
+            border-color: #c7d2fe
+        }
+
+        .tf-pages button:disabled {
+            opacity: .4;
+            cursor: not-allowed
+        }
+
+        /* modal */
+        .tf-modal .modal-content {
+            border: 0;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .18)
+        }
+
+        .tf-modal .modal-header {
+            border-radius: 20px 20px 0 0;
+            border: 0;
+            padding: 1.2rem 1.4rem
+        }
+
+        .tf-modal .modal-body {
+            padding: 1.4rem
+        }
+
+        .tf-modal .modal-footer {
+            border: 0;
+            padding: .9rem 1.4rem 1.2rem
+        }
+
+        .tf-modal .form-control,
+        .tf-modal .form-select {
+            border-radius: 10px;
+            border: 1.5px solid #e5e7f0;
+            font-size: .87rem;
+            padding: .55rem .85rem;
+            transition: border .2s, box-shadow .2s
+        }
+
+        .tf-modal .form-control:focus,
+        .tf-modal .form-select:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, .1)
+        }
+
+        .tf-modal .form-label {
+            font-size: .82rem;
+            font-weight: 600;
+            color: #4444aa;
+            margin-bottom: .28rem
+        }
+
+        /* add button */
+        .btn-add-primary {
+            background: linear-gradient(135deg, #4f46e5, #818cf8);
+            color: #fff;
+            border: 0;
+            border-radius: 12px;
+            padding: .52rem 1.15rem;
+            font-weight: 600;
+            font-size: .87rem;
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            box-shadow: 0 4px 14px rgba(79, 70, 229, .35);
+            transition: transform .15s, box-shadow .15s;
+            cursor: pointer
+        }
+
+        .btn-add-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 7px 20px rgba(79, 70, 229, .4);
+            color: #fff
+        }
+
+        /* empty state */
+        .tf-empty {
+            text-align: center;
+            padding: 3rem 1rem
+        }
+
+        .tf-empty-icon {
+            font-size: 3rem;
+            opacity: .18;
+            color: #4f46e5;
+            margin-bottom: .7rem
+        }
+
+        .tf-empty p {
+            color: #8888bb;
+            font-size: .88rem;
+            margin: 0
+        }
+
+        /* status pills */
+        .pill-active {
+            background: rgba(16, 185, 129, .12);
+            color: #059669
+        }
+
+        .pill-inactive {
+            background: rgba(148, 163, 184, .18);
+            color: #64748b
+        }
+
+        .pill-soldout {
+            background: rgba(239, 68, 68, .12);
+            color: #dc2626
+        }
+
+        /* row avatar */
+        .row-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .95rem;
+            flex-shrink: 0
+        }
+    </style>
+</head>
+
+<body>
+    <div class="layout-wrapper">
+
+        <!-- ① Icon Strip -->
+        <div class="icon-strip">
+            <button class="strip-toggle" id="stripToggleBtn" title="Toggle sidebar">
+                <i class="bi bi-layout-sidebar"></i>
+            </button>
+            <div class="strip-divider"></div>
+            <a href="/" class="strip-icon <%= title === 'Dashboard' ? 'active' : '' %>" title="Dashboard">
+                <i class="bi bi-grid-1x2-fill"></i>
+            </a>
+            <div class="strip-divider"></div>
+            <!-- Access Control Group Icon -->
+            <a href="/users"
+                class="strip-icon <%= title && (title.includes('User')||title.includes('Role')||title.includes('Module')||title.includes('Permission')) ? 'active' : '' %>"
+                title="Access Control">
+                <i class="bi bi-shield-lock-fill"></i>
+            </a>
+            <div class="strip-divider"></div>
+            <a href="#"
+                class="strip-icon <%= title && (title.includes('Travel') || title.includes('Review')) ? 'active' : '' %>"
+                title="Travel">
+                <i class="bi bi-airplane-fill"></i>
+            </a>
+            <a href="#" class="strip-icon <%= title && title.includes('Forex') ? 'active' : '' %>" title="Forex">
+                <i class="bi bi-currency-exchange"></i>
+            </a>
+            <div class="strip-divider"></div>
+            <a href="/crm/leads"
+                class="strip-icon <%= title && (title.includes('CRM') || title.includes('Lead') || title.includes('Pipeline') || title.includes('Follow-up')) ? 'active' : '' %>"
+                title="CRM">
+                <i class="bi bi-people-fill"></i>
+            </a>
+            <div class="strip-divider"></div>
+            <a href="/cms/pages" class="strip-icon <%= title && title.includes('Page') ? 'active' : '' %>" title="Pages">
+                <i class="bi bi-file-earmark-richtext-fill"></i>
+            </a>
+            <div class="strip-divider"></div>
+            <a href="#" class="strip-icon" title="Reports"><i class="bi bi-bar-chart-fill"></i></a>
+            <a href="#" class="strip-icon" title="Settings"><i class="bi bi-gear-fill"></i></a>
+            <div class="strip-divider"></div>
+        </div>
+
+        <!-- ② Nav Panel -->
+        <aside class="nav-panel">
+            <div class="nav-panel-header">
+                <div class="nav-company">
+                    <div style="background-color:#1e293b; padding:8px 12px; border-radius:6px;">
+                        <img src="" alt="Logo" style="height:30px;">
+                    </div>
+
+                </div>
+                <button class="nav-panel-toggle"><i class="bi bi-chevron-left"></i></button>
+            </div>
+
+            <nav class="nav-menu">
+                <ul class="list-unstyled">
+                    <li>
+                        <a href="/" class="nav-link-item <%= title === 'Dashboard' ? 'active' : '' %>">
+                            <span class="nav-label-row"><i class="bi bi-grid-1x2 nav-icon"></i> Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="nav-link-item <%= title && (title.includes('User')||title.includes('Role')||title.includes('Module')||title.includes('Permission')) ? 'active' : '' %>"
+                            data-bs-toggle="collapse" href="#accessCollapse"
+                            aria-expanded="<%= title && (title.includes('User')||title.includes('Role')||title.includes('Module')||title.includes('Permission')) ? 'true' : 'false' %>">
+                            <span class="nav-label-row"><i class="bi bi-shield-lock nav-icon"></i> Access Control</span>
+                            <i class="bi bi-chevron-down chevron"></i>
+                        </a>
+                        <div class="collapse <%= title && (title.includes('User')||title.includes('Role')||title.includes('Module')||title.includes('Permission')) ? 'show' : '' %>"
+                            id="accessCollapse">
+                            <ul class="nav-sub list-unstyled">
+                                <li><a href="/users"
+                                        class="nav-link-item <%= title === 'User Management' ? 'active' : '' %>"><i
+                                            class="bi bi-people nav-icon"></i> Users</a></li>
+                                <li><a href="/roles"
+                                        class="nav-link-item <%= title === 'Role Management' ? 'active' : '' %>"><i
+                                            class="bi bi-key nav-icon"></i> Roles</a></li>
+                                <li><a href="/modules"
+                                        class="nav-link-item <%= title === 'Module Management' ? 'active' : '' %>"><i
+                                            class="bi bi-box nav-icon"></i> Modules</a></li>
+                                <li><a href="/permissions"
+                                        class="nav-link-item <%= title === 'Permission Management' ? 'active' : '' %>"><i
+                                            class="bi bi-shield-check nav-icon"></i> Permissions</a></li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li>
+                        <a class="nav-link-item <%= title && (title.includes('Continent')||title.includes('Countr')||title.includes('Cit')||title.includes('Destination')||title.includes('Categor')||title.includes('Mapping')||title.includes('Package')||title.includes('Review')) ? 'active' : '' %>"
+                            data-bs-toggle="collapse" href="#travelCollapse"
+                            aria-expanded="<%= title && (title.includes('Continent')||title.includes('Countr')||title.includes('Cit')||title.includes('Destination')||title.includes('Categor')||title.includes('Mapping')||title.includes('Package')||title.includes('Review')) ? 'true' : 'false' %>">
+                            <span class="nav-label-row"><i class="bi bi-airplane nav-icon"></i> Travel</span>
+                            <i class="bi bi-chevron-down chevron"></i>
+                        </a>
+                        <div class="collapse <%= title && (title.includes('Continent')||title.includes('Countr')||title.includes('Cit')||title.includes('Destination')||title.includes('Categor')||title.includes('Mapping')||title.includes('Package')||title.includes('Review')) ? 'show' : '' %>"
+                            id="travelCollapse">
+                            <ul class="nav-sub list-unstyled">
+                                <li><a href="/travel/continents"
+                                        class="nav-link-item <%= title === 'Continents' ? 'active' : '' %>"><i
+                                            class="bi bi-globe2 nav-icon"></i> Continents</a></li>
+                                <li><a href="/travel/countries"
+                                        class="nav-link-item <%= title === 'Countries' ? 'active' : '' %>"><i
+                                            class="bi bi-flag nav-icon"></i> Countries</a></li>
+                                <li><a href="/travel/cities"
+                                        class="nav-link-item <%= title === 'Cities' ? 'active' : '' %>"><i
+                                            class="bi bi-buildings nav-icon"></i> Cities</a></li>
+                                <li><a href="/travel/categories"
+                                        class="nav-link-item <%= title === 'Destination Categories' ? 'active' : '' %>"><i
+                                            class="bi bi-tags nav-icon"></i> Categories</a></li>
+                                <li><a href="/travel/destinations"
+                                        class="nav-link-item <%= title === 'Destinations' ? 'active' : '' %>"><i
+                                            class="bi bi-geo-alt nav-icon"></i> Destinations</a></li>
+                                <li><a href="/travel/mappings"
+                                        class="nav-link-item <%= title === 'Destination Mapping' ? 'active' : '' %>"><i
+                                            class="bi bi-diagram-3 nav-icon"></i> Mapping</a></li>
+                                <li><a href="/travel/packages"
+                                        class="nav-link-item <%= title && title.includes('Package') ? 'active' : '' %>"><i
+                                            class="bi bi-suitcase-lg nav-icon"></i> Packages</a></li>
+                                <li><a href="/travel/reviews"
+                                        class="nav-link-item <%= title && title.includes('Review') ? 'active' : '' %>"><i
+                                            class="bi bi-camera-reels nav-icon"></i> Video Reviews</a></li>
+                                <!-- <li><a href="/travel/package-dates" class="nav-link-item <%= title === 'Package Dates' ? 'active' : '' %>"><i class="bi bi-calendar-range nav-icon"></i> Package Dates</a></li> -->
+                            </ul>
+                        </div>
+                    </li>
+                    <li>
+                        <a href="#" class="nav-link-item">
+                            <span class="nav-label-row"><i class="bi bi-currency-exchange nav-icon"></i> Forex</span>
+                            <i class="bi bi-chevron-down chevron"></i>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="nav-link-item <%= title && (title.includes('CRM') || title.includes('Lead') || title.includes('Pipeline') || title.includes('Follow-up')) ? 'active' : '' %>"
+                            data-bs-toggle="collapse" href="#crmCollapse"
+                            aria-expanded="<%= title && (title.includes('CRM') || title.includes('Lead') || title.includes('Pipeline') || title.includes('Follow-up')) ? 'true' : 'false' %>">
+                            <span class="nav-label-row"><i class="bi bi-people nav-icon"></i> CRM (Leads)</span>
+                            <i class="bi bi-chevron-down chevron"></i>
+                        </a>
+                        <div class="collapse <%= title && (title.includes('CRM') || title.includes('Lead') || title.includes('Pipeline') || title.includes('Follow-up')) ? 'show' : '' %>"
+                            id="crmCollapse">
+                            <ul class="nav-sub list-unstyled">
+                                <li><a href="/crm/leads"
+                                        class="nav-link-item <%= title === 'CRM Leads' || title && title.includes('Lead:') ? 'active' : '' %>"><i
+                                            class="bi bi-person-lines-fill nav-icon"></i> Leads</a></li>
+                                <li><a href="/crm/pipelines"
+                                        class="nav-link-item <%= title === 'CRM Pipelines' ? 'active' : '' %>"><i
+                                            class="bi bi-diagram-3 nav-icon"></i> Pipelines</a></li>
+                                <li><a href="/crm/form-builder"
+                                        class="nav-link-item <%= title === 'CRM Form Builder' ? 'active' : '' %>"><i
+                                            class="bi bi-ui-checks nav-icon"></i> Form Builder</a></li>
+                                <li><a href="/crm/follow-ups"
+                                        class="nav-link-item <%= title === 'CRM Follow-ups' ? 'active' : '' %>"><i
+                                            class="bi bi-calendar-check nav-icon"></i> Follow-ups</a></li>
+                                <li><a href="/crm/settings"
+                                        class="nav-link-item <%= title === 'CRM Settings' ? 'active' : '' %>"><i
+                                            class="bi bi-gear nav-icon"></i> CRM Settings</a></li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li>
+                        <a href="/cms/pages" class="nav-link-item <%= title && title.includes('Page') ? 'active' : '' %>">
+                            <span class="nav-label-row"><i class="bi bi-file-earmark-richtext nav-icon"></i> Pages</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="nav-link-item">
+                            <span class="nav-label-row"><i class="bi bi-bar-chart nav-icon"></i> Reports</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="nav-link-item">
+                            <span class="nav-label-row"><i class="bi bi-gear nav-icon"></i> Settings</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="nav-panel-footer">
+                <div class="user-chip">
+                    <img src="https://ui-avatars.com/api/?name=<%= encodeURIComponent(user ? user.name : 'G') %>&background=4f46e5&color=fff"
+                        alt="User">
+                    <div class="user-chip-info">
+                        <div class="user-chip-name">
+                            <%= user ? user.name : 'Guest' %>
+                        </div>
+                        <div class="user-chip-role">
+                            <%= user ? user.role_name : 'No Role' %>
+                        </div>
+                    </div>
+                    <a href="/auth/logout" class="user-chip-logout" title="Logout"><i
+                            class="bi bi-box-arrow-right"></i></a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ③ Main Content -->
+        <main class="main-content">
+            <header class="topbar">
+                <span class="topbar-title">
+                    <%= title %>
+                </span>
+                <div class="topbar-actions">
+                    <button class="topbar-btn" title="Notifications"><i class="bi bi-bell"></i></button>
+                    <button class="topbar-btn" title="Search"><i class="bi bi-search"></i></button>
+                </div>
+            </header>
+            <div class="page-content">
+                <%- body %>
+            </div>
+        </main>
+    </div>
+
+    <!-- Floating restore button (visible only when icon strip is hidden) -->
+    <button id="stripRestoreBtn" title="Show sidebar" style="
+        display:none; position:fixed; left:0; top:50%; transform:translateY(-50%);
+        width:20px; height:48px; background:var(--primary); color:#fff;
+        border:none; border-radius:0 8px 8px 0; cursor:pointer;
+        font-size:0.75rem; z-index:2000; box-shadow:2px 0 8px rgba(79,70,229,0.3);
+        transition: opacity 0.2s;
+    "><i class="bi bi-chevron-right"></i></button>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const T = 'width 0.25s ease, opacity 0.25s ease';
+
+        // ── Nav panel toggle (chevron < in header)
+        const navToggleBtn = document.querySelector('.nav-panel-toggle');
+        const navPanel = document.querySelector('.nav-panel');
+        let navHidden = false;
+        navToggleBtn.addEventListener('click', () => {
+            navHidden = !navHidden;
+            navPanel.style.transition = T;
+            navPanel.style.width = navHidden ? '0' : 'var(--nav-panel-w)';
+            navPanel.style.overflow = navHidden ? 'hidden' : '';
+            navPanel.style.opacity = navHidden ? '0' : '1';
+            navToggleBtn.innerHTML = navHidden
+                ? '<i class="bi bi-chevron-right"></i>'
+                : '<i class="bi bi-chevron-left"></i>';
+        });
+
+        // ── Icon strip toggle (≡ button at top of strip)
+        const stripToggleBtn = document.getElementById('stripToggleBtn');
+        const stripRestoreBtn = document.getElementById('stripRestoreBtn');
+        const iconStrip = document.querySelector('.icon-strip');
+        let stripHidden = false;
+
+        function setStripState(hide) {
+            stripHidden = hide;
+            iconStrip.style.transition = T;
+            iconStrip.style.width = hide ? '0' : 'var(--icon-strip-w)';
+            iconStrip.style.overflow = hide ? 'hidden' : '';
+            iconStrip.style.opacity = hide ? '0' : '1';
+            stripRestoreBtn.style.display = hide ? 'flex' : 'none';
+            stripRestoreBtn.style.alignItems = 'center';
+            stripRestoreBtn.style.justifyContent = 'center';
+        }
+
+        stripToggleBtn.addEventListener('click', () => setStripState(true));
+        stripRestoreBtn.addEventListener('click', () => setStripState(false));
+    </script>
+</body>
+
+</html>
