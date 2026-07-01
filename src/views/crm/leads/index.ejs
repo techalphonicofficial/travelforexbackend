@@ -24,13 +24,12 @@
     <input type="text" id="leadSearch" placeholder="Search leads..." onkeyup="filterLeads()">
   </div>
   
-  <div class="d-flex align-items-center gap-2">
-    <span class="small fw-bold text-muted text-uppercase">Pipeline:</span>
-    <select class="tf-select" id="pipelineFilter" onchange="changePipeline(this.value)">
-      <% pipelines.forEach(p => { %>
-        <option value="<%= p.id %>" <%= p.id == selectedPipelineId ? 'selected' : '' %>><%= p.name %></option>
-      <% }) %>
-    </select>
+  <div class="tf-pipeline-tabs" id="pipelineFilter">
+    <% pipelines.forEach(p => { %>
+      <button class="tf-pipeline-tab<%= p.id == selectedPipelineId ? ' active' : '' %>" onclick="changePipeline('<%= p.id %>')">
+        <%= p.name %>
+      </button>
+    <% }) %>
   </div>
 </div>
 
@@ -155,6 +154,37 @@
     background: white;
     color: #4f46e5;
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  }
+
+  /* Pipeline Tabs */
+  .tf-pipeline-tabs {
+    display: flex;
+    gap: 0.35rem;
+    background: #f0f0fa;
+    padding: 0.3rem;
+    border-radius: 12px;
+    flex-wrap: wrap;
+  }
+  .tf-pipeline-tab {
+    border: none;
+    background: transparent;
+    padding: 0.42rem 1.1rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #6b6b9e;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    white-space: nowrap;
+  }
+  .tf-pipeline-tab:hover {
+    background: rgba(79, 70, 229, 0.08);
+    color: #4f46e5;
+  }
+  .tf-pipeline-tab.active {
+    background: #4f46e5;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
   }
 </style>
 
