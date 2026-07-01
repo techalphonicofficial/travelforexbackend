@@ -12,6 +12,10 @@ const Destination = sequelize.define('Destination', {
         type: DataTypes.STRING(150),
         allowNull: false
     },
+    title: {
+        type: DataTypes.STRING(255),
+        allowNull: true
+    },
     type: {
         type: DataTypes.STRING(100),
         allowNull: true,
@@ -45,6 +49,61 @@ const Destination = sequelize.define('Destination', {
     is_visa_free: {
         type: DataTypes.BOOLEAN,
         defaultValue: false
+    },
+    customize: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
+    is_customizable: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
+    country: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+        defaultValue: 'India'
+    },
+    state: {
+        type: DataTypes.STRING(100),
+        allowNull: true
+    },
+    tax_rule_type: {
+        type: DataTypes.ENUM('domestic', 'international_outbound', 'exempt'),
+        allowNull: false,
+        defaultValue: 'domestic'
+    },
+    gst_rate: {
+        type: DataTypes.DECIMAL(5, 2),
+        allowNull: false,
+        defaultValue: 5.00
+    },
+    tcs_rate: {
+        type: DataTypes.DECIMAL(5, 2),
+        allowNull: false,
+        defaultValue: 0.00
+    },
+    gst_amount: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0.00
+    },
+    feature_image: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    feature_image_alt: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    tags: {
+        type: DataTypes.ARRAY(DataTypes.STRING),
+        defaultValue: [],
+        allowNull: true
+    },
+    activities_data: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        defaultValue: []
     }
 }, {
     tableName: 'destinations',

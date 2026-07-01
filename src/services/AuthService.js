@@ -54,8 +54,10 @@ class AuthService {
     console.log('STEP 8 - user type:', user.type);
     console.log('STEP 9 - role_id:', user.role_id);
 
-    // Role permissions only for admins
-    if (user.type === 'admin' && user.role_id) {
+    user.role_name = user.role ? user.role.name : null;
+
+    // Role permissions only for admins and managers
+    if (['admin', 'manager', 'employee'].includes(user.type) && user.role_id) {
 
       console.log('STEP 10 - fetching permissions');
 
@@ -155,11 +157,14 @@ class AuthService {
   }
 
   generateToken(user) {
+    const roleName = user.role_name || (user.role ? user.role.name : null);
     const payload = {
       id: user.id,
       name: user.name,
       email: user.email,
-      type: user.type
+      type: user.type,
+      role_id: user.role_id || null,
+      role_name: roleName
     };
     return jwt.sign(payload, process.env.JWT_SECRET || 'your_default_secret', { expiresIn: '24h' });
   }

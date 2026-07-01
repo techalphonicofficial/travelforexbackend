@@ -1,7 +1,9 @@
 class BlogRepository {
-    constructor(BlogPost, BlogCategory) {
+    constructor(BlogPost, BlogCategory, BlogDetail, User) {
         this.BlogPost = BlogPost;
         this.BlogCategory = BlogCategory;
+        this.BlogDetail = BlogDetail;
+        this.User = User;
     }
 
     // Categories
@@ -27,21 +29,64 @@ class BlogRepository {
     async findAllPosts(filters = {}) {
         return await this.BlogPost.findAll({
             where: filters,
-            include: [{ model: this.BlogCategory, as: 'category' }],
+            include: [
+                { model: this.BlogCategory, as: 'category' },
+                { model: this.User, as: 'author', attributes: ['id', 'name', 'email'] }
+            ],
             order: [['created_at', 'DESC']]
+        });
+    }
+
+    async findPaginatedPosts(filters = {}, limit = 10, offset = 0) {
+        return await this.BlogPost.findAndCountAll({
+            where: filters,
+            include: [
+                { model: this.BlogCategory, as: 'category' },
+                { model: this.BlogDetail, as: 'details' },
+                { model: this.User, as: 'author', attributes: ['id', 'name', 'email'] }
+            ],
+            order: [['created_at', 'DESC']],
+            limit,
+            offset,
+            distinct: true
         });
     }
 
     async findPostById(id) {
         return await this.BlogPost.findByPk(id, {
-            include: [{ model: this.BlogCategory, as: 'category' }]
+            include: [
+                { model: this.BlogCategory, as: 'category' },
+                { model: this.BlogDetail, as: 'details' },
+                { model: this.User, as: 'author', attributes: ['id', 'name', 'email'] }
+            ]
         });
     }
 
     async findPostBySlug(slug) {
         return await this.BlogPost.findOne({
             where: { slug },
-            include: [{ model: this.BlogCategory, as: 'category' }]
+            include: [
+                { model: this.BlogCategory, as: 'category' },
+                { model: this.BlogDetail, as: 'details' },
+                { model: this.User, as: 'author', attributes: ['id', 'name', 'email'] }
+            ]
+        });
+    }
+
+    async findRelatedPosts(currentPostId, categoryId, limit = 3) {
+        const { Op } = require('sequelize');
+        return await this.BlogPost.findAll({
+            where: {
+                id: { [Op.ne]: currentPostId },
+                category_id: categoryId,
+                status: 'published'
+            },
+            limit,
+            order: [['created_at', 'DESC']],
+            include: [
+                { model: this.BlogCategory, as: 'category' },
+                { model: this.User, as: 'author', attributes: ['id', 'name', 'email'] }
+            ]
         });
     }
 

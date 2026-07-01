@@ -12,7 +12,7 @@ const BlogPost = sequelize.define('BlogPost', {
         allowNull: false
     },
     author_id: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.UUID,
         allowNull: true
     },
     title: {
@@ -53,7 +53,7 @@ const BlogPost = sequelize.define('BlogPost', {
         allowNull: true
     },
     status: {
-        type: DataTypes.ENUM('draft', 'published', 'scheduled'),
+        type: DataTypes.ENUM('draft', 'published', 'active', 'inactive', 'scheduled'),
         defaultValue: 'draft'
     },
     published_at: {

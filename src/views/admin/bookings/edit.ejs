@@ -1,0 +1,70 @@
+<%- contentFor('body') %>
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row align-items-center mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0 text-dark">Edit Booking</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="/dashboard">Home</a></li>
+                    <li class="breadcrumb-item"><a href="/admin/bookings">Bookings</a></li>
+                    <li class="breadcrumb-item active">Edit</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-primary card-outline shadow">
+            <div class="card-header">
+                <h3 class="card-title">Update Details for <%= booking.booking_reference %></h3>
+            </div>
+            <form action="/admin/bookings/<%= booking.id %>" method="POST">
+                <div class="card-body">
+                    <div class="form-group">
+                        <label>Customer Name</label>
+                        <select name="customer_id" class="form-control select2" required>
+                            <option value="">Select Customer</option>
+                            <% customers.forEach(c => { %>
+                                <option value="<%= c.id %>" <%= booking.customer_id === c.id ? 'selected' : '' %>><%= c.user ? c.user.name : 'Unknown' %> (<%= c.user ? c.user.email : 'Unknown' %>)</option>
+                            <% }) %>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Total Amount (₹)</label>
+                        <input type="number" step="0.01" class="form-control" name="total_amount" value="<%= parseFloat(booking.total_amount).toFixed(2) %>" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Payment Status</label>
+                        <select class="form-control" name="payment_status" required>
+                            <option value="pending" <%= booking.payment_status === 'pending' ? 'selected' : '' %>>Pending</option>
+                            <option value="paid" <%= booking.payment_status === 'paid' ? 'selected' : '' %>>Paid</option>
+                            <option value="failed" <%= booking.payment_status === 'failed' ? 'selected' : '' %>>Failed</option>
+                            <option value="refunded" <%= booking.payment_status === 'refunded' ? 'selected' : '' %>>Refunded</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Booking Status</label>
+                        <select class="form-control" name="booking_status" required>
+                            <option value="pending" <%= booking.booking_status === 'pending' ? 'selected' : '' %>>Pending</option>
+                            <option value="confirmed" <%= booking.booking_status === 'confirmed' ? 'selected' : '' %>>Confirmed</option>
+                            <option value="cancelled" <%= booking.booking_status === 'cancelled' ? 'selected' : '' %>>Cancelled</option>
+                            <option value="completed" <%= booking.booking_status === 'completed' ? 'selected' : '' %>>Completed</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-footer text-right">
+                    <a href="/admin/bookings/<%= booking.id %>" class="btn btn-default">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>

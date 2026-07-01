@@ -33,6 +33,7 @@ class PermissionController {
   async editForm(req, res) {
     try {
       const permission = await this.permissionService.getPermissionById(req.params.id);
+      if (!permission) return res.status(404).send('Permission not found');
       const modules = await this.permissionService.getAllModules();
       res.render('permissions/edit', { permission, modules, title: 'Edit Permission' });
     } catch (error) {

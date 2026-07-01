@@ -112,7 +112,26 @@ class PageController {
         try {
             const page = await this.pageRepo.findBySlug(req.params.slug);
             if (!page) return res.status(404).json({ success: false, message: 'Page not found' });
-            res.json({ success: true, data: page });
+            
+            // Convert to plain object
+            const pageData = page.toJSON();
+            
+            // Parse json_data in details
+            if (pageData.details && pageData.details.length > 0) {
+                pageData.details = pageData.details.map(detail => {
+                    if (detail.json_data && typeof detail.json_data === 'string') {
+                        try {
+                            detail.json_data = JSON.parse(detail.json_data);
+                        } catch (e) {
+                            // Leave as string if invalid JSON
+                            console.error('Error parsing json_data:', e);
+                        }
+                    }
+                    return detail;
+                });
+            }
+
+            res.json({ success: true, data: pageData });
         } catch (err) {
             res.status(500).json({ success: false, message: err.message });
         }

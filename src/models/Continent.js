@@ -11,6 +11,14 @@ const Continent = sequelize.define('Continent', {
         type: DataTypes.STRING(100),
         allowNull: false,
         unique: true
+    },
+    latitude: {
+        type: DataTypes.DECIMAL(10, 7),
+        allowNull: true
+    },
+    longitude: {
+        type: DataTypes.DECIMAL(10, 7),
+        allowNull: true
     }
 }, {
     tableName: 'continents',

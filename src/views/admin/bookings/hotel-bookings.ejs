@@ -1,0 +1,205 @@
+<%- contentFor('body') %>
+
+<%
+const statuses = ['new', 'contacted', 'quoted', 'converted', 'cancelled'];
+const statusStyle = {
+  new: 'background:#e0f2fe;color:#0369a1;',
+  contacted: 'background:#eef2ff;color:#4f46e5;',
+  quoted: 'background:#fef3c7;color:#92400e;',
+  converted: 'background:#dcfce7;color:#166534;',
+  cancelled: 'background:#fee2e2;color:#991b1b;'
+};
+const selectedLimit = limit || 10;
+const totalPagesSafe = Math.max(1, totalPages || 1);
+const startItem = totalBookings ? ((currentPage - 1) * selectedLimit) + 1 : 0;
+const endItem = Math.min(currentPage * selectedLimit, totalBookings || 0);
+const pageItems = [];
+for (let pageNo = 1; pageNo <= totalPagesSafe; pageNo++) {
+  if (pageNo === 1 || pageNo === totalPagesSafe || Math.abs(pageNo - currentPage) <= 1) {
+    pageItems.push(pageNo);
+  } else if (pageItems[pageItems.length - 1] !== '...') {
+    pageItems.push('...');
+  }
+}
+const pageUrl = (pageNo) => `/admin/bookings/hotel-bookings?page=${pageNo}&limit=${selectedLimit}&search=${encodeURIComponent(searchQuery || '')}&status=${encodeURIComponent(statusFilter || '')}`;
+%>
+
+<style>
+  .hb-shell{display:flex;flex-direction:column;gap:1rem;}
+  .hb-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+  .hb-title{font-size:1.75rem;font-weight:800;color:#111827;margin:0;}
+  .hb-muted{color:#64748b;font-size:.88rem;margin:.15rem 0 0;}
+  .hb-tab{display:inline-flex;align-items:center;gap:.4rem;padding:.55rem .85rem;border-radius:9px;background:#eef2ff;color:#4f46e5;text-decoration:none;font-weight:800;font-size:.84rem;}
+  .hb-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.8rem;}
+  .hb-stat{background:#fff;border:1px solid #eef2ff;border-radius:12px;padding:.95rem 1rem;box-shadow:0 4px 16px rgba(79,70,229,.06);}
+  .hb-stat-label{color:#64748b;font-size:.75rem;font-weight:800;text-transform:uppercase;}
+  .hb-stat-value{color:#111827;font-size:1.45rem;font-weight:800;line-height:1;margin-top:.4rem;}
+  .hb-toolbar{background:#fff;border:1px solid #eef2ff;border-radius:12px;padding:.9rem;box-shadow:0 4px 16px rgba(79,70,229,.06);}
+  .hb-toolbar form{display:flex;align-items:center;flex-wrap:wrap;gap:.65rem;margin:0;}
+  .hb-input,.hb-select{border:1px solid #e2e8f0;border-radius:10px;padding:.58rem .75rem;background:#fff;color:#334155;}
+  .hb-input{min-width:min(320px,100%);}
+  .hb-btn{border:0;border-radius:10px;background:#4f46e5;color:#fff;padding:.62rem 1rem;font-weight:800;}
+  .hb-table-wrap{background:#fff;border:1px solid #eef2ff;border-radius:12px;overflow:auto;box-shadow:0 4px 20px rgba(79,70,229,.07);}
+  .hb-table{width:100%;min-width:1120px;border-collapse:collapse;}
+  .hb-table th{background:#f8fafc;color:#475569;font-size:.74rem;text-transform:uppercase;padding:.85rem 1rem;border-bottom:1px solid #eef2ff;}
+  .hb-table td{padding:.9rem 1rem;border-bottom:1px solid #f1f5f9;color:#334155;font-size:.88rem;vertical-align:top;}
+  .hb-main{font-weight:800;color:#111827;}
+  .hb-sub{color:#64748b;font-size:.78rem;margin-top:.2rem;}
+  .hb-pill{display:inline-flex;align-items:center;border-radius:999px;padding:.25rem .65rem;font-size:.75rem;font-weight:800;white-space:nowrap;}
+  .hb-money{font-weight:800;color:#111827;white-space:nowrap;}
+  .hb-status-form{display:flex;align-items:center;gap:.4rem;}
+  .hb-status-form select{width:125px;border:1px solid #e2e8f0;border-radius:8px;padding:.38rem .45rem;font-size:.8rem;}
+  .hb-status-form button{width:32px;height:32px;border:0;border-radius:8px;background:#eef2ff;color:#4f46e5;}
+  .pagination-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;background:#fff;border:1px solid #eef2ff;border-radius:12px;padding:.75rem .9rem;}
+  .pagination-row a,.pagination-row span{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;border-radius:8px;text-decoration:none;color:#4f46e5;font-weight:700;border:1px solid #e2e8f0;background:#fff;}
+  .pagination-row span.disabled{color:#94a3b8;background:#f8fafc;}
+  .pagination-row span.active{background:#4f46e5;color:#fff;border-color:#4f46e5;}
+</style>
+
+<div class="hb-shell">
+  <div class="hb-header">
+    <div>
+      <h1 class="hb-title">Hotel Bookings</h1>
+      <p class="hb-muted">Hotel booking requests stored separately from custom trip enquiries.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="/admin/bookings/package-bookings" class="hb-tab"><i class="bi bi-receipt-cutoff"></i> Package Bookings</a>
+      <a href="/admin/bookings/inquiries" class="hb-tab" style="background:#f8fafc;color:#475569;"><i class="bi bi-ui-checks-grid"></i> Custom Requests</a>
+    </div>
+  </div>
+
+  <div class="hb-stats">
+    <div class="hb-stat">
+      <div class="hb-stat-label">Total Showing</div>
+      <div class="hb-stat-value"><%= totalBookings || 0 %></div>
+    </div>
+    <% statuses.forEach(statusName => { %>
+      <div class="hb-stat">
+        <div class="hb-stat-label"><%= statusName %></div>
+        <div class="hb-stat-value"><%= statusCounts[statusName] || 0 %></div>
+      </div>
+    <% }) %>
+  </div>
+
+  <div class="hb-toolbar">
+    <form method="GET" action="/admin/bookings/hotel-bookings">
+      <input class="hb-input" type="text" name="search" value="<%= searchQuery || '' %>" placeholder="Search customer, hotel, destination, notes">
+      <select class="hb-select" name="status">
+        <option value="">All Statuses</option>
+        <% statuses.forEach(statusName => { %>
+          <option value="<%= statusName %>" <%= statusFilter === statusName ? 'selected' : '' %>><%= statusName %></option>
+        <% }) %>
+      </select>
+      <select class="hb-select" name="limit">
+        <% limitOptions.forEach(option => { %>
+          <option value="<%= option %>" <%= selectedLimit === option ? 'selected' : '' %>><%= option %> / page</option>
+        <% }) %>
+      </select>
+      <button class="hb-btn" type="submit">Filter</button>
+      <% if (searchQuery || statusFilter) { %>
+        <a href="/admin/bookings/hotel-bookings" class="hb-tab" style="background:#f8fafc;color:#475569;">Clear</a>
+      <% } %>
+    </form>
+  </div>
+
+  <div class="hb-table-wrap">
+    <table class="hb-table">
+      <thead>
+        <tr>
+          <th>Customer</th>
+          <th>Hotel</th>
+          <th>Rooms</th>
+          <th>Amounts</th>
+          <th>Commission</th>
+          <th>Status</th>
+          <th>Submitted</th>
+          <th>Update</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (bookings && bookings.length) { %>
+          <% bookings.forEach(booking => { %>
+            <tr>
+              <td>
+                <div class="hb-main"><%= booking.user ? booking.user.name : 'Guest Customer' %></div>
+                <div class="hb-sub"><%= booking.user ? booking.user.email : 'No email' %></div>
+                <div class="hb-sub"><%= booking.user ? booking.user.phone_number || 'No phone' : 'No phone' %></div>
+              </td>
+              <td>
+                <div class="hb-main"><%= booking.hotel ? booking.hotel.name : 'Hotel #' + booking.hotel_id %></div>
+                <div class="hb-sub">Hotel ID: <%= booking.hotel_id %></div>
+                <div class="hb-sub"><%= booking.destination ? booking.destination.name : (booking.hotel && booking.hotel.destination ? booking.hotel.destination.name : 'N/A') %></div>
+              </td>
+              <td>
+                <span class="hb-pill" style="background:#f1f5f9;color:#475569;"><%= booking.room_count %> room<%= booking.room_count === 1 ? '' : 's' %></span>
+                <div class="hb-sub"><%= booking.total_travellers || 1 %> traveller<%= booking.total_travellers === 1 ? '' : 's' %></div>
+                <% if (booking.check_in || booking.check_out) { %>
+                  <div class="hb-sub"><%= booking.check_in || 'N/A' %> / <%= booking.check_out || 'N/A' %></div>
+                <% } %>
+              </td>
+              <td>
+                <div class="hb-money">Base INR <%= booking.base_amount %></div>
+                <div class="hb-sub">Total INR <%= booking.total_amount %></div>
+              </td>
+              <td>
+                <div class="hb-money"><%= booking.commission_percent %>%</div>
+                <div class="hb-sub">INR <%= booking.commission_amount %></div>
+              </td>
+              <td>
+                <span class="hb-pill" style="<%= statusStyle[booking.status] || statusStyle.new %>"><%= booking.status %></span>
+              </td>
+              <td>
+                <div><%= new Date(booking.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) %></div>
+                <div class="hb-sub"><%= new Date(booking.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) %></div>
+              </td>
+              <td>
+                <form class="hb-status-form" method="POST" action="/admin/bookings/hotel-bookings/<%= booking.id %>/status">
+                  <select name="status">
+                    <% statuses.forEach(statusName => { %>
+                      <option value="<%= statusName %>" <%= booking.status === statusName ? 'selected' : '' %>><%= statusName %></option>
+                    <% }) %>
+                  </select>
+                  <button type="submit" title="Save status"><i class="bi bi-check-lg"></i></button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        <% } else { %>
+          <tr>
+            <td colspan="8" class="text-center py-5 text-muted">
+              <i class="bi bi-inbox" style="font-size:2rem;"></i>
+              <div class="mt-2 fw-bold">No hotel bookings found.</div>
+            </td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <% if (totalBookings > 0) { %>
+    <div class="pagination-row">
+      <div class="text-muted small">Showing <%= startItem %>-<%= endItem %> of <%= totalBookings %></div>
+      <div class="d-flex gap-1">
+        <% if (currentPage > 1) { %>
+          <a href="<%= pageUrl(currentPage - 1) %>" title="Previous"><i class="bi bi-chevron-left"></i></a>
+        <% } else { %>
+          <span class="disabled"><i class="bi bi-chevron-left"></i></span>
+        <% } %>
+        <% pageItems.forEach(item => { %>
+          <% if (item === '...') { %>
+            <span class="disabled">...</span>
+          <% } else if (item === currentPage) { %>
+            <span class="active"><%= item %></span>
+          <% } else { %>
+            <a href="<%= pageUrl(item) %>"><%= item %></a>
+          <% } %>
+        <% }) %>
+        <% if (currentPage < totalPagesSafe) { %>
+          <a href="<%= pageUrl(currentPage + 1) %>" title="Next"><i class="bi bi-chevron-right"></i></a>
+        <% } else { %>
+          <span class="disabled"><i class="bi bi-chevron-right"></i></span>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+</div>

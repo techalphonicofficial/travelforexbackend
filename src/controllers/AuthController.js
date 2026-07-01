@@ -11,14 +11,16 @@ class AuthController {
     try {
       const { email, password } = req.body;
       const user = await this.authService.login(email, password);
+      const roleName = user.role_name || (user.role ? user.role.name : null);
 
       // Store user in session
       req.session.user = {
         id: user.id,
         name: user.name,
         email: user.email,
+        type: user.type,
         role_id: user.role_id,
-        role_name: user.role_name,
+        role_name: roleName,
         permissions: user.permissions
       };
 

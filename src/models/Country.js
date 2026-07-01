@@ -16,6 +16,14 @@ const Country = sequelize.define('Country', {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: { model: Continent, key: 'id' }
+    },
+    latitude: {
+        type: DataTypes.DECIMAL(10, 7),
+        allowNull: true
+    },
+    longitude: {
+        type: DataTypes.DECIMAL(10, 7),
+        allowNull: true
     }
 }, {
     tableName: 'countries',

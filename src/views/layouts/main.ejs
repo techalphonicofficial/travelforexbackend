@@ -15,16 +15,65 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <%
+        const layoutThemeColours = typeof theme_colours === 'object' && theme_colours ? theme_colours : {};
+        const layoutThemeCssVariables = typeof theme_css_variables === 'object' && theme_css_variables ? theme_css_variables : {};
+        const layoutThemeValue = (key, fallback) => /^#[0-9a-fA-F]{6}$/.test(String(layoutThemeColours[key] || ''))
+            ? String(layoutThemeColours[key]).toLowerCase()
+            : fallback;
+        const layoutThemeRgb = color => [
+            parseInt(color.slice(1, 3), 16),
+            parseInt(color.slice(3, 5), 16),
+            parseInt(color.slice(5, 7), 16)
+        ].join(', ');
+        const layoutBrandPrimary = layoutThemeValue('theme_brand_primary', '#026eb5');
+        const layoutBrandPrimaryHover = layoutThemeValue('theme_brand_primary_hover', '#005f9f');
+        const layoutBrandPrimaryLight = layoutThemeValue('theme_brand_primary_light', '#c5e5fb');
+        const layoutBrandPrimaryBorder = layoutThemeValue('theme_brand_primary_border', '#7abfee');
+        const layoutBrandSecondary = layoutThemeValue('theme_brand_secondary', '#fdce2e');
+        const layoutBrandSecondaryHover = layoutThemeValue('theme_brand_secondary_hover', '#f6b800');
+        const layoutAccent = layoutThemeValue('theme_color_accent', '#00b894');
+        const layoutAccentHover = layoutThemeValue('theme_color_accent_hover', '#00a382');
+        const layoutBrandPrimaryRgb = layoutThemeRgb(layoutBrandPrimary);
+        const layoutBrandSecondaryRgb = layoutThemeRgb(layoutBrandSecondary);
+    %>
     <style>
         :root {
-            --primary: #4f46e5;
-            --primary-light: #6366f1;
+            --brand-primary: <%= layoutBrandPrimary %>;
+            --brand-primary-hover: <%= layoutBrandPrimaryHover %>;
+            --brand-primary-light: <%= layoutBrandPrimaryLight %>;
+            --brand-primary-border: <%= layoutBrandPrimaryBorder %>;
+            --brand-secondary: <%= layoutBrandSecondary %>;
+            --brand-secondary-hover: <%= layoutBrandSecondaryHover %>;
+            --color-primary: var(--brand-primary);
+            --color-primary-hover: var(--brand-primary-hover);
+            --color-primary-light: var(--brand-primary-light);
+            --color-secondary: var(--brand-secondary);
+            --color-secondary-hover: var(--brand-secondary-hover);
+            --bs-primary: var(--color-primary);
+            --bs-secondary: var(--color-secondary);
+            --bs-link-color: var(--color-primary);
+            --bs-link-hover-color: var(--color-primary-hover);
+            --bs-primary-rgb: <%= layoutBrandPrimaryRgb %>;
+            --bs-secondary-rgb: <%= layoutBrandSecondaryRgb %>;
+            --color-accent: <%= layoutAccent %>;
+            --color-accent-hover: <%= layoutAccentHover %>;
+            --primary: var(--color-primary);
+            --primary-hover: var(--color-primary-hover);
+            --primary-light: var(--color-primary-light);
+            --secondary: var(--color-secondary);
+            --secondary-hover: var(--color-secondary-hover);
+            --accent: var(--color-accent);
+            --accent-hover: var(--color-accent-hover);
+            <% Object.entries(layoutThemeCssVariables).forEach(([key, value]) => { %>
+            <%= key %>: <%= value %>;
+            <% }) %>
             --icon-strip-bg: #e8e8f4;
             --nav-panel-bg: #f0f0fa;
             --nav-text: #2d2d6e;
             --nav-muted: #8888bb;
-            --nav-active-bg: #e0e0f5;
-            --nav-hover-bg: #e4e4f7;
+            --nav-active-bg: var(--color-primary-light);
+            --nav-hover-bg: color-mix(in srgb, var(--color-primary-light) 70%, white);
             --icon-strip-w: 62px;
             --nav-panel-w: 220px;
         }
@@ -389,8 +438,8 @@
         }
 
         .btn-primary:hover {
-            background: var(--primary-light);
-            border-color: var(--primary-light);
+            background: var(--color-primary-hover);
+            border-color: var(--color-primary-hover);
         }
 
         /* ══════════════════════════════════════════════
@@ -879,20 +928,25 @@
             <a href="/" class="strip-icon <%= title === 'Dashboard' ? 'active' : '' %>" title="Dashboard">
                 <i class="bi bi-grid-1x2-fill"></i>
             </a>
+            <a href="/newsletter-subscribers"
+                class="strip-icon <%= title === 'Newsletter Subscribers' ? 'active' : '' %>"
+                title="Newsletter">
+                <i class="bi bi-envelope-paper-fill"></i>
+            </a>
             <div class="strip-divider"></div>
             <!-- Access Control Group Icon -->
             <a href="/users"
-                class="strip-icon <%= title && (title.includes('User')||title.includes('Role')||title.includes('Module')||title.includes('Permission')) ? 'active' : '' %>"
+                class="strip-icon <%= title && (title.includes('User')||title.includes('Vendor Requests')||title.includes('Role')||title.includes('Module')||title.includes('Permission')) ? 'active' : '' %>"
                 title="Access Control">
                 <i class="bi bi-shield-lock-fill"></i>
             </a>
             <div class="strip-divider"></div>
             <a href="#"
-                class="strip-icon <%= title && (title.includes('Travel') || title.includes('Review')) ? 'active' : '' %>"
+                class="strip-icon <%= title && (title.includes('Travel') || title.includes('Review') || title.includes('Booking') || title.includes('Inquiry')) ? 'active' : '' %>"
                 title="Travel">
                 <i class="bi bi-airplane-fill"></i>
             </a>
-            <a href="#" class="strip-icon <%= title && title.includes('Forex') ? 'active' : '' %>" title="Forex">
+            <a href="/travel/forex-services" class="strip-icon <%= title && title.includes('Forex') ? 'active' : '' %>" title="Forex">
                 <i class="bi bi-currency-exchange"></i>
             </a>
             <div class="strip-divider"></div>
@@ -902,8 +956,11 @@
                 <i class="bi bi-people-fill"></i>
             </a>
             <div class="strip-divider"></div>
-            <a href="/cms/pages" class="strip-icon <%= title && title.includes('Page') ? 'active' : '' %>" title="Pages">
+            <a href="/cms/pages" class="strip-icon <%= title && (title.includes('Page') || title === 'Footer Settings') ? 'active' : '' %>" title="Pages">
                 <i class="bi bi-file-earmark-richtext-fill"></i>
+            </a>
+            <a href="/cms/blog/posts" class="strip-icon <%= title && title.includes('Blog') ? 'active' : '' %>" title="Blogs">
+                <i class="bi bi-journal-richtext"></i>
             </a>
             <div class="strip-divider"></div>
             <a href="#" class="strip-icon" title="Reports"><i class="bi bi-bar-chart-fill"></i></a>
@@ -915,8 +972,12 @@
         <aside class="nav-panel">
             <div class="nav-panel-header">
                 <div class="nav-company">
-                    <div style="background-color:#1e293b; padding:8px 12px; border-radius:6px;">
-                        <img src="" alt="Logo" style="height:30px;">
+                    <div style="background-color:#1e293b; padding:8px 12px; border-radius:6px; display:flex; justify-content:center; align-items:center;">
+                        <% if (company_logo_url) { %>
+                            <img src="<%= company_logo_url %>" alt="Company Logo" style="max-height:30px; max-width: 100%;">
+                        <% } else { %>
+                            <span style="color:white; font-weight:bold; font-size:16px;"><%= typeof company_name !== 'undefined' && company_name ? company_name : 'PickTrails' %></span>
+                        <% } %>
                     </div>
 
                 </div>
@@ -931,18 +992,26 @@
                         </a>
                     </li>
                     <li>
-                        <a class="nav-link-item <%= title && (title.includes('User')||title.includes('Role')||title.includes('Module')||title.includes('Permission')) ? 'active' : '' %>"
+                        <a href="/newsletter-subscribers" class="nav-link-item <%= title === 'Newsletter Subscribers' ? 'active' : '' %>">
+                            <span class="nav-label-row"><i class="bi bi-envelope-paper nav-icon"></i> Newsletter</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="nav-link-item <%= title && (title.includes('User')||title.includes('Vendor Requests')||title.includes('Role')||title.includes('Module')||title.includes('Permission')) ? 'active' : '' %>"
                             data-bs-toggle="collapse" href="#accessCollapse"
-                            aria-expanded="<%= title && (title.includes('User')||title.includes('Role')||title.includes('Module')||title.includes('Permission')) ? 'true' : 'false' %>">
+                            aria-expanded="<%= title && (title.includes('User')||title.includes('Vendor Requests')||title.includes('Role')||title.includes('Module')||title.includes('Permission')) ? 'true' : 'false' %>">
                             <span class="nav-label-row"><i class="bi bi-shield-lock nav-icon"></i> Access Control</span>
                             <i class="bi bi-chevron-down chevron"></i>
                         </a>
-                        <div class="collapse <%= title && (title.includes('User')||title.includes('Role')||title.includes('Module')||title.includes('Permission')) ? 'show' : '' %>"
+                        <div class="collapse <%= title && (title.includes('User')||title.includes('Vendor Requests')||title.includes('Role')||title.includes('Module')||title.includes('Permission')) ? 'show' : '' %>"
                             id="accessCollapse">
                             <ul class="nav-sub list-unstyled">
                                 <li><a href="/users"
                                         class="nav-link-item <%= title === 'User Management' ? 'active' : '' %>"><i
                                             class="bi bi-people nav-icon"></i> Users</a></li>
+                                <li><a href="/admin/vendors/requests"
+                                        class="nav-link-item <%= title === 'Vendor Requests' ? 'active' : '' %>"><i
+                                            class="bi bi-shop nav-icon"></i> Vendor Requests</a></li>
                                 <li><a href="/roles"
                                         class="nav-link-item <%= title === 'Role Management' ? 'active' : '' %>"><i
                                             class="bi bi-key nav-icon"></i> Roles</a></li>
@@ -956,13 +1025,13 @@
                         </div>
                     </li>
                     <li>
-                        <a class="nav-link-item <%= title && (title.includes('Continent')||title.includes('Countr')||title.includes('Cit')||title.includes('Destination')||title.includes('Categor')||title.includes('Mapping')||title.includes('Package')||title.includes('Review')) ? 'active' : '' %>"
+                        <a class="nav-link-item <%= title && (title.includes('Continent')||title.includes('Countr')||title.includes('Cit')||title.includes('Destination')||title.includes('Categor')||title.includes('Mapping')||title.includes('Package')||title.includes('Review')||title.includes('Booking')||title.includes('Inquiry')) ? 'active' : '' %>"
                             data-bs-toggle="collapse" href="#travelCollapse"
-                            aria-expanded="<%= title && (title.includes('Continent')||title.includes('Countr')||title.includes('Cit')||title.includes('Destination')||title.includes('Categor')||title.includes('Mapping')||title.includes('Package')||title.includes('Review')) ? 'true' : 'false' %>">
+                            aria-expanded="<%= title && (title.includes('Continent')||title.includes('Countr')||title.includes('Cit')||title.includes('Destination')||title.includes('Categor')||title.includes('Mapping')||title.includes('Package')||title.includes('Review')||title.includes('Booking')||title.includes('Inquiry')) ? 'true' : 'false' %>">
                             <span class="nav-label-row"><i class="bi bi-airplane nav-icon"></i> Travel</span>
                             <i class="bi bi-chevron-down chevron"></i>
                         </a>
-                        <div class="collapse <%= title && (title.includes('Continent')||title.includes('Countr')||title.includes('Cit')||title.includes('Destination')||title.includes('Categor')||title.includes('Mapping')||title.includes('Package')||title.includes('Review')) ? 'show' : '' %>"
+                        <div class="collapse <%= title && (title.includes('Continent')||title.includes('Countr')||title.includes('Cit')||title.includes('Destination')||title.includes('Categor')||title.includes('Mapping')||title.includes('Package')||title.includes('Coupon')||title.includes('Review')||title.includes('Booking')||title.includes('Inquiry')) ? 'show' : '' %>"
                             id="travelCollapse">
                             <ul class="nav-sub list-unstyled">
                                 <li><a href="/travel/continents"
@@ -974,6 +1043,9 @@
                                 <li><a href="/travel/cities"
                                         class="nav-link-item <%= title === 'Cities' ? 'active' : '' %>"><i
                                             class="bi bi-buildings nav-icon"></i> Cities</a></li>
+                                <li><a href="/travel/airports"
+                                        class="nav-link-item <%= title === 'Airports' ? 'active' : '' %>"><i
+                                            class="bi bi-airplane nav-icon"></i> Airports</a></li>
                                 <li><a href="/travel/categories"
                                         class="nav-link-item <%= title === 'Destination Categories' ? 'active' : '' %>"><i
                                             class="bi bi-tags nav-icon"></i> Categories</a></li>
@@ -984,19 +1056,49 @@
                                         class="nav-link-item <%= title === 'Destination Mapping' ? 'active' : '' %>"><i
                                             class="bi bi-diagram-3 nav-icon"></i> Mapping</a></li>
                                 <li><a href="/travel/packages"
-                                        class="nav-link-item <%= title && title.includes('Package') ? 'active' : '' %>"><i
+                                        class="nav-link-item <%= title && title.includes('Package') && title !== 'Package Bookings' ? 'active' : '' %>"><i
                                             class="bi bi-suitcase-lg nav-icon"></i> Packages</a></li>
+                                <li><a href="/travel/coupons"
+                                        class="nav-link-item <%= title && title.includes('Coupon') ? 'active' : '' %>"><i
+                                            class="bi bi-ticket-perforated nav-icon"></i> Coupons</a></li>
+                                <li><a href="/travel/hotels"
+                                        class="nav-link-item <%= title && (title === 'Hotels' || title === 'Add Hotel' || title === 'Edit Hotel') ? 'active' : '' %>"><i
+                                            class="bi bi-building nav-icon"></i> Hotels</a></li>
+                                <li><a href="/admin/bookings/package-bookings"
+                                        class="nav-link-item <%= title === 'Package Bookings' ? 'active' : '' %>"><i
+                                            class="bi bi-receipt-cutoff nav-icon"></i> Package Bookings</a></li>
+                                <li><a href="/admin/bookings/hotel-bookings"
+                                        class="nav-link-item <%= title === 'Hotel Bookings' ? 'active' : '' %>"><i
+                                            class="bi bi-journal-check nav-icon"></i> Hotel Bookings</a></li>
+                                <!-- Activities menu item removed per user request -->
                                 <li><a href="/travel/reviews"
                                         class="nav-link-item <%= title && title.includes('Review') ? 'active' : '' %>"><i
                                             class="bi bi-camera-reels nav-icon"></i> Video Reviews</a></li>
+                                <li><a href="/admin/bookings/inquiries"
+                                        class="nav-link-item <%= title && title.includes('Inquiry') ? 'active' : '' %>"><i
+                                            class="bi bi-ui-checks-grid nav-icon"></i> Custom Requests</a></li>
                                 <!-- <li><a href="/travel/package-dates" class="nav-link-item <%= title === 'Package Dates' ? 'active' : '' %>"><i class="bi bi-calendar-range nav-icon"></i> Package Dates</a></li> -->
                             </ul>
                         </div>
                     </li>
                     <li>
-                        <a href="#" class="nav-link-item">
-                            <span class="nav-label-row"><i class="bi bi-currency-exchange nav-icon"></i> Forex</span>
-                            <i class="bi bi-chevron-down chevron"></i>
+                        <a href="/travel/forex-services" class="nav-link-item <%= title === 'Forex Services' ? 'active' : '' %>">
+                            <span class="nav-label-row"><i class="bi bi-currency-exchange nav-icon"></i> Forex Services</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/travel/forex-rates" class="nav-link-item <%= title === 'Forex Conversion Rates' ? 'active' : '' %>">
+                            <span class="nav-label-row"><i class="bi bi-cash-coin nav-icon"></i> Forex Rates</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/travel/forex-converter" class="nav-link-item <%= title === 'Forex Converter' ? 'active' : '' %>">
+                            <span class="nav-label-row"><i class="bi bi-arrow-left-right nav-icon"></i> Forex Converter</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/travel/forex-service-requests" class="nav-link-item <%= title === 'Forex Service Requests' ? 'active' : '' %>">
+                            <span class="nav-label-row"><i class="bi bi-receipt nav-icon"></i> Forex Service Requests</span>
                         </a>
                     </li>
                     <li>
@@ -1021,27 +1123,69 @@
                                 <li><a href="/crm/follow-ups"
                                         class="nav-link-item <%= title === 'CRM Follow-ups' ? 'active' : '' %>"><i
                                             class="bi bi-calendar-check nav-icon"></i> Follow-ups</a></li>
-                                <li><a href="/crm/settings"
-                                        class="nav-link-item <%= title === 'CRM Settings' ? 'active' : '' %>"><i
-                                            class="bi bi-gear nav-icon"></i> CRM Settings</a></li>
+                               
                             </ul>
                         </div>
                     </li>
                     <li>
-                        <a href="/cms/pages" class="nav-link-item <%= title && title.includes('Page') ? 'active' : '' %>">
+                        <a class="nav-link-item <%= title && (title.includes('Page') || title === 'Footer Settings') ? 'active' : '' %>"
+                            data-bs-toggle="collapse" href="#pagesCollapse"
+                            aria-expanded="<%= title && (title.includes('Page') || title === 'Footer Settings') ? 'true' : 'false' %>">
                             <span class="nav-label-row"><i class="bi bi-file-earmark-richtext nav-icon"></i> Pages</span>
+                            <i class="bi bi-chevron-down chevron"></i>
                         </a>
+                        <div class="collapse <%= title && (title.includes('Page') || title === 'Footer Settings') ? 'show' : '' %>" id="pagesCollapse">
+                            <ul class="nav-sub list-unstyled">
+                                <li><a href="/cms/pages" class="nav-link-item <%= title && title.includes('Page') && title !== 'Footer Settings' ? 'active' : '' %>"><i class="bi bi-file-earmark nav-icon"></i> All Pages</a></li>
+                                <li><a href="/cms/footer" class="nav-link-item <%= title === 'Footer Settings' ? 'active' : '' %>"><i class="bi bi-layout-text-window nav-icon"></i> Footer Settings</a></li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li>
+                        <a class="nav-link-item <%= title && title.includes('Blog') ? 'active' : '' %>"
+                            data-bs-toggle="collapse" href="#blogCollapse"
+                            aria-expanded="<%= title && title.includes('Blog') ? 'true' : 'false' %>">
+                            <span class="nav-label-row"><i class="bi bi-journal-richtext nav-icon"></i> Blogs</span>
+                            <i class="bi bi-chevron-down chevron"></i>
+                        </a>
+                        <div class="collapse <%= title && title.includes('Blog') ? 'show' : '' %>" id="blogCollapse">
+                            <ul class="nav-sub list-unstyled">
+                                <li><a href="/cms/blog/posts" class="nav-link-item <%= title && title.includes('Post') ? 'active' : '' %>"><i class="bi bi-pen nav-icon"></i> All Posts</a></li>
+                                <li><a href="/cms/blog/categories" class="nav-link-item <%= title && title.includes('Categories') ? 'active' : '' %>"><i class="bi bi-tags nav-icon"></i> Categories</a></li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li>
+                        <a class="nav-link-item <%= title && title.includes('Accounting') || title && (title.includes('Ledger')||title.includes('Trial')||title.includes('Profit')||title.includes('Journal')||title.includes('Voucher')||title.includes('Chart of')) ? 'active' : '' %>"
+                            data-bs-toggle="collapse" href="#accountingCollapse"
+                            aria-expanded="<%= title && (title.includes('Accounting')||title.includes('Ledger')||title.includes('Trial')||title.includes('Profit')||title.includes('Journal')||title.includes('Voucher')||title.includes('Chart of')) ? 'true' : 'false' %>">
+                            <span class="nav-label-row"><i class="bi bi-calculator nav-icon"></i> Accounting</span>
+                            <i class="bi bi-chevron-down chevron"></i>
+                        </a>
+                        <div class="collapse <%= title && (title.includes('Accounting')||title.includes('Ledger')||title.includes('Trial')||title.includes('Profit')||title.includes('Journal')||title.includes('Voucher')||title.includes('Chart of')) ? 'show' : '' %>" id="accountingCollapse">
+                            <ul class="nav-sub list-unstyled">
+                                <li><a href="/accounting/dashboard"     class="nav-link-item <%= title === 'Accounting Dashboard' ? 'active' : '' %>"><i class="bi bi-grid-1x2 nav-icon"></i> Dashboard</a></li>
+                                <li><a href="/accounting/vouchers"      class="nav-link-item <%= title === 'Accounting Vouchers' || (title && title.startsWith('Voucher ')) ? 'active' : '' %>"><i class="bi bi-receipt-cutoff nav-icon"></i> Vouchers</a></li>
+                                <li><a href="/accounting/ledger"        class="nav-link-item <%= title === 'General Ledger' ? 'active' : '' %>"><i class="bi bi-journal-text nav-icon"></i> General Ledger</a></li>
+                                <li><a href="/accounting/accounts"      class="nav-link-item <%= title === 'Chart of Accounts' ? 'active' : '' %>"><i class="bi bi-list-columns-reverse nav-icon"></i> Chart of Accounts</a></li>
+                                <li><a href="/accounting/trial-balance" class="nav-link-item <%= title === 'Trial Balance' ? 'active' : '' %>"><i class="bi bi-scale nav-icon"></i> Trial Balance</a></li>
+                                <li><a href="/accounting/pnl"           class="nav-link-item <%= title === 'Profit & Loss Statement' ? 'active' : '' %>"><i class="bi bi-graph-up-arrow nav-icon"></i> P&amp;L Statement</a></li>
+                                <li><a href="/accounting/vouchers/new"  class="nav-link-item <%= title === 'New Voucher' ? 'active' : '' %>"><i class="bi bi-pencil-square nav-icon"></i> New Voucher</a></li>
+                                <li><a href="/admin/wallets/requests"   class="nav-link-item <%= title === 'Wallet Fund Requests' ? 'active' : '' %>"><i class="bi bi-wallet2 nav-icon"></i> Wallet Requests</a></li>
+                            </ul>
+                        </div>
                     </li>
                     <li>
                         <a href="#" class="nav-link-item">
                             <span class="nav-label-row"><i class="bi bi-bar-chart nav-icon"></i> Reports</span>
                         </a>
                     </li>
-                    <li>
-                        <a href="#" class="nav-link-item">
-                            <span class="nav-label-row"><i class="bi bi-gear nav-icon"></i> Settings</span>
+                      <li>
+                        <a href="/crm/settings" class="nav-link-item">
+                            <span class="nav-label-row"><i class="bi bi-gear nav-icon"></i> Crm Setting</span>
                         </a>
                     </li>
+                   
                 </ul>
             </nav>
 

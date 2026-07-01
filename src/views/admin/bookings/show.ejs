@@ -1,0 +1,368 @@
+<%- contentFor('body') %>
+
+<style>
+    /* Custom Itinerary Timeline Styling */
+    .itinerary-timeline {
+        position: relative;
+        padding-left: 2rem;
+        margin-top: 1.5rem;
+    }
+    .itinerary-timeline::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #e2e8f0;
+        border-radius: 2px;
+    }
+    .itinerary-day {
+        position: relative;
+        margin-bottom: 2rem;
+    }
+    .itinerary-day-badge {
+        position: absolute;
+        left: -2.85rem;
+        top: 0;
+        background: #4f46e5;
+        color: white;
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.9rem;
+        box-shadow: 0 0 0 4px #ffffff, 0 4px 6px rgba(0,0,0,0.1);
+        z-index: 2;
+    }
+    .itinerary-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .itinerary-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+    }
+    .itinerary-section-title {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6b7280;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .itinerary-hotel-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.25rem;
+        background: #f8fafc;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    .hotel-icon-wrapper {
+        background: #e0e7ff;
+        color: #4f46e5;
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        margin-right: 1rem;
+    }
+    .activity-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .activity-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #f3f4f6;
+    }
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+    .activity-icon-wrapper {
+        background: #dcfce7;
+        color: #16a34a;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        margin-right: 1rem;
+    }
+    .price-tag {
+        background: #f1f5f9;
+        color: #334155;
+        font-weight: 600;
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .booking-stats-card {
+        border-radius: 1rem;
+        border: none;
+        background: linear-gradient(145deg, #ffffff, #f9fafb);
+    }
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px dashed #e2e8f0;
+    }
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+    .detail-label {
+        color: #64748b;
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+    .detail-value {
+        font-weight: 600;
+        color: #1e293b;
+    }
+</style>
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row align-items-center mb-4 mt-2">
+            <div class="col-sm-6">
+                <h1 class="m-0 text-dark" style="font-weight: 800; letter-spacing: -0.5px;">Booking Details</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right bg-transparent p-0 m-0 align-items-center">
+                    <li class="breadcrumb-item"><a href="/dashboard" class="text-indigo">Home</a></li>
+                    <li class="breadcrumb-item"><a href="/admin/bookings" class="text-indigo">Bookings</a></li>
+                    <li class="breadcrumb-item active text-muted mr-3"><%= booking.booking_reference %></li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Left Sidebar: Customer & Payment Details -->
+            <div class="col-lg-4 col-md-5">
+                <div class="card booking-stats-card shadow-sm mb-4">
+                    <div class="card-body p-4">
+                        <div class="text-center mb-4">
+                            <div style="width: 70px; height: 70px; background: #e0e7ff; color: #4f46e5; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 1rem font-weight: bold;">
+                                <%= booking.customer && booking.customer.user && booking.customer.user.name ? booking.customer.user.name.charAt(0).toUpperCase() : 'U' %>
+                            </div>
+                                <div class="col-8 mx-auto">
+                                    <h4 class="mb-1" style="font-weight: 700; color: #343a40;">
+                                        <%= booking.customer && booking.customer.user ? booking.customer.user.name : 'Unknown Customer' %>
+                                    </h4>
+                                    <p class="text-muted mb-1"><i class="fas fa-envelope mr-1"></i> <%= booking.customer && booking.customer.user ? booking.customer.user.email : 'N/A' %></p>
+                                    <p class="text-muted mb-0"><i class="fas fa-phone mr-1"></i> <%= booking.customer ? booking.customer.phone : 'N/A' %></p>
+                                </div>
+                        </div>
+                        
+                        <div class="mt-4 pt-3" style="border-top: 1px solid #f1f5f9;">
+                            <div class="detail-row">
+                                <span class="detail-label">Booking Ref</span>
+                                <span class="detail-value text-indigo"><%= booking.booking_reference %></span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Type</span>
+                                <span class="detail-value">
+                                    <% if (booking.type === 'custom_trip') { %>
+                                        <span class="badge" style="background: #e0e7ff; color: #4f46e5; padding: 0.4em 0.8em; border-radius: 6px;">Custom Trip</span>
+                                    <% } else { %>
+                                        <span class="badge" style="background: #e0f2fe; color: #0284c7; padding: 0.4em 0.8em; border-radius: 6px;">Package</span>
+                                    <% } %>
+                                </span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Total Amount</span>
+                                <span class="detail-value" style="font-size: 1.1rem; color: #16a34a;">₹<%= parseFloat(booking.total_amount).toLocaleString('en-IN', {minimumFractionDigits: 2}) %></span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Status</span>
+                                <span class="detail-value">
+                                    <% if (booking.payment_status === 'paid') { %>
+                                        <span class="badge" style="background: #dcfce7; color: #16a34a; padding: 0.4em 0.8em; border-radius: 6px;"><i class="fas fa-check-circle mr-1"></i> Paid</span>
+                                    <% } else if (booking.payment_status === 'pending') { %>
+                                        <span class="badge" style="background: #fef08a; color: #ca8a04; padding: 0.4em 0.8em; border-radius: 6px;"><i class="fas fa-clock mr-1"></i> Pending</span>
+                                    <% } else { %>
+                                        <span class="badge" style="background: #fee2e2; color: #dc2626; padding: 0.4em 0.8em; border-radius: 6px;"><%= booking.payment_status %></span>
+                                    <% } %>
+                                </span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Date</span>
+                                <span class="detail-value"><%= new Date(booking.created_at).toLocaleDateString('en-US', {day:'numeric', month:'short', year:'numeric'}) %></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <% if (booking.payments && booking.payments.length > 0) { %>
+                <div class="card booking-stats-card shadow-sm">
+                    <div class="card-body p-4">
+                        <h5 style="font-weight: 700; color: #1e293b; margin-bottom: 1.5rem;"><i class="fas fa-history text-muted mr-2"></i> Payment History</h5>
+                        <div class="table-responsive">
+                            <table class="table table-borderless table-sm mb-0">
+                                <tbody>
+                                    <% booking.payments.forEach(payment => { %>
+                                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                                            <td class="py-2 pl-0">
+                                                <small class="d-block text-muted">Txn ID</small>
+                                                <span class="font-weight-bold text-dark"><%= payment.transaction_id %></span>
+                                            </td>
+                                            <td class="py-2 text-right pr-0">
+                                                <div class="font-weight-bold" style="color: #16a34a;">₹<%= parseFloat(payment.amount).toLocaleString('en-IN') %></div>
+                                                <% if (payment.status === 'success') { %>
+                                                    <small class="text-success"><i class="fas fa-check"></i> Success</small>
+                                                <% } else { %>
+                                                    <small class="text-warning"><%= payment.status %></small>
+                                                <% } %>
+                                            </td>
+                                        </tr>
+                                    <% }) %>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <% } %>
+            </div>
+            
+            <!-- Right Sidebar: Itinerary Timeline -->
+            <div class="col-lg-8 col-md-7">
+                <div class="card shadow-sm" style="border-radius: 1rem; border: none;">
+                    <div class="card-header bg-white" style="border-bottom: 1px solid #f1f5f9; padding: 1.5rem;">
+                        <h4 class="card-title m-0" style="font-weight: 700; color: #1e293b;"><i class="fas fa-map-marked-alt text-indigo mr-2"></i> Trip Itinerary</h4>
+                    </div>
+                    <div class="card-body p-4">
+                        <% if (booking.type === 'custom_trip' && booking.custom_trip) { %>
+                            <div class="d-flex align-items-center justify-content-between mb-4 p-3" style="background: #f8fafc; border-radius: 0.5rem; border: 1px solid #e2e8f0;">
+                                <div>
+                                    <h5 class="m-0 font-weight-bold" style="color: #4f46e5;">Destination: <%= booking.custom_trip.destination ? booking.custom_trip.destination.name : 'Unknown' %></h5>
+                                </div>
+                                <div class="text-right">
+                                    <span class="d-block text-muted small">Travel Dates</span>
+                                    <span class="font-weight-bold text-dark"><%= new Date(booking.custom_trip.start_date).toLocaleDateString('en-US', {day:'numeric', month:'short'}) %> - <%= new Date(booking.custom_trip.end_date).toLocaleDateString('en-US', {day:'numeric', month:'short', year:'numeric'}) %></span>
+                                </div>
+                            </div>
+                            
+                            <div class="itinerary-timeline mt-5">
+                                <% if (booking.custom_trip.days && booking.custom_trip.days.length > 0) { %>
+                                    <% booking.custom_trip.days.forEach(day => { %>
+                                        <div class="itinerary-day">
+                                            <div class="itinerary-day-badge">D<%= day.day_number %></div>
+                                            
+                                            <div class="itinerary-card shadow-sm">
+                                                
+                                                <!-- Hotel Section -->
+                                                <div class="itinerary-hotel-item">
+                                                    <div class="hotel-icon-wrapper">
+                                                        <i class="fas fa-bed"></i>
+                                                    </div>
+                                                    <div class="flex-grow-1">
+                                                        <div class="itinerary-section-title mb-1">Accommodation</div>
+                                                        <% if (day.hotel) { %>
+                                                            <div class="d-flex justify-content-between align-items-center">
+                                                                <div>
+                                                                    <h5 class="mb-0 font-weight-bold text-dark"><%= day.hotel.name %></h5>
+                                                                    <div style="color: #fbbf24; font-size: 0.8rem; margin-top: 2px;">
+                                                                        <% for(let i=0; i<day.hotel.star_rating; i++) { %><i class="fas fa-star"></i><% } %>
+                                                                    </div>
+                                                                    <small class="text-muted"><%= day.hotel.address %></small>
+                                                                </div>
+                                                                <div>
+                                                                    <span class="price-tag">₹<%= parseFloat(day.hotel.price_per_night).toLocaleString('en-IN') %> <span class="font-weight-normal text-muted">/ night</span></span>
+                                                                </div>
+                                                            </div>
+                                                        <% } else { %>
+                                                            <p class="text-muted mb-0 font-italic small">No hotel selected for this day.</p>
+                                                        <% } %>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Activities Section -->
+                                                <div class="p-4">
+                                                    <div class="itinerary-section-title"><i class="fas fa-hiking"></i> Planned Activities</div>
+                                                    <% if (day.activities && day.activities.length > 0) { %>
+                                                        <ul class="activity-list">
+                                                            <% day.activities.forEach(tripAct => { %>
+                                                                <% if (tripAct.activity) { %>
+                                                                <li class="activity-item px-0">
+                                                                    <div class="activity-icon-wrapper">
+                                                                        <i class="fas fa-ticket-alt"></i>
+                                                                    </div>
+                                                                    <div class="flex-grow-1">
+                                                                        <h6 class="mb-0 font-weight-bold text-dark"><%= tripAct.activity.name %></h6>
+                                                                        <small class="text-muted"><i class="far fa-clock mr-1"></i> <%= tripAct.activity.duration_minutes %> mins duration</small>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span class="price-tag">₹<%= parseFloat(tripAct.activity.price).toLocaleString('en-IN') %></span>
+                                                                    </div>
+                                                                </li>
+                                                                <% } else { %>
+                                                                <li class="activity-item px-0">
+                                                                    <div class="activity-icon-wrapper">
+                                                                        <i class="fas fa-ticket-alt"></i>
+                                                                    </div>
+                                                                    <div class="flex-grow-1">
+                                                                        <h6 class="mb-0 font-weight-bold text-dark"><%= tripAct.title || 'Activity' %></h6>
+                                                                        <% if (tripAct.description) { %>
+                                                                            <p class="text-muted mb-0 small"><%= tripAct.description %></p>
+                                                                        <% } %>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span class="price-tag">₹0.00</span>
+                                                                    </div>
+                                                                </li>
+                                                                <% } %>
+                                                            <% }) %>
+                                                        </ul>
+                                                    <% } else { %>
+                                                        <div class="text-center py-3" style="background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1;">
+                                                            <p class="text-muted mb-0 small"><em>Leisure day. No activities planned.</em></p>
+                                                        </div>
+                                                    <% } %>
+                                                </div>
+                                                
+                                            </div>
+                                        </div>
+                                    <% }) %>
+                                <% } else { %>
+                                    <div class="alert alert-info border-0 shadow-sm"><i class="fas fa-info-circle mr-2"></i> No days defined for this trip yet.</div>
+                                <% } %>
+                            </div>
+                        <% } else if (booking.type === 'pre_packaged' && booking.package) { %>
+                            <div class="text-center py-5">
+                                <div style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem;"><i class="fas fa-suitcase-rolling"></i></div>
+                                <h4 class="text-dark font-weight-bold mb-3">Package: <%= booking.package.name %></h4>
+                                <p class="text-muted">This booking was made for a pre-defined static package.<br>Standard package itinerary applies.</p>
+                            </div>
+                        <% } else { %>
+                            <div class="alert alert-warning border-0 shadow-sm"><i class="fas fa-exclamation-triangle mr-2"></i> Itinerary details are not available.</div>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

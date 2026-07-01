@@ -35,7 +35,9 @@
                             <i class="bi bi-folder-fill me-1"></i> <%= permission.module_name %>
                         </span>
                     </td>
-                    <td class="text-secondary small"><%= new Date(permission.created_at).toLocaleDateString() %></td>
+                    <td class="text-secondary small">
+                        <%= permission.created_at ? new Date(permission.created_at).toLocaleDateString() : '-' %>
+                    </td>
                     <td class="pe-4 text-end">
                         <div class="d-flex justify-content-end gap-2">
                             <a href="/permissions/<%= permission.id %>/edit" class="btn btn-sm btn-outline-primary" title="Edit Permission">

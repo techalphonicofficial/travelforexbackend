@@ -1,27 +1,1138 @@
-<div class="card">
-    <h3>Overview</h3>
-    <p>Welcome to the Travel & Forex Dashboard management system.</p>
-    
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-top: 2rem;">
-        <div class="card" style="background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%); color: white; border: none;">
-            <i class="fas fa-users" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.8;"></i>
-            <h4 style="font-size: 0.9rem; font-weight: 500; opacity: 0.9;">Total Users</h4>
-            <div style="font-size: 2rem; font-weight: 800; margin-top: 0.5rem;">124</div>
-            <div style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.8;">+12% from last month</div>
-        </div>
-        
-        <div class="card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none;">
-            <i class="fas fa-plane-departure" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.8;"></i>
-            <h4 style="font-size: 0.9rem; font-weight: 500; opacity: 0.9;">Travel Bookings</h4>
-            <div style="font-size: 2rem; font-weight: 800; margin-top: 0.5rem;">58</div>
-            <div style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.8;">Active trips this week</div>
-        </div>
-        
-        <div class="card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none;">
-            <i class="fas fa-money-bill-transfer" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.8;"></i>
-            <h4 style="font-size: 0.9rem; font-weight: 500; opacity: 0.9;">Forex Volume</h4>
-            <div style="font-size: 2rem; font-weight: 800; margin-top: 0.5rem;">$4.2k</div>
-            <div style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.8;">Processed today</div>
-        </div>
-    </div>
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- Day.js CDN -->
+<%
+  const dash = locals.dashboardStats || {};
+  const vendorRequests = Array.isArray(locals.recentVendorRequests) ? locals.recentVendorRequests : [];
+  const packageBookings = Array.isArray(locals.recentPackageBookings) ? locals.recentPackageBookings : [];
+  const packageReturnRequests = Array.isArray(locals.recentPackageReturnRequests) ? locals.recentPackageReturnRequests : [];
+  const forexRequests = Array.isArray(locals.recentForexConversionRequests) ? locals.recentForexConversionRequests : [];
+  const newsletters = Array.isArray(locals.recentNewsletters) ? locals.recentNewsletters : [];
+  const inr = (value) => Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  const fxMoney = (value, code) => {
+    const amount = Number(value || 0);
+    const currency = String(code || 'INR').toUpperCase();
+    try {
+      return amount.toLocaleString('en-IN', { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    } catch (err) {
+      return `${currency} ${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+  };
+  const fxCustomerLabel = (request) => {
+    const customer = request && request.customer ? request.customer : {};
+    const user = customer.user || {};
+    return user.name || user.email || request.customer_id || 'Customer';
+  };
+  const vendorOwnerLabel = (request) => {
+    const owner = request && request.user ? request.user : {};
+    return owner.name || request.legal_name || request.business_name || 'Vendor';
+  };
+  const compactInr = (value) => {
+    const amount = Number(value || 0);
+    if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)}Cr`;
+    if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
+    if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)}k`;
+    return `₹${amount.toFixed(0)}`;
+  };
+  const forexInrRate = (value) => {
+    const amount = Number(value || 0);
+    if (!amount) return 'N/A';
+    return `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+  const dashboardDate = (value) => {
+    if (!value) return '';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('en-IN');
+  };
+  const roundMoney = (value) => {
+    const amount = Number(value || 0);
+    return Number.isFinite(amount) ? Math.round(amount * 100) / 100 : 0;
+  };
+  const clampPercent = (value) => Math.min(Math.max(roundMoney(value), 0), 100);
+  const returnRequestPercent = (rule = {}) => {
+    if (rule.return_percentage !== undefined) return clampPercent(rule.return_percentage);
+    if (rule.refundable_percentage !== undefined) return clampPercent(rule.refundable_percentage);
+    const refundPercent = clampPercent(rule.refund_percentage);
+    return refundPercent > 0 ? refundPercent : clampPercent(rule.cancellation_percentage);
+  };
+  const returnRequestAmount = (request) => {
+    const rule = request.cancellation_rule_snapshot || {};
+    const booking = request.booking || {};
+    const hasRule = rule.return_percentage !== undefined
+      || rule.refundable_percentage !== undefined
+      || rule.refund_percentage !== undefined
+      || rule.cancellation_percentage !== undefined;
+    if (request.status === 'pending' && hasRule) {
+      const refund = roundMoney(roundMoney(booking.paid_amount) * returnRequestPercent(rule) / 100);
+      return roundMoney(refund + roundMoney(booking.remaining_amount));
+    }
+    const refund = roundMoney(request.requested_refund_amount);
+    const cancelRemaining = roundMoney(request.requested_cancel_remaining_amount);
+    return roundMoney(refund + cancelRemaining);
+  };
+%>
+
+<style>
+  /* ── Dashboard Specific Styles ── */
+  .db-hero {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4338ca 100%);
+    border-radius: 20px;
+    padding: 2rem 2.2rem;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 1.8rem;
+    box-shadow: 0 12px 40px rgba(67, 56, 202, 0.35);
+  }
+
+  .db-hero::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 260px; height: 260px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 50%;
+  }
+
+  .db-hero::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; right: 120px;
+    width: 200px; height: 200px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 50%;
+  }
+
+  .db-hero-title {
+    font-size: 1.7rem;
+    font-weight: 800;
+    margin: 0 0 0.3rem;
+    letter-spacing: -0.5px;
+  }
+
+  .db-hero-sub {
+    font-size: 0.88rem;
+    opacity: 0.72;
+    margin: 0;
+  }
+
+  .db-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 0.3rem 0.9rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #a5f3fc;
+    margin-bottom: 0.6rem;
+  }
+
+  /* ── Stat Cards ── */
+  .db-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.2rem;
+    margin-bottom: 1.8rem;
+  }
+
+  .db-stat {
+    background: #fff;
+    border-radius: 18px;
+    padding: 1.4rem 1.5rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(79,70,229,0.08);
+    border: 1.5px solid transparent;
+    transition: all 0.25s ease;
+    cursor: default;
+  }
+
+  .db-stat:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 36px rgba(79,70,229,0.14);
+    border-color: rgba(79,70,229,0.18);
+  }
+
+  .db-stat-glow {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 18px 18px 0 0;
+  }
+
+  .db-stat-icon-wrap {
+    width: 46px; height: 46px;
+    border-radius: 13px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+  }
+
+  .db-stat-val {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #1e1b4b;
+    line-height: 1;
+    font-family: 'Outfit', sans-serif;
+  }
+
+  .db-stat-rate {
+    font-size: 1.75rem;
+    white-space: nowrap;
+  }
+
+  .db-stat-label {
+    font-size: 0.78rem;
+    color: #8888bb;
+    font-weight: 500;
+    margin-top: 0.3rem;
+  }
+
+  .db-stat-change {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.73rem;
+    font-weight: 600;
+    padding: 0.22rem 0.6rem;
+    border-radius: 20px;
+    margin-top: 0.6rem;
+  }
+
+  .db-stat-change.up {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+  }
+
+  .db-stat-change.down {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+  }
+
+  /* Sparkline mini chart inside stat card */
+  .db-stat-spark {
+    position: absolute;
+    bottom: 0; right: 0;
+    width: 90px; height: 50px;
+    opacity: 0.25;
+  }
+
+  /* ── Chart Panels ── */
+  .db-charts-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.2rem;
+    margin-bottom: 1.8rem;
+  }
+
+  .db-chart-wide {
+    grid-column: 1 / -1;
+  }
+
+  @media (max-width: 900px) {
+    .db-charts-row { grid-template-columns: 1fr; }
+    .db-chart-wide { grid-column: 1; }
+  }
+
+  .db-panel {
+    background: #fff;
+    border-radius: 18px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(79,70,229,0.07);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .db-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.2rem;
+  }
+
+  .db-panel-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1e1b4b;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .db-panel-title i {
+    font-size: 1rem;
+    color: #4f46e5;
+  }
+
+  .db-panel-pill {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    background: #eef2ff;
+    color: #4f46e5;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+  }
+
+  .db-panel-pill:hover {
+    background: #4f46e5;
+    color: #fff;
+  }
+
+  .db-chart-canvas-wrap {
+    position: relative;
+  }
+
+  /* ── Activity Feed ── */
+  .db-activity {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .db-act-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9rem;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid #f4f4fb;
+    transition: background 0.15s;
+    border-radius: 8px;
+    padding-left: 0.4rem;
+  }
+
+  .db-act-item:last-child { border-bottom: 0; }
+  .db-act-item:hover { background: #fafafe; }
+
+  .db-act-dot {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  .db-act-title {
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: #1e1b4b;
+  }
+
+  .db-act-sub {
+    font-size: 0.75rem;
+    color: #8888bb;
+    margin-top: 0.1rem;
+  }
+
+  .db-act-time {
+    font-size: 0.7rem;
+    color: #b0b0d0;
+    margin-left: auto;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+  }
+
+  /* ── Donut Legend ── */
+  .db-donut-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    margin-top: 1rem;
+  }
+
+  .db-dl-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.8rem;
+  }
+
+  .db-dl-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .db-dl-label {
+    display: flex;
+    align-items: center;
+    color: #555577;
+    font-weight: 500;
+  }
+
+  .db-dl-val {
+    font-weight: 700;
+    color: #1e1b4b;
+  }
+
+  /* ── Quick Metrics Row ── */
+  .db-metrics-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.9rem;
+    margin-bottom: 1.8rem;
+  }
+
+  .db-metric-chip {
+    background: linear-gradient(135deg, #f8f8ff, #f0f0fa);
+    border-radius: 14px;
+    padding: 1rem 1.2rem;
+    border: 1.5px solid rgba(79,70,229,0.08);
+    transition: all 0.2s;
+  }
+
+  .db-metric-chip:hover {
+    border-color: rgba(79,70,229,0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(79,70,229,0.1);
+  }
+
+  .db-metric-chip-label {
+    font-size: 0.72rem;
+    color: #8888bb;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .db-metric-chip-val {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #1e1b4b;
+    margin-top: 0.25rem;
+    font-family: 'Outfit', sans-serif;
+  }
+
+  /* counter animation */
+  @keyframes countUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .db-stat-val, .db-metric-chip-val {
+    animation: countUp 0.5s ease both;
+  }
+
+</style>
+
+<!-- ── Hero Banner ── -->
+<div class="db-hero">
+  <div class="db-hero-badge"><i class="bi bi-lightning-fill"></i> Live Dashboard</div>
+  <h1 class="db-hero-title">Travel &amp; Forex Analytics</h1>
+  <p class="db-hero-sub">Real-time overview of your operations · Updated just now</p>
+  <div style="position:absolute;top:1.5rem;right:2rem;display:flex;gap:0.6rem;z-index:1;">
+    <button class="db-panel-pill" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.2);">
+      <i class="bi bi-download"></i> Export
+    </button>
+    <button class="db-panel-pill" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.2);">
+      <i class="bi bi-arrow-clockwise"></i> Refresh
+    </button>
+  </div>
 </div>
+
+<!-- ── Main KPI Stats ── -->
+<div class="db-stats-grid">
+
+  <!-- Total Users -->
+  <div class="db-stat">
+    <div class="db-stat-glow" style="background:linear-gradient(90deg,#6366f1,#818cf8);"></div>
+    <div class="db-stat-icon-wrap" style="background:#eef2ff;color:#4f46e5;">
+      <i class="bi bi-people-fill"></i>
+    </div>
+    <div class="db-stat-val" data-target="<%= dash.totalUsers || 0 %>">0</div>
+    <div class="db-stat-label">Total Users</div>
+    <span class="db-stat-change up"><i class="bi bi-arrow-up-short"></i>+12% from last month</span>
+    <canvas class="db-stat-spark" id="spark1"></canvas>
+  </div>
+
+  <!-- Vendor Requests -->
+  <div class="db-stat">
+    <div class="db-stat-glow" style="background:linear-gradient(90deg,#0f766e,#14b8a6);"></div>
+    <div class="db-stat-icon-wrap" style="background:#f0fdfa;color:#0f766e;">
+      <i class="bi bi-shop"></i>
+    </div>
+    <div class="db-stat-val" data-target="<%= dash.vendorRequestCount || 0 %>">0</div>
+    <div class="db-stat-label">Vendor Requests</div>
+    <a class="db-stat-change up" href="/admin/vendors/requests" style="text-decoration:none;"><i class="bi bi-person-check"></i>Review pending</a>
+    <canvas class="db-stat-spark" id="spark8"></canvas>
+  </div>
+
+  <!-- Package Bookings -->
+  <div class="db-stat">
+    <div class="db-stat-glow" style="background:linear-gradient(90deg,#10b981,#34d399);"></div>
+    <div class="db-stat-icon-wrap" style="background:#ecfdf5;color:#059669;">
+      <i class="bi bi-airplane-fill"></i>
+    </div>
+    <div class="db-stat-val" data-target="<%= dash.packageBookingCount || 0 %>">0</div>
+    <div class="db-stat-label">Package Bookings</div>
+    <span class="db-stat-change up"><i class="bi bi-arrow-up-short"></i><%= compactInr(dash.packageBookingPaidTotal) %> collected</span>
+    <canvas class="db-stat-spark" id="spark2"></canvas>
+  </div>
+
+  <!-- Cancel Requests -->
+  <div class="db-stat">
+    <div class="db-stat-glow" style="background:linear-gradient(90deg,#ef4444,#fb7185);"></div>
+    <div class="db-stat-icon-wrap" style="background:#fef2f2;color:#dc2626;">
+      <i class="bi bi-arrow-counterclockwise"></i>
+    </div>
+    <div class="db-stat-val" data-target="<%= dash.packageReturnRequestCount || 0 %>">0</div>
+    <div class="db-stat-label">Cancel Requests</div>
+    <a class="db-stat-change down" href="/admin/bookings/return-requests" style="text-decoration:none;"><i class="bi bi-exclamation-circle"></i>Pending approval</a>
+    <canvas class="db-stat-spark" id="spark9"></canvas>
+  </div>
+
+  <!-- Forex Services -->
+  <div class="db-stat">
+    <div class="db-stat-glow" style="background:linear-gradient(90deg,#f59e0b,#fbbf24);"></div>
+    <div class="db-stat-icon-wrap" style="background:#fffbeb;color:#d97706;">
+      <i class="bi bi-currency-exchange"></i>
+    </div>
+    <div class="db-stat-val" data-target="<%= dash.forexServiceCount || 0 %>">0</div>
+    <div class="db-stat-label">Forex Services</div>
+    <a class="db-stat-change up" href="/travel/forex-services" style="text-decoration:none;"><i class="bi bi-arrow-up-short"></i>Country mapped</a>
+    <canvas class="db-stat-spark" id="spark3"></canvas>
+  </div>
+
+  <!-- Forex Rates -->
+  <div class="db-stat">
+    <div class="db-stat-glow" style="background:linear-gradient(90deg,#06b6d4,#22d3ee);"></div>
+    <div class="db-stat-icon-wrap" style="background:#ecfeff;color:#0891b2;">
+      <i class="bi bi-cash-coin"></i>
+    </div>
+    <div class="db-stat-val" data-target="<%= dash.forexRateCount || 0 %>">0</div>
+    <div class="db-stat-label">Forex Rates</div>
+    <a class="db-stat-change up" href="/travel/forex-rates" style="text-decoration:none;"><i class="bi bi-arrow-up-short"></i>Conversion rates</a>
+    <canvas class="db-stat-spark" id="spark5"></canvas>
+  </div>
+
+  <!-- USD to INR -->
+  <div class="db-stat">
+    <div class="db-stat-glow" style="background:linear-gradient(90deg,#14b8a6,#2dd4bf);"></div>
+    <div class="db-stat-icon-wrap" style="background:#f0fdfa;color:#0f766e;">
+      <i class="bi bi-currency-dollar"></i>
+    </div>
+    <div class="db-stat-val db-stat-rate"><%= forexInrRate(dash.usdToInrRate) %></div>
+    <div class="db-stat-label">USD to INR</div>
+    <a class="db-stat-change up" href="/travel/forex-rates" style="text-decoration:none;"><i class="bi bi-arrow-up-short"></i>1 USD reference</a>
+    <canvas class="db-stat-spark" id="spark6"></canvas>
+  </div>
+
+  <!-- CRM Leads -->
+  <div class="db-stat">
+    <div class="db-stat-glow" style="background:linear-gradient(90deg,#ec4899,#f472b6);"></div>
+    <div class="db-stat-icon-wrap" style="background:#fdf2f8;color:#db2777;">
+      <i class="bi bi-person-lines-fill"></i>
+    </div>
+    <div class="db-stat-val" data-target="<%= dash.leadCount || 0 %>">0</div>
+    <div class="db-stat-label">CRM Leads</div>
+    <span class="db-stat-change up"><i class="bi bi-arrow-up-short"></i>+8 new today</span>
+    <canvas class="db-stat-spark" id="spark4"></canvas>
+  </div>
+
+  <!-- Newsletter -->
+  <div class="db-stat">
+    <div class="db-stat-glow" style="background:linear-gradient(90deg,#8b5cf6,#a78bfa);"></div>
+    <div class="db-stat-icon-wrap" style="background:#f5f3ff;color:#7c3aed;">
+      <i class="bi bi-envelope-paper"></i>
+    </div>
+    <div class="db-stat-val" data-target="<%= dash.newsletterCount || 0 %>">0</div>
+    <div class="db-stat-label">Newsletter</div>
+    <span class="db-stat-change up"><i class="bi bi-envelope-check"></i>Subscribers</span>
+    <canvas class="db-stat-spark" id="spark7"></canvas>
+  </div>
+
+</div>
+
+<!-- ── Quick Metric Chips ── -->
+<div class="db-metrics-row">
+  <div class="db-metric-chip">
+    <div class="db-metric-chip-label">Conversion Rate</div>
+    <div class="db-metric-chip-val">68.4%</div>
+  </div>
+  <div class="db-metric-chip">
+    <div class="db-metric-chip-label">Avg. Deal Size</div>
+    <div class="db-metric-chip-val"><%= compactInr(dash.averageBookingValue) %></div>
+  </div>
+  <div class="db-metric-chip">
+    <div class="db-metric-chip-label">Packages Listed</div>
+    <div class="db-metric-chip-val"><%= dash.packageCount || 0 %></div>
+  </div>
+  <div class="db-metric-chip">
+    <div class="db-metric-chip-label">Destinations</div>
+    <div class="db-metric-chip-val">89</div>
+  </div>
+  <div class="db-metric-chip">
+    <div class="db-metric-chip-label">Open Follow-ups</div>
+    <div class="db-metric-chip-val">21</div>
+  </div>
+  <div class="db-metric-chip">
+    <div class="db-metric-chip-label">Package Revenue</div>
+    <div class="db-metric-chip-val"><%= compactInr(dash.packageBookingPaidTotal) %></div>
+  </div>
+</div>
+
+<!-- ── Charts Row 1: Revenue + Lead Funnel ── -->
+<div class="db-charts-row">
+
+  <!-- Revenue Area Chart (wide) -->
+  <div class="db-panel db-chart-wide">
+    <div class="db-panel-header">
+      <div class="db-panel-title"><i class="bi bi-graph-up-arrow"></i> Revenue &amp; Bookings Trend</div>
+      <div style="display:flex;gap:0.5rem;">
+        <button class="db-panel-pill active" onclick="switchPeriod(this,'7d')">7D</button>
+        <button class="db-panel-pill" onclick="switchPeriod(this,'30d')" style="background:#f0f0fa;color:#8888bb;">30D</button>
+        <button class="db-panel-pill" onclick="switchPeriod(this,'90d')" style="background:#f0f0fa;color:#8888bb;">90D</button>
+      </div>
+    </div>
+    <div class="db-chart-canvas-wrap" style="height:230px;">
+      <canvas id="revenueChart"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Charts Row 2: Donut + Bar + Activity ── -->
+<div class="db-charts-row">
+
+  <!-- Lead Source Donut -->
+  <div class="db-panel">
+    <div class="db-panel-header">
+      <div class="db-panel-title"><i class="bi bi-pie-chart-fill"></i> Lead Sources</div>
+      <button class="db-panel-pill">View All</button>
+    </div>
+    <div style="height:180px;display:flex;align-items:center;justify-content:center;">
+      <canvas id="leadDonutChart"></canvas>
+    </div>
+    <div class="db-donut-legend">
+      <div class="db-dl-item">
+        <span class="db-dl-label"><span class="db-dl-dot" style="background:#4f46e5;"></span>Organic Search</span>
+        <span class="db-dl-val">38%</span>
+      </div>
+      <div class="db-dl-item">
+        <span class="db-dl-label"><span class="db-dl-dot" style="background:#10b981;"></span>Referral</span>
+        <span class="db-dl-val">27%</span>
+      </div>
+      <div class="db-dl-item">
+        <span class="db-dl-label"><span class="db-dl-dot" style="background:#f59e0b;"></span>Social Media</span>
+        <span class="db-dl-val">21%</span>
+      </div>
+      <div class="db-dl-item">
+        <span class="db-dl-label"><span class="db-dl-dot" style="background:#ec4899;"></span>Direct</span>
+        <span class="db-dl-val">14%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Forex Currency Bar Chart -->
+  <div class="db-panel">
+    <div class="db-panel-header">
+      <div class="db-panel-title"><i class="bi bi-bar-chart-fill"></i> Forex Volume by Currency</div>
+      <button class="db-panel-pill">This Week</button>
+    </div>
+    <div class="db-chart-canvas-wrap" style="height:260px;">
+      <canvas id="forexBarChart"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Charts Row 3: Destination Heatmap + Activity ── -->
+<div class="db-charts-row">
+
+  <!-- Top Destinations Horizontal Bar -->
+  <div class="db-panel">
+    <div class="db-panel-header">
+      <div class="db-panel-title"><i class="bi bi-geo-alt-fill"></i> Top Destinations</div>
+      <button class="db-panel-pill">This Month</button>
+    </div>
+    <div class="db-chart-canvas-wrap" style="height:250px;">
+      <canvas id="destinationChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Recent Package Bookings -->
+  <div class="db-panel">
+    <div class="db-panel-header">
+      <div class="db-panel-title"><i class="bi bi-suitcase-lg"></i> Recent Package Bookings</div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+        <a class="db-panel-pill" href="/admin/bookings/package-bookings" style="text-decoration:none;">Manage Bookings</a>
+        <a class="db-panel-pill" href="/accounting/ledger?ref_type=PackageBooking" style="text-decoration:none;">View Ledger</a>
+      </div>
+    </div>
+    <div class="db-activity">
+      <% if (packageBookings.length > 0) { %>
+        <% packageBookings.forEach(booking => { %>
+          <div class="db-act-item">
+            <div class="db-act-dot" style="background:#ecfdf5;color:#059669;"><i class="bi bi-check-circle-fill"></i></div>
+            <div>
+              <div class="db-act-title"><%= booking.booking_reference %></div>
+              <div class="db-act-sub"><%= booking.package_name || 'Package booking' %> · <%= booking.customer_name || 'Guest customer' %></div>
+              <div class="db-act-sub">Paid ₹<%= inr(booking.paid_amount) %> · Vendor ₹<%= inr(booking.vendor_amount) %> · <%= booking.payment_status %></div>
+            </div>
+            <span class="db-act-time"><%= new Date(booking.created_at).toLocaleDateString('en-IN') %></span>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="db-act-item">
+          <div class="db-act-dot" style="background:#eef2ff;color:#4f46e5;"><i class="bi bi-suitcase-lg"></i></div>
+          <div>
+            <div class="db-act-title">No package bookings yet</div>
+            <div class="db-act-sub">Confirmed package bookings will appear here after payment verification.</div>
+          </div>
+        </div>
+      <% } %>
+      <% if (false) { %>
+      <div class="db-act-item">
+        <div class="db-act-dot" style="background:#eef2ff;color:#4f46e5;"><i class="bi bi-person-plus"></i></div>
+        <div>
+          <div class="db-act-title">New user registered</div>
+          <div class="db-act-sub">Priya Sharma joined as Customer</div>
+        </div>
+        <span class="db-act-time">2m ago</span>
+      </div>
+      <div class="db-act-item">
+        <div class="db-act-dot" style="background:#ecfdf5;color:#059669;"><i class="bi bi-suitcase-lg"></i></div>
+        <div>
+          <div class="db-act-title">Booking confirmed</div>
+          <div class="db-act-sub">Bali Bliss Package · 4 nights</div>
+        </div>
+        <span class="db-act-time">18m ago</span>
+      </div>
+      <div class="db-act-item">
+        <div class="db-act-dot" style="background:#fffbeb;color:#d97706;"><i class="bi bi-currency-dollar"></i></div>
+        <div>
+          <div class="db-act-title">Forex transaction</div>
+          <div class="db-act-sub">USD → INR · $850 processed</div>
+        </div>
+        <span class="db-act-time">45m ago</span>
+      </div>
+      <div class="db-act-item">
+        <div class="db-act-dot" style="background:#fdf2f8;color:#db2777;"><i class="bi bi-telephone-fill"></i></div>
+        <div>
+          <div class="db-act-title">Lead follow-up due</div>
+          <div class="db-act-sub">Rahul Mehta · Europe Tour inquiry</div>
+        </div>
+        <span class="db-act-time">1h ago</span>
+      </div>
+      <div class="db-act-item">
+        <div class="db-act-dot" style="background:#eff6ff;color:#3b82f6;"><i class="bi bi-star-fill"></i></div>
+        <div>
+          <div class="db-act-title">New review submitted</div>
+          <div class="db-act-sub">⭐⭐⭐⭐⭐ Maldives Escape</div>
+        </div>
+        <span class="db-act-time">2h ago</span>
+      </div>
+      <div class="db-act-item">
+        <div class="db-act-dot" style="background:#f0fdf4;color:#16a34a;"><i class="bi bi-check-circle-fill"></i></div>
+        <div>
+          <div class="db-act-title">Pipeline stage updated</div>
+          <div class="db-act-sub">Ananya Singh → Proposal Sent</div>
+        </div>
+        <span class="db-act-time">3h ago</span>
+      </div>
+      <% } %>
+    </div>
+  </div>
+
+</div>
+
+<!-- Package Cancel Requests -->
+<div class="db-charts-row">
+  <div class="db-panel db-chart-wide">
+    <div class="db-panel-header">
+      <div class="db-panel-title"><i class="bi bi-arrow-counterclockwise"></i> Package Cancel Requests</div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+        <span class="db-panel-pill"><%= dash.packageReturnRequestCount || 0 %> Pending</span>
+        <a class="db-panel-pill" href="/admin/bookings/return-requests" style="text-decoration:none;">Review Requests</a>
+      </div>
+    </div>
+    <div class="db-activity">
+      <% if (packageReturnRequests.length > 0) { %>
+        <% packageReturnRequests.forEach(request => { const booking = request.booking || {}; %>
+          <div class="db-act-item">
+            <div class="db-act-dot" style="background:#fef2f2;color:#dc2626;"><i class="bi bi-arrow-counterclockwise"></i></div>
+            <div style="min-width:0;flex:1;">
+              <div class="db-act-title"><%= request.booking_reference || (booking && booking.booking_reference) || 'Package cancel request' %></div>
+              <div class="db-act-sub"><%= request.customer_name || 'Guest customer' %> · <%= booking.package_name || 'Package booking' %></div>
+              <div class="db-act-sub">Requested INR <%= inr(returnRequestAmount(request)) %> · <%= request.reason || 'No reason added' %></div>
+            </div>
+            <span class="db-act-time"><%= dashboardDate(request.created_at) %></span>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="db-act-item">
+          <div class="db-act-dot" style="background:#fef2f2;color:#dc2626;"><i class="bi bi-arrow-counterclockwise"></i></div>
+          <div>
+            <div class="db-act-title">No pending cancel requests</div>
+            <div class="db-act-sub">Customer package cancellation requests will appear here.</div>
+          </div>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Vendor Requests -->
+<div class="db-charts-row">
+  <div class="db-panel db-chart-wide">
+    <div class="db-panel-header">
+      <div class="db-panel-title"><i class="bi bi-shop"></i> Recent Vendor Requests</div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+        <span class="db-panel-pill"><%= dash.vendorRequestCount || 0 %> Pending</span>
+        <a class="db-panel-pill" href="/admin/vendors/requests" style="text-decoration:none;">Review Requests</a>
+      </div>
+    </div>
+    <div class="db-activity">
+      <% if (vendorRequests.length > 0) { %>
+        <% vendorRequests.forEach(request => { %>
+          <div class="db-act-item">
+            <div class="db-act-dot" style="background:#f0fdfa;color:#0f766e;"><i class="bi bi-shop"></i></div>
+            <div style="min-width:0;flex:1;">
+              <div class="db-act-title"><%= request.business_name || 'Vendor business' %></div>
+              <div class="db-act-sub"><%= vendorOwnerLabel(request) %> · <%= request.email || (request.user && request.user.email) || 'No email' %></div>
+              <div class="db-act-sub"><%= request.city || 'City not added' %>, <%= request.state || 'State not added' %> · <%= request.business_type || 'Business type' %></div>
+            </div>
+            <span class="db-act-time"><%= request.created_at ? new Date(request.created_at).toLocaleDateString('en-IN') : '' %></span>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="db-act-item">
+          <div class="db-act-dot" style="background:#f0fdfa;color:#0f766e;"><i class="bi bi-shop"></i></div>
+          <div>
+            <div class="db-act-title">No pending vendor requests</div>
+            <div class="db-act-sub">New vendor signups will appear here for admin approval.</div>
+          </div>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- ── Recent Forex Conversion Requests ── -->
+<div class="db-charts-row">
+  <div class="db-panel db-chart-wide">
+    <div class="db-panel-header">
+      <div class="db-panel-title"><i class="bi bi-currency-exchange"></i> Recent Forex Conversions</div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+        <span class="db-panel-pill"><%= dash.forexConversionRequestCount || 0 %> Requests</span>
+        <a class="db-panel-pill" href="/travel/forex-converter" style="text-decoration:none;">Open Converter</a>
+      </div>
+    </div>
+    <div class="db-activity">
+      <% if (forexRequests.length > 0) { %>
+        <% forexRequests.forEach(request => { %>
+          <div class="db-act-item">
+            <div class="db-act-dot" style="background:#f0fdfa;color:#0f766e;"><i class="bi bi-cash-coin"></i></div>
+            <div style="min-width:0;flex:1;">
+              <div class="db-act-title"><%= fxCustomerLabel(request) %> · <%= request.from_currency %> → <%= request.to_currency %></div>
+              <div class="db-act-sub"><%= fxMoney(request.amount, request.from_currency) %> converted to <%= fxMoney(request.converted_amount, request.to_currency) %></div>
+              <div class="db-act-sub">Status <%= request.status || 'new' %> · Service -<%= fxMoney(request.service_charge_amount, request.to_currency) %> · Total <%= fxMoney(request.total_amount, request.to_currency) %></div>
+            </div>
+            <span class="db-act-time"><%= request.created_at ? new Date(request.created_at).toLocaleDateString('en-IN') : '' %></span>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="db-act-item">
+          <div class="db-act-dot" style="background:#f0fdfa;color:#0f766e;"><i class="bi bi-cash-coin"></i></div>
+          <div>
+            <div class="db-act-title">No forex conversion requests yet</div>
+            <div class="db-act-sub">Requests created from the forex conversion API will appear here.</div>
+          </div>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Newsletter Subscribers -->
+<div class="db-charts-row" id="newsletter-subscribers" style="scroll-margin-top: 80px;">
+  <div class="db-panel db-chart-wide">
+    <div class="db-panel-header">
+      <div class="db-panel-title"><i class="bi bi-envelope-paper"></i> Recent Newsletter Subscribers</div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+        <span class="db-panel-pill"><%= dash.newsletterCount || 0 %> Subscribers</span>
+        <a class="db-panel-pill" href="/newsletter-subscribers" style="text-decoration:none;">View All</a>
+      </div>
+    </div>
+    <div class="db-activity">
+      <% if (newsletters.length > 0) { %>
+        <% newsletters.forEach(subscriber => { %>
+          <div class="db-act-item">
+            <div class="db-act-dot" style="background:#f5f3ff;color:#7c3aed;"><i class="bi bi-envelope-check"></i></div>
+            <div style="min-width:0;flex:1;">
+              <div class="db-act-title"><%= subscriber.email || 'Email subscriber' %></div>
+              <div class="db-act-sub">Status <%= subscriber.status || 'subscribed' %></div>
+            </div>
+            <span class="db-act-time"><%= dashboardDate(subscriber.subscribed_at || subscriber.created_at) %></span>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="db-act-item">
+          <div class="db-act-dot" style="background:#f5f3ff;color:#7c3aed;"><i class="bi bi-envelope-paper"></i></div>
+          <div>
+            <div class="db-act-title">No newsletter subscribers yet</div>
+            <div class="db-act-sub">New subscriptions from the newsletter API will appear here.</div>
+          </div>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ── Animated Counters ── */
+  document.querySelectorAll('.db-stat-val[data-target]').forEach(el => {
+    const target = parseInt(el.dataset.target);
+    let cur = 0;
+    const step = Math.ceil(target / 40);
+    const timer = setInterval(() => {
+      cur = Math.min(cur + step, target);
+      el.textContent = cur;
+      if (cur >= target) clearInterval(timer);
+    }, 30);
+  });
+
+  /* ── Spark Lines (mini) ── */
+  const sparkOpts = (color) => ({
+    type: 'line',
+    data: {
+      labels: ['','','','','','',''],
+      datasets: [{
+        data: Array.from({length:7}, () => Math.floor(Math.random()*60+20)),
+        borderColor: color,
+        borderWidth: 2,
+        fill: false,
+        tension: 0.4,
+        pointRadius: 0,
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      scales: { x: { display: false }, y: { display: false } },
+      animation: false,
+      responsive: true,
+      maintainAspectRatio: false,
+    }
+  });
+
+  new Chart(document.getElementById('spark1'), sparkOpts('#6366f1'));
+  new Chart(document.getElementById('spark2'), sparkOpts('#10b981'));
+  new Chart(document.getElementById('spark3'), sparkOpts('#f59e0b'));
+  new Chart(document.getElementById('spark4'), sparkOpts('#ec4899'));
+  new Chart(document.getElementById('spark5'), sparkOpts('#06b6d4'));
+  new Chart(document.getElementById('spark6'), sparkOpts('#14b8a6'));
+  new Chart(document.getElementById('spark7'), sparkOpts('#8b5cf6'));
+  new Chart(document.getElementById('spark8'), sparkOpts('#0f766e'));
+  new Chart(document.getElementById('spark9'), sparkOpts('#ef4444'));
+
+  /* ── Revenue Chart ── */
+  const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+  const revenueGrad = revenueCtx.createLinearGradient(0, 0, 0, 230);
+  revenueGrad.addColorStop(0, 'rgba(79,70,229,0.25)');
+  revenueGrad.addColorStop(1, 'rgba(79,70,229,0)');
+
+  const bookingGrad = revenueCtx.createLinearGradient(0, 0, 0, 230);
+  bookingGrad.addColorStop(0, 'rgba(16,185,129,0.2)');
+  bookingGrad.addColorStop(1, 'rgba(16,185,129,0)');
+
+  const labels7d = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const revenueData7d = [2800, 3200, 2900, 4100, 3800, 5200, 4600];
+  const bookingData7d = [8, 12, 9, 15, 11, 19, 14];
+
+  window.revenueChart = new Chart(revenueCtx, {
+    data: {
+      labels: labels7d,
+      datasets: [
+        {
+          type: 'line',
+          label: 'Revenue ($)',
+          data: revenueData7d,
+          borderColor: '#4f46e5',
+          backgroundColor: revenueGrad,
+          borderWidth: 2.5,
+          fill: true,
+          tension: 0.45,
+          pointBackgroundColor: '#4f46e5',
+          pointRadius: 4,
+          pointHoverRadius: 7,
+          yAxisID: 'y',
+        },
+        {
+          type: 'bar',
+          label: 'Bookings',
+          data: bookingData7d,
+          backgroundColor: 'rgba(16,185,129,0.18)',
+          borderColor: '#10b981',
+          borderWidth: 1.5,
+          borderRadius: 6,
+          yAxisID: 'y1',
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'top',
+          align: 'end',
+          labels: { boxWidth: 12, font: { size: 11 }, color: '#555577' }
+        },
+        tooltip: {
+          backgroundColor: '#1e1b4b',
+          titleColor: '#a5b4fc',
+          bodyColor: '#e0e7ff',
+          padding: 12,
+          cornerRadius: 10,
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#8888bb', font: { size: 11 } } },
+        y: {
+          position: 'left',
+          grid: { color: 'rgba(79,70,229,0.06)' },
+          ticks: { color: '#8888bb', font: { size: 11 }, callback: v => '$'+v },
+        },
+        y1: {
+          position: 'right',
+          grid: { display: false },
+          ticks: { color: '#10b981', font: { size: 11 } },
+        }
+      }
+    }
+  });
+
+  /* ── Lead Donut Chart ── */
+  new Chart(document.getElementById('leadDonutChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Organic', 'Referral', 'Social', 'Direct'],
+      datasets: [{
+        data: [38, 27, 21, 14],
+        backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#ec4899'],
+        borderWidth: 0,
+        hoverOffset: 8,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '68%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e1b4b',
+          titleColor: '#a5b4fc',
+          bodyColor: '#e0e7ff',
+          padding: 10,
+          cornerRadius: 8,
+        }
+      }
+    }
+  });
+
+  /* ── Forex Bar Chart ── */
+  new Chart(document.getElementById('forexBarChart'), {
+    type: 'bar',
+    data: {
+      labels: ['USD/INR', 'EUR/INR', 'GBP/INR', 'AED/INR', 'AUD/INR', 'SGD/INR'],
+      datasets: [{
+        label: 'Volume ($)',
+        data: [1800, 1200, 980, 650, 420, 350],
+        backgroundColor: [
+          'rgba(79,70,229,0.75)', 'rgba(16,185,129,0.75)', 'rgba(245,158,11,0.75)',
+          'rgba(236,72,153,0.75)', 'rgba(59,130,246,0.75)', 'rgba(139,92,246,0.75)'
+        ],
+        borderRadius: 8,
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e1b4b',
+          titleColor: '#a5b4fc',
+          bodyColor: '#e0e7ff',
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: { label: ctx => ' $' + ctx.parsed.y }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#8888bb', font: { size: 10 } } },
+        y: {
+          grid: { color: 'rgba(79,70,229,0.06)' },
+          ticks: { color: '#8888bb', font: { size: 11 }, callback: v => '$'+v }
+        }
+      }
+    }
+  });
+
+  /* ── Top Destinations Horizontal Bar ── */
+  new Chart(document.getElementById('destinationChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Bali', 'Maldives', 'Dubai', 'Paris', 'Thailand', 'Singapore'],
+      datasets: [{
+        label: 'Bookings',
+        data: [22, 18, 15, 12, 10, 8],
+        backgroundColor: 'rgba(79,70,229,0.12)',
+        borderColor: '#4f46e5',
+        borderWidth: 2,
+        borderRadius: 8,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e1b4b',
+          titleColor: '#a5b4fc',
+          bodyColor: '#e0e7ff',
+          padding: 10,
+          cornerRadius: 8,
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(79,70,229,0.06)' },
+          ticks: { color: '#8888bb', font: { size: 11 } }
+        },
+        y: { grid: { display: false }, ticks: { color: '#555577', font: { size: 12, weight: '600' } } }
+      }
+    }
+  });
+
+  /* ── Period Switcher ── */
+  window.switchPeriod = function(btn, period) {
+    document.querySelectorAll('.db-panel-pill').forEach(b => {
+      b.style.background = '#f0f0fa'; b.style.color = '#8888bb';
+    });
+    btn.style.background = '#4f46e5'; btn.style.color = '#fff';
+
+    const datasets = {
+      '7d': { labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], rev: [2800,3200,2900,4100,3800,5200,4600], bk: [8,12,9,15,11,19,14] },
+      '30d': { labels: ['W1','W2','W3','W4'], rev: [12000,16500,14200,18700], bk: [38,52,44,62] },
+      '90d': { labels: ['Jan','Feb','Mar'], rev: [45000,52000,61000], bk: [142,168,195] },
+    };
+    const d = datasets[period];
+    window.revenueChart.data.labels = d.labels;
+    window.revenueChart.data.datasets[0].data = d.rev;
+    window.revenueChart.data.datasets[1].data = d.bk;
+    window.revenueChart.update();
+  };
+
+})();
+</script>

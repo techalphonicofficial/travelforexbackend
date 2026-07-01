@@ -13,7 +13,7 @@ const AppSetting = sequelize.define('AppSetting', {
         unique: true
     },
     value: {
-        type: DataTypes.STRING(500),
+        type: DataTypes.TEXT,
         allowNull: true
     }
 }, {

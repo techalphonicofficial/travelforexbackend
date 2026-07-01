@@ -58,6 +58,53 @@ router.get('/', async (req, res) => {
 
 /**
  * @openapi
+ * /api/v1/destinations/trending:
+ *   get:
+ *     summary: Get trending destinations
+ *     tags: [Destinations]
+ *     responses:
+ *       200:
+ *         description: List of trending destinations
+ */
+router.get('/trending', async (req, res) => {
+    try {
+        const data = await destinationRepo.findTrending();
+        res.json({ success: true, data });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+/**
+ * @openapi
+ * /api/v1/destinations/visa-free:
+ *   get:
+ *     summary: Get visa-free destinations
+ *     tags: [Destinations]
+ *     responses:
+ *       200:
+ *         description: List of visa-free destinations
+ */
+router.get('/visa-free', async (req, res) => {
+    try {
+        const data = await destinationRepo.findVisaFree();
+        res.json({ success: true, data });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.get('/customizable', async (req, res) => {
+    try {
+        const data = await destinationRepo.findCustomizable();
+        res.json({ success: true, data });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+/**
+ * @openapi
  * /api/v1/destinations/slug/{slug}:
  *   get:
  *     summary: Get destination by slug with full details and gallery
@@ -80,6 +127,127 @@ router.get('/slug/:slug', async (req, res) => {
         const data = await destinationRepo.findBySlug(req.params.slug);
         if (!data) return res.status(404).json({ success: false, message: 'Not found' });
         res.json({ success: true, data });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+/**
+ * @openapi
+ * /api/v1/destinations/slug/{slug}/related-by-country:
+ *   get:
+ *     summary: Get all destinations located in the same country as the provided destination slug
+ *     tags: [Destinations]
+ *     parameters:
+ *       - in: path
+ *         name: slug
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The slug of the source destination
+ *     responses:
+ *       200:
+ *         description: List of destinations in the same country
+ *       404:
+ *         description: Destination not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/slug/:slug/related-by-country', async (req, res) => {
+    try {
+        const { models: { Destination, DestinationMapping, City, Country } } = require('../container');
+        
+        // Find the destination by slug
+        const targetDest = await Destination.findOne({ where: { slug: req.params.slug } });
+        if (!targetDest) {
+             return res.status(404).json({ success: false, message: 'Destination not found' });
+        }
+
+        // Find mappings for the current destination
+        const currentMappings = await DestinationMapping.findAll({
+            where: { destination_id: targetDest.id },
+            attributes: ['city_id'],
+            raw: true
+        });
+        
+        if (!currentMappings || currentMappings.length === 0) {
+             return res.json({ success: true, data: [] });
+        }
+        
+        const currentCityIds = currentMappings.map(m => m.city_id).filter(Boolean);
+        
+        // Get unique country_ids from those cities
+        const currentCities = await City.findAll({
+            where: { id: currentCityIds },
+            attributes: ['country_id'],
+            raw: true
+        });
+        const countryIds = [...new Set(currentCities.map(c => c.country_id).filter(Boolean))];
+        
+        if (countryIds.length === 0) {
+             return res.json({ success: true, data: [] });
+        }
+        
+        // Find all cities belonging to those countries
+        const allCitiesInCountries = await City.findAll({
+            where: { country_id: countryIds },
+            attributes: ['id', 'country_id'],
+            raw: true
+        });
+        const cityIds = allCitiesInCountries.map(c => c.id);
+        
+        if (cityIds.length === 0) {
+             return res.json({ success: true, data: [] });
+        }
+        
+        // Fetch Country names
+        const countries = await Country.findAll({
+            where: { id: countryIds },
+            attributes: ['id', 'name'],
+            raw: true
+        });
+        const countryMap = {};
+        countries.forEach(c => countryMap[c.id] = c.name);
+
+        const cityToCountryMap = {};
+        allCitiesInCountries.forEach(c => {
+            cityToCountryMap[c.id] = countryMap[c.country_id];
+        });
+        
+        // Find all destination mappings for those cities (raw to save memory)
+        const relatedMappings = await DestinationMapping.findAll({
+            where: { city_id: cityIds },
+            attributes: ['destination_id', 'city_id'],
+            raw: true
+        });
+        
+        const destIds = [...new Set(relatedMappings.map(m => m.destination_id))];
+        if (destIds.length === 0) {
+             return res.json({ success: true, data: [] });
+        }
+
+        // Map each destination_id to its country name
+        const destCountryMap = {};
+        for (const m of relatedMappings) {
+            if (!destCountryMap[m.destination_id] && cityToCountryMap[m.city_id]) {
+                destCountryMap[m.destination_id] = cityToCountryMap[m.city_id];
+            }
+        }
+
+        // Fetch actual destinations
+        const destinations = await Destination.findAll({
+            where: { id: destIds }
+        });
+        
+        const relatedDestinations = destinations.map(dest => {
+            const destData = dest.toJSON ? dest.toJSON() : { ...dest.dataValues };
+            if (destCountryMap[dest.id]) {
+                destData.country = destCountryMap[dest.id];
+            }
+            return destData;
+        });
+        
+        res.json({ success: true, data: relatedDestinations });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }

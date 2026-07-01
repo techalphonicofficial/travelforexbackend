@@ -1,0 +1,255 @@
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+  .acc-hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+    border-radius: 20px;
+    padding: 1.8rem 2rem;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 1.6rem;
+    box-shadow: 0 12px 40px rgba(49,46,129,.4);
+  }
+  .acc-hero::before {
+    content:''; position:absolute; top:-50px; right:-50px;
+    width:220px; height:220px; background:rgba(255,255,255,.05); border-radius:50%;
+  }
+  .acc-nav {
+    display: flex; gap: .6rem; flex-wrap: wrap; margin-bottom: 1.6rem;
+  }
+  .acc-nav a {
+    display: inline-flex; align-items: center; gap: .4rem;
+    padding: .42rem 1rem; border-radius: 10px; font-size: .82rem; font-weight: 600;
+    text-decoration: none; background: #fff; color: #4f46e5;
+    border: 1.5px solid rgba(79,70,229,.2);
+    box-shadow: 0 2px 8px rgba(79,70,229,.07);
+    transition: all .15s;
+  }
+  .acc-nav a:hover, .acc-nav a.active {
+    background: #4f46e5; color: #fff; border-color: #4f46e5;
+    box-shadow: 0 4px 14px rgba(79,70,229,.3);
+  }
+  .acc-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 1rem; margin-bottom: 1.6rem;
+  }
+  .acc-stat {
+    background:#fff; border-radius:16px; padding:1.3rem 1.4rem;
+    box-shadow:0 4px 20px rgba(79,70,229,.07);
+    border:1.5px solid transparent; transition:all .2s; position:relative; overflow:hidden;
+  }
+  .acc-stat:hover { transform:translateY(-3px); box-shadow:0 10px 28px rgba(79,70,229,.13); }
+  .acc-stat-bar { position:absolute; top:0; left:0; right:0; height:3px; border-radius:16px 16px 0 0; }
+  .acc-stat-icon { width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.15rem;margin-bottom:.9rem; }
+  .acc-stat-val { font-size:1.7rem;font-weight:800;color:#1e1b4b;line-height:1;font-family:'Outfit',sans-serif; }
+  .acc-stat-lbl { font-size:.75rem;color:#8888bb;font-weight:500;margin-top:.3rem; }
+  .acc-stat-tag { display:inline-flex;align-items:center;gap:.2rem;font-size:.7rem;font-weight:600;padding:.18rem .55rem;border-radius:20px;margin-top:.55rem; }
+  .acc-panel { background:#fff;border-radius:16px;padding:1.4rem;box-shadow:0 4px 20px rgba(79,70,229,.07);margin-bottom:1.4rem; }
+  .acc-panel-title { font-size:.92rem;font-weight:700;color:#1e1b4b;display:flex;align-items:center;gap:.45rem;margin-bottom:1.1rem; }
+  .acc-panel-title i { color:#4f46e5; }
+  .acc-two-col { display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.4rem; }
+  @media(max-width:860px){.acc-two-col{grid-template-columns:1fr;}}
+  .acc-act-item { display:flex;align-items:flex-start;gap:.8rem;padding:.65rem 0;border-bottom:1px solid #f4f4fb; }
+  .acc-act-item:last-child{border-bottom:0;}
+  .acc-act-dot { width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0; }
+  .acc-act-title{font-size:.82rem;font-weight:600;color:#1e1b4b;}
+  .acc-act-sub{font-size:.72rem;color:#8888bb;}
+  .acc-act-amt{font-size:.8rem;font-weight:700;margin-left:auto;flex-shrink:0;}
+  .acc-badge-rev{background:rgba(16,185,129,.1);color:#059669;}
+  .acc-badge-exp{background:rgba(239,68,68,.1);color:#dc2626;}
+  .acc-badge-blue{background:#eef2ff;color:#4f46e5;}
+</style>
+
+<!-- Hero -->
+<div class="acc-hero">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;position:relative;z-index:1;">
+    <div>
+      <div style="font-size:.75rem;opacity:.65;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:.3rem;">
+        <i class="bi bi-calculator-fill"></i> Accounting Module
+      </div>
+      <h1 style="font-size:1.6rem;font-weight:800;margin:0;">Financial Dashboard</h1>
+      <p style="font-size:.83rem;opacity:.65;margin:.25rem 0 0;">Double-entry bookkeeping · <%= new Date().toLocaleDateString('en-IN', {day:'2-digit',month:'long',year:'numeric'}) %></p>
+    </div>
+    <a href="/accounting/vouchers/new" style="display:inline-flex;align-items:center;gap:.5rem;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);color:#fff;padding:.55rem 1.2rem;border-radius:12px;font-weight:600;font-size:.85rem;text-decoration:none;backdrop-filter:blur(8px);transition:all .15s;">
+      <i class="bi bi-plus-lg"></i> New Voucher
+    </a>
+  </div>
+</div>
+
+<!-- Nav Pills -->
+<div class="acc-nav">
+  <a href="/accounting/dashboard" class="active"><i class="bi bi-grid-1x2-fill"></i> Dashboard</a>
+  <a href="/accounting/vouchers"><i class="bi bi-receipt-cutoff"></i> Vouchers</a>
+  <a href="/accounting/ledger"><i class="bi bi-journal-text"></i> General Ledger</a>
+  <a href="/accounting/accounts"><i class="bi bi-list-columns-reverse"></i> Chart of Accounts</a>
+  <a href="/accounting/trial-balance"><i class="bi bi-scale"></i> Trial Balance</a>
+  <a href="/accounting/pnl"><i class="bi bi-graph-up-arrow"></i> P&amp;L Statement</a>
+  <a href="/accounting/vouchers/new"><i class="bi bi-pencil-square"></i> New Voucher</a>
+</div>
+
+<!-- KPI Stats -->
+<div class="acc-stats">
+
+  <div class="acc-stat">
+    <div class="acc-stat-bar" style="background:linear-gradient(90deg,#4f46e5,#818cf8);"></div>
+    <div class="acc-stat-icon" style="background:#eef2ff;color:#4f46e5;"><i class="bi bi-bank"></i></div>
+    <div class="acc-stat-val">₹<%= Number(stats.cashBalance).toLocaleString('en-IN',{maximumFractionDigits:0}) %></div>
+    <div class="acc-stat-lbl">Cash & Bank Balance</div>
+    <span class="acc-stat-tag acc-badge-blue"><i class="bi bi-check-circle-fill"></i> Account 1000</span>
+  </div>
+
+  <div class="acc-stat">
+    <div class="acc-stat-bar" style="background:linear-gradient(90deg,#10b981,#34d399);"></div>
+    <div class="acc-stat-icon" style="background:#ecfdf5;color:#059669;"><i class="bi bi-graph-up-arrow"></i></div>
+    <div class="acc-stat-val">₹<%= Number(stats.totalRevenue).toLocaleString('en-IN',{maximumFractionDigits:0}) %></div>
+    <div class="acc-stat-lbl">Total Revenue</div>
+    <span class="acc-stat-tag acc-badge-rev"><i class="bi bi-arrow-up-short"></i> All revenue accounts</span>
+  </div>
+
+  <div class="acc-stat">
+    <div class="acc-stat-bar" style="background:linear-gradient(90deg,#ef4444,#f87171);"></div>
+    <div class="acc-stat-icon" style="background:#fef2f2;color:#dc2626;"><i class="bi bi-arrow-down-circle-fill"></i></div>
+    <div class="acc-stat-val">₹<%= Number(stats.totalExpenses).toLocaleString('en-IN',{maximumFractionDigits:0}) %></div>
+    <div class="acc-stat-lbl">Total Expenses</div>
+    <span class="acc-stat-tag acc-badge-exp"><i class="bi bi-arrow-down-short"></i> All expense accounts</span>
+  </div>
+
+  <div class="acc-stat">
+    <div class="acc-stat-bar" style="background:linear-gradient(90deg,<%= stats.netProfit>=0?'#10b981,#34d399':'#ef4444,#f87171' %>);"></div>
+    <div class="acc-stat-icon" style="background:<%= stats.netProfit>=0?'#ecfdf5':'#fef2f2' %>;color:<%= stats.netProfit>=0?'#059669':'#dc2626' %>;"><i class="bi bi-<%= stats.netProfit>=0?'trophy-fill':'exclamation-triangle-fill' %>"></i></div>
+    <div class="acc-stat-val" style="color:<%= stats.netProfit>=0?'#059669':'#dc2626' %>;">₹<%= Number(Math.abs(stats.netProfit)).toLocaleString('en-IN',{maximumFractionDigits:0}) %></div>
+    <div class="acc-stat-lbl">Net Profit <%= stats.netProfit<0?'(Loss)':'' %></div>
+    <span class="acc-stat-tag" style="background:<%= stats.netProfit>=0?'rgba(16,185,129,.1)':'rgba(239,68,68,.1)' %>;color:<%= stats.netProfit>=0?'#059669':'#dc2626' %>;"><%= stats.netProfit>=0?'Profitable':'Loss Making' %></span>
+  </div>
+
+  <div class="acc-stat">
+    <div class="acc-stat-bar" style="background:linear-gradient(90deg,#f59e0b,#fbbf24);"></div>
+    <div class="acc-stat-icon" style="background:#fffbeb;color:#d97706;"><i class="bi bi-wallet2"></i></div>
+    <div class="acc-stat-val">₹<%= Number(stats.vendorPayable).toLocaleString('en-IN',{maximumFractionDigits:0}) %></div>
+    <div class="acc-stat-lbl">Vendor Payables</div>
+    <span class="acc-stat-tag" style="background:rgba(245,158,11,.1);color:#d97706;"><i class="bi bi-people-fill"></i> Account 2000</span>
+  </div>
+
+  <div class="acc-stat">
+    <div class="acc-stat-bar" style="background:linear-gradient(90deg,#06b6d4,#67e8f9);"></div>
+    <div class="acc-stat-icon" style="background:#ecfeff;color:#0891b2;"><i class="bi bi-receipt"></i></div>
+    <div class="acc-stat-val">₹<%= Number(stats.accountsReceivable).toLocaleString('en-IN',{maximumFractionDigits:0}) %></div>
+    <div class="acc-stat-lbl">Accounts Receivable</div>
+    <span class="acc-stat-tag" style="background:rgba(6,182,212,.1);color:#0891b2;"><i class="bi bi-hourglass-split"></i> Pending collection</span>
+  </div>
+
+  <div class="acc-stat">
+    <div class="acc-stat-bar" style="background:linear-gradient(90deg,#8b5cf6,#a78bfa);"></div>
+    <div class="acc-stat-icon" style="background:#f5f3ff;color:#7c3aed;"><i class="bi bi-percent"></i></div>
+    <div class="acc-stat-val">₹<%= Number(stats.gstPayable).toLocaleString('en-IN',{maximumFractionDigits:0}) %></div>
+    <div class="acc-stat-lbl">GST Payable</div>
+    <span class="acc-stat-tag" style="background:rgba(139,92,246,.1);color:#7c3aed;"><i class="bi bi-building"></i> Account 2100</span>
+  </div>
+
+  <div class="acc-stat">
+    <div class="acc-stat-bar" style="background:linear-gradient(90deg,#ec4899,#f472b6);"></div>
+    <div class="acc-stat-icon" style="background:#fdf2f8;color:#db2777;"><i class="bi bi-journal-check"></i></div>
+    <div class="acc-stat-val"><%= stats.journalEntryCount %></div>
+    <div class="acc-stat-lbl">Posted Entries</div>
+    <span class="acc-stat-tag" style="background:rgba(236,72,153,.1);color:#db2777;"><i class="bi bi-list-check"></i> All time</span>
+  </div>
+
+</div>
+
+<!-- Charts Row -->
+<div class="acc-two-col">
+
+  <!-- Revenue Trend -->
+  <div class="acc-panel">
+    <div class="acc-panel-title"><i class="bi bi-bar-chart-line-fill"></i> Monthly Revenue Trend</div>
+    <div style="height:220px;"><canvas id="revChart"></canvas></div>
+  </div>
+
+  <!-- Income vs Expenses Donut -->
+  <div class="acc-panel">
+    <div class="acc-panel-title"><i class="bi bi-pie-chart-fill"></i> Revenue vs Expenses</div>
+    <div style="height:160px;display:flex;align-items:center;justify-content:center;">
+      <canvas id="pvEChart"></canvas>
+    </div>
+    <div style="display:flex;gap:1.5rem;justify-content:center;margin-top:.8rem;font-size:.8rem;font-weight:600;">
+      <span style="color:#10b981;"><span style="display:inline-block;width:10px;height:10px;background:#10b981;border-radius:50%;margin-right:.4rem;"></span>Revenue ₹<%= Number(stats.totalRevenue).toLocaleString('en-IN',{maximumFractionDigits:0}) %></span>
+      <span style="color:#ef4444;"><span style="display:inline-block;width:10px;height:10px;background:#ef4444;border-radius:50%;margin-right:.4rem;"></span>Expenses ₹<%= Number(stats.totalExpenses).toLocaleString('en-IN',{maximumFractionDigits:0}) %></span>
+    </div>
+  </div>
+
+</div>
+
+<!-- Recent Voucher Entries -->
+<div class="acc-panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+    <div class="acc-panel-title" style="margin:0;"><i class="bi bi-clock-history"></i> Recent Voucher Entries</div>
+    <a href="/accounting/vouchers" style="font-size:.78rem;font-weight:600;color:#4f46e5;text-decoration:none;">View All →</a>
+  </div>
+  <% recentEntries.forEach(e => { %>
+  <div class="acc-act-item">
+    <div class="acc-act-dot" style="background:#eef2ff;color:#4f46e5;">
+      <i class="bi bi-receipt-cutoff"></i>
+    </div>
+    <div style="flex:1;min-width:0;">
+      <div class="acc-act-title"><%= e.description %></div>
+      <div class="acc-act-sub">
+        <%= new Date(e.entry_date).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) %>
+        <% if(e.voucher) { %> · <span style="background:#eef2ff;color:#3730a3;border-radius:6px;padding:1px 7px;font-size:.7rem;font-weight:700;"><%= e.voucher.voucher_no %></span> <% } %>
+        <% if(e.reference_type) { %> · <span style="background:#f0f0fa;color:#4f46e5;border-radius:6px;padding:1px 7px;font-size:.7rem;font-weight:600;"><%= e.reference_type %></span> <% } %>
+      </div>
+    </div>
+    <div style="text-align:right;flex-shrink:0;">
+      <div class="acc-act-amt" style="color:#059669;">Dr ₹<%= e.lines.reduce((s,l)=>s+parseFloat(l.debit||0),0).toLocaleString('en-IN',{maximumFractionDigits:0}) %></div>
+      <div style="font-size:.7rem;color:#8888bb;"><%= e.lines.length %> lines</div>
+    </div>
+  </div>
+  <% }) %>
+</div>
+
+<script>
+(function(){
+  const monthly = <%- monthlyRevenue %>;
+
+  // Revenue bar chart
+  const rCtx = document.getElementById('revChart').getContext('2d');
+  const rGrad = rCtx.createLinearGradient(0,0,0,220);
+  rGrad.addColorStop(0,'rgba(79,70,229,.35)');
+  rGrad.addColorStop(1,'rgba(79,70,229,0)');
+  new Chart(rCtx, {
+    type:'bar',
+    data:{
+      labels: monthly.length ? monthly.map(m=>m.month) : ['No Data'],
+      datasets:[{
+        label:'Revenue (₹)',
+        data: monthly.length ? monthly.map(m=>parseFloat(m.net_revenue)) : [0],
+        backgroundColor: 'rgba(79,70,229,.18)',
+        borderColor:'#4f46e5', borderWidth:2, borderRadius:8
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#1e1b4b',titleColor:'#a5b4fc',bodyColor:'#e0e7ff',padding:10,cornerRadius:8,callbacks:{label:c=>' ₹'+c.parsed.y.toLocaleString('en-IN')}}},
+      scales:{x:{grid:{display:false},ticks:{color:'#8888bb',font:{size:11}}},y:{grid:{color:'rgba(79,70,229,.06)'},ticks:{color:'#8888bb',font:{size:11},callback:v=>'₹'+v.toLocaleString('en-IN')}}}
+    }
+  });
+
+  // Revenue vs Expenses donut
+  new Chart(document.getElementById('pvEChart'),{
+    type:'doughnut',
+    data:{
+      labels:['Revenue','Expenses'],
+      datasets:[{
+        data:[<%= stats.totalRevenue %>, <%= stats.totalExpenses %>],
+        backgroundColor:['#10b981','#ef4444'],
+        borderWidth:0, hoverOffset:6
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'70%',
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#1e1b4b',titleColor:'#a5b4fc',bodyColor:'#e0e7ff',padding:10,cornerRadius:8,callbacks:{label:c=>' ₹'+c.parsed.toLocaleString('en-IN')}}}
+    }
+  });
+})();
+</script>

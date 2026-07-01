@@ -20,7 +20,7 @@ const storage = multer.diskStorage({
 const upload = multer({
     storage: storage,
     fileFilter: (req, file, cb) => {
-        const filetypes = /jpeg|jpg|png|webp|mp4|mov|avi|webm/;
+        const filetypes = /jpeg|jpg|png|webp|mp4|mov|avi|webm|avif/;
         const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
         const mimetype = filetypes.test(file.mimetype);
         if (mimetype && extname) return cb(null, true);
@@ -39,6 +39,8 @@ const isVendor = (req, res, next) => {
 };
 
 // Auth Routes
+router.get('/register', (req, res) => vendorAuthController.registerForm(req, res));
+router.post('/register', (req, res) => vendorAuthController.register(req, res));
 router.get('/login', (req, res) => vendorAuthController.loginForm(req, res));
 router.post('/login', (req, res) => vendorAuthController.login(req, res));
 router.get('/logout', (req, res) => vendorAuthController.logout(req, res));
@@ -54,10 +56,22 @@ router.get('/packages/:id/edit', isVendor, (req, res) => vendorPackageController
 router.delete('/packages/:id', isVendor, (req, res) => vendorPackageController.delete(req, res));
 
 // Package Gallery
+router.post('/packages/:id/main-image', isVendor, upload.single('main_image'), (req, res) => vendorPackageController.uploadMainImage(req, res));
 router.post('/packages/:id/gallery', isVendor, upload.single('media'), (req, res) => vendorPackageController.uploadMedia(req, res));
 router.delete('/packages/:id/gallery/:mediaId', isVendor, (req, res) => vendorPackageController.deleteMedia(req, res));
+router.post('/packages/activity-image', isVendor, upload.single('activity_image'), (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+        const imageUrl = `/uploads/packages/${req.file.filename}`;
+        res.json({ success: true, imageUrl });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 
 // Wallet
 router.get('/wallet', isVendor, (req, res) => vendorWalletController.index(req, res));
+router.post('/wallet/topup', isVendor, (req, res) => vendorWalletController.topUp(req, res));
+router.post('/wallet/withdraw', isVendor, (req, res) => vendorWalletController.withdraw(req, res));
 
 module.exports = router;

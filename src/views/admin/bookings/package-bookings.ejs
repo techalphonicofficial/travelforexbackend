@@ -1,0 +1,735 @@
+<%- contentFor('body') %>
+
+<%
+const statuses = paymentStatuses || ['pending', 'payment_initiated', 'paid', 'payment_verified', 'failed', 'cancelled'];
+const canProcessRefundAction = Boolean(locals.canProcessPackageRefund);
+const statusStyle = {
+  pending: 'background:#f1f5f9;color:#475569;',
+  payment_initiated: 'background:#fef3c7;color:#92400e;',
+  paid: 'background:#dcfce7;color:#166534;',
+  payment_verified: 'background:#dcfce7;color:#166534;',
+  partial_paid: 'background:#e0f2fe;color:#0369a1;',
+  partially_refunded: 'background:#ffedd5;color:#9a3412;',
+  partially_cancelled: 'background:#fef3c7;color:#92400e;',
+  refunded: 'background:#fee2e2;color:#991b1b;',
+  failed: 'background:#fee2e2;color:#991b1b;',
+  cancelled: 'background:#fee2e2;color:#991b1b;'
+};
+const accountingStyle = {
+  pending: 'background:#fef3c7;color:#92400e;',
+  recorded: 'background:#fef3c7;color:#92400e;',
+  posted: 'background:#dcfce7;color:#166534;',
+  failed: 'background:#fee2e2;color:#991b1b;'
+};
+const selectedLimit = limit || 10;
+const totalPagesSafe = Math.max(1, totalPages || 1);
+const startItem = totalBookings ? ((currentPage - 1) * selectedLimit) + 1 : 0;
+const endItem = Math.min(currentPage * selectedLimit, totalBookings || 0);
+const pageItems = [];
+for (let pageNo = 1; pageNo <= totalPagesSafe; pageNo++) {
+  if (pageNo === 1 || pageNo === totalPagesSafe || Math.abs(pageNo - currentPage) <= 1) {
+    pageItems.push(pageNo);
+  } else if (pageItems[pageItems.length - 1] !== '...') {
+    pageItems.push('...');
+  }
+}
+const pageUrl = (pageNo) => `/admin/bookings/package-bookings?page=${pageNo}&limit=${selectedLimit}&search=${encodeURIComponent(searchQuery || '')}&status=${encodeURIComponent(statusFilter || '')}`;
+const money = (value) => Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const label = (value) => String(value || 'pending').replace(/_/g, ' ');
+const totalsSafe = totals || {};
+const dateInputValue = (value) => {
+  if (!value) return '';
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value.trim())) return value.trim();
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+};
+const findDepartureDate = (raw = {}) => {
+  const keys = ['departure_date', 'departureDate', 'travel_date', 'travelDate', 'start_date', 'startDate', 'trip_start_date', 'tripStartDate', 'journey_date', 'journeyDate', 'package_start_date', 'packageStartDate', 'selected_date', 'selectedDate'];
+  const sources = [raw, raw.trip, raw.travel, raw.booking, raw.package_date, raw.packageDate, raw.custom_fields, raw.customFields].filter(Boolean);
+  for (const source of sources) {
+    for (const key of keys) {
+      if (source[key]) return source[key];
+    }
+  }
+  return '';
+};
+%>
+
+<style>
+  .pb-shell{display:flex;flex-direction:column;gap:1rem;}
+  .pb-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+  .pb-title{font-size:1.75rem;font-weight:800;color:#111827;margin:0;}
+  .pb-muted{color:#64748b;font-size:.88rem;margin:.15rem 0 0;}
+  .pb-tabs{display:inline-flex;align-items:center;gap:.35rem;background:#eef2ff;padding:.28rem;border-radius:8px;flex-wrap:wrap;}
+  .pb-tab{display:inline-flex;align-items:center;gap:.4rem;padding:.48rem .78rem;border-radius:7px;color:#4f46e5;text-decoration:none;font-size:.84rem;font-weight:800;}
+  .pb-tab.active{background:#fff;color:#1e1b4b;box-shadow:0 2px 8px rgba(79,70,229,.12);}
+  .pb-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.8rem;}
+  .pb-stat{background:#fff;border:1px solid #e0e7ff;border-radius:8px;padding:1rem;box-shadow:0 4px 16px rgba(79,70,229,.06);}
+  .pb-stat-label{color:#64748b;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.03em;}
+  .pb-stat-value{color:#111827;font-size:1.38rem;font-weight:800;line-height:1.15;margin-top:.4rem;}
+  .pb-stat-sub{color:#64748b;font-size:.78rem;margin-top:.35rem;}
+  .pb-toolbar{background:#fff;border:1px solid #e0e7ff;border-radius:8px;padding:.9rem;box-shadow:0 4px 16px rgba(79,70,229,.06);}
+  .pb-toolbar form{display:flex;align-items:center;flex-wrap:wrap;gap:.65rem;margin:0;}
+  .pb-search{position:relative;min-width:min(360px,100%);}
+  .pb-search i{position:absolute;left:.75rem;top:50%;transform:translateY(-50%);color:#94a3b8;}
+  .pb-search input{width:100%;border:1px solid #dbe3ef;border-radius:8px;padding:.62rem .75rem .62rem 2.2rem;outline:none;color:#1f2937;}
+  .pb-select{border:1px solid #dbe3ef;border-radius:8px;padding:.62rem .75rem;background:#fff;color:#334155;}
+  .pb-btn{border:0;border-radius:8px;background:#4f46e5;color:#fff;padding:.64rem 1rem;font-weight:800;}
+  .pb-clear{background:#f8fafc;color:#475569;border:1px solid #e2e8f0;}
+  .pb-table-wrap{background:#fff;border:1px solid #e0e7ff;border-radius:8px;overflow:auto;box-shadow:0 4px 20px rgba(79,70,229,.07);}
+  .pb-table{width:100%;min-width:1240px;border-collapse:collapse;}
+  .pb-table th{background:#f8fafc;color:#475569;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;padding:.85rem 1rem;border-bottom:1px solid #e0e7ff;}
+  .pb-table td{padding:.9rem 1rem;border-bottom:1px solid #f1f5f9;color:#334155;font-size:.86rem;vertical-align:top;}
+  .pb-table tr:last-child td{border-bottom:0;}
+  .pb-main{font-weight:800;color:#111827;}
+  .pb-sub{color:#64748b;font-size:.78rem;margin-top:.22rem;line-height:1.35;}
+  .pb-money{font-weight:800;color:#111827;white-space:nowrap;}
+  .pb-positive{color:#047857;}
+  .pb-warn{color:#b45309;}
+  .pb-pill{display:inline-flex;align-items:center;border-radius:999px;padding:.25rem .62rem;font-size:.74rem;font-weight:800;text-transform:capitalize;white-space:nowrap;}
+  .pb-coupon-pill{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;gap:.3rem;text-transform:none;}
+  .pb-mini-grid{display:grid;gap:.26rem;}
+  .pb-actions{display:inline-flex;align-items:center;gap:.35rem;flex-wrap:wrap;margin-top:.4rem;}
+  .pb-action{display:inline-flex;align-items:center;gap:.32rem;border-radius:7px;padding:.32rem .55rem;text-decoration:none;font-size:.74rem;font-weight:800;background:#eef2ff;color:#4f46e5;border:1px solid #c7d2fe;}
+  .pb-row-actions{display:flex;align-items:flex-start;gap:.4rem;flex-wrap:wrap;min-width:150px;}
+  .pb-action-view{background:#eff6ff;color:#2563eb;border-color:#bfdbfe;}
+  .pb-action-download{background:#f8fafc;color:#334155;border-color:#cbd5e1;}
+  .pb-action-pay{background:#ecfdf5;color:#047857;border-color:#bbf7d0;}
+  .pb-action-refund{background:#fff7ed;color:#c2410c;border-color:#fed7aa;}
+  .pb-action-disabled{background:#f8fafc;color:#94a3b8;border-color:#e2e8f0;cursor:not-allowed;}
+  .pb-action[disabled]{opacity:.7;}
+  .pb-modal-label{font-size:.78rem;font-weight:800;color:#475569;margin-bottom:.25rem;}
+  .pb-modal-input{border:1px solid #dbe3ef;border-radius:8px;padding:.62rem .75rem;width:100%;outline:none;}
+  .pb-modal-help{font-size:.75rem;color:#64748b;margin-top:.25rem;}
+  .pb-modal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem;}
+  .pb-summary{display:grid;gap:1rem;}
+  .pb-summary-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;border:1px solid #e0e7ff;background:#f8fafc;border-radius:8px;padding:1rem;}
+  .pb-summary-title{font-size:1.05rem;font-weight:900;color:#111827;margin:0;}
+  .pb-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:.75rem;}
+  .pb-summary-card{border:1px solid #e0e7ff;border-radius:8px;background:#fff;padding:.85rem;}
+  .pb-summary-card-wide{grid-column:1/-1;}
+  .pb-summary-label{font-size:.72rem;font-weight:900;text-transform:uppercase;color:#64748b;letter-spacing:.03em;}
+  .pb-summary-value{font-size:.95rem;font-weight:900;color:#111827;margin-top:.22rem;}
+  .pb-summary-muted{font-size:.78rem;color:#64748b;line-height:1.45;margin-top:.18rem;}
+  .pb-summary-table{width:100%;border-collapse:collapse;border:1px solid #e0e7ff;border-radius:8px;overflow:hidden;}
+  .pb-summary-table th{background:#f8fafc;color:#475569;text-transform:uppercase;font-size:.72rem;letter-spacing:.03em;padding:.7rem;border-bottom:1px solid #e0e7ff;}
+  .pb-summary-table td{padding:.7rem;border-bottom:1px solid #f1f5f9;font-size:.84rem;color:#334155;vertical-align:top;}
+  .pb-summary-table tr:last-child td{border-bottom:0;}
+  .pb-summary-table tfoot td{background:#f8fafc;font-weight:900;color:#111827;}
+  @media(max-width:700px){.pb-modal-grid{grid-template-columns:1fr;}}
+  @media(max-width:980px){.pb-summary-grid{grid-template-columns:1fr;}}
+  .pb-empty{text-align:center;padding:3rem 1rem;color:#64748b;}
+  .pb-empty i{font-size:2rem;color:#c7d2fe;}
+  .pagination-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;background:#fff;border:1px solid #e0e7ff;border-radius:8px;padding:.75rem .9rem;}
+  .pagination-row a,.pagination-row span{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;border-radius:7px;text-decoration:none;color:#4f46e5;font-weight:700;border:1px solid #e2e8f0;background:#fff;}
+  .pagination-row span.disabled{color:#94a3b8;background:#f8fafc;}
+  .pagination-row span.active{background:#4f46e5;color:#fff;border-color:#4f46e5;}
+</style>
+
+<div class="pb-shell">
+  <div class="pb-header">
+    <div>
+      <h1 class="pb-title">Package Bookings</h1>
+      <p class="pb-muted">Payment-verified package bookings with customer, vendor split, tax, and accounting status.</p>
+    </div>
+    <div class="pb-tabs">
+      <a href="/admin/bookings/package-bookings" class="pb-tab active"><i class="bi bi-receipt-cutoff"></i> Package Bookings</a>
+      <a href="/admin/bookings/return-requests" class="pb-tab"><i class="bi bi-arrow-counterclockwise"></i> Cancel Requests</a>
+      <a href="/" class="pb-tab"><i class="bi bi-speedometer2"></i> Dashboard</a>
+      <a href="/admin/bookings/inquiries" class="pb-tab"><i class="bi bi-ui-checks-grid"></i> Custom Requests</a>
+      <a href="/admin/bookings/hotel-bookings" class="pb-tab"><i class="bi bi-building"></i> Hotel Bookings</a>
+    </div>
+  </div>
+
+  <div class="pb-stats">
+    <div class="pb-stat">
+      <div class="pb-stat-label">Total Showing</div>
+      <div class="pb-stat-value"><%= totalBookings || 0 %></div>
+      <div class="pb-stat-sub">Current filtered bookings</div>
+    </div>
+    <div class="pb-stat">
+      <div class="pb-stat-label">Package Total</div>
+      <div class="pb-stat-value">INR <%= money(totalsSafe.packageTotal) %></div>
+      <div class="pb-stat-sub">Booking value including tax</div>
+    </div>
+    <div class="pb-stat">
+      <div class="pb-stat-label">Collected</div>
+      <div class="pb-stat-value pb-positive">INR <%= money(totalsSafe.paidTotal) %></div>
+      <div class="pb-stat-sub">Paid now / verified amount</div>
+    </div>
+    <div class="pb-stat">
+      <div class="pb-stat-label">Remaining</div>
+      <div class="pb-stat-value pb-warn">INR <%= money(totalsSafe.remainingTotal) %></div>
+      <div class="pb-stat-sub">Balance receivable</div>
+    </div>
+    <div class="pb-stat">
+      <div class="pb-stat-label">Vendor Payable</div>
+      <div class="pb-stat-value">INR <%= money(totalsSafe.vendorTotal) %></div>
+      <div class="pb-stat-sub">Hotel/package cost split</div>
+    </div>
+    <div class="pb-stat">
+      <div class="pb-stat-label">Platform + Tax</div>
+      <div class="pb-stat-value">INR <%= money(Number(totalsSafe.platformTotal || 0) + Number(totalsSafe.taxTotal || 0)) %></div>
+      <div class="pb-stat-sub">Revenue INR <%= money(totalsSafe.platformTotal) %> / tax INR <%= money(totalsSafe.taxTotal) %></div>
+    </div>
+  </div>
+
+  <div class="pb-toolbar">
+    <form method="GET" action="/admin/bookings/package-bookings">
+      <div class="pb-search">
+        <i class="bi bi-search"></i>
+        <input type="text" name="search" value="<%= searchQuery || '' %>" placeholder="Search booking ref, customer, vendor, coupon, package, payment id">
+      </div>
+      <select class="pb-select" name="status">
+        <option value="">All Payment Statuses</option>
+        <% statuses.forEach(statusName => { %>
+          <option value="<%= statusName %>" <%= statusFilter === statusName ? 'selected' : '' %>><%= label(statusName) %></option>
+        <% }) %>
+      </select>
+      <select class="pb-select" name="limit">
+        <% limitOptions.forEach(option => { %>
+          <option value="<%= option %>" <%= selectedLimit === option ? 'selected' : '' %>><%= option %> / page</option>
+        <% }) %>
+      </select>
+      <button class="pb-btn" type="submit">Filter</button>
+      <% if (searchQuery || statusFilter) { %>
+        <a href="/admin/bookings/package-bookings" class="pb-action pb-clear">Clear</a>
+      <% } %>
+    </form>
+  </div>
+
+  <div class="pb-table-wrap">
+    <table class="pb-table">
+      <thead>
+        <tr>
+          <th>Booking</th>
+          <th>Customer</th>
+          <th>Package</th>
+          <th>Collected</th>
+          <th>Split</th>
+          <th>Payment</th>
+          <th>Accounting</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (bookings && bookings.length) { %>
+          <% bookings.forEach(booking => { %>
+            <%
+              const raw = booking.raw_payload || {};
+              const route = Array.isArray(raw.route) ? raw.route.join(' to ') : '';
+              const hotels = Array.isArray(raw.hotels) ? raw.hotels : [];
+              const hotelPaymentTotal = hotels.reduce((sum, hotel) => sum + Number(hotel.estimated_amount || 0), 0);
+              const createdAt = booking.created_at ? new Date(booking.created_at) : null;
+              const verifiedAt = booking.payment_verified_at ? new Date(booking.payment_verified_at) : null;
+              const modalKey = String(booking.id || booking.booking_reference || '').replace(/[^a-zA-Z0-9_-]/g, '');
+              const paidAmount = Number(booking.paid_amount || 0);
+              const remainingAmount = Number(booking.remaining_amount || 0);
+              const couponSnapshot = booking.coupon_snapshot || {};
+              const rawCoupon = raw.coupon || raw.applied_coupon || {};
+              const couponCode = booking.coupon_code || couponSnapshot.code || couponSnapshot.coupon_code || rawCoupon.code || rawCoupon.coupon_code || '';
+              const couponDiscount = Number(booking.coupon_discount_amount || couponSnapshot.discount_amount || rawCoupon.discount_amount || rawCoupon.amount || 0);
+              const baseAfterCoupon = Number(booking.package_base_amount || booking.package_price || 0);
+              const baseBeforeCoupon = baseAfterCoupon + couponDiscount;
+              const canAccount = booking.accounting_status === 'recorded';
+              const canPayRemaining = canAccount && remainingAmount > 0;
+              const departureInputValue = dateInputValue(findDepartureDate(raw));
+              const returnClosed = raw.return_status === 'closed' || ['refunded', 'cancelled'].includes(String(booking.payment_status || '').toLowerCase());
+              const canRefund = canProcessRefundAction && canAccount && !returnClosed && (paidAmount > 0 || remainingAmount > 0);
+              const refundDisabledTitle = !canProcessRefundAction
+                ? 'Only admin or manager can process package refunds'
+                : (!canAccount ? 'Accounting must be recorded first' : (returnClosed ? 'Package return is already closed' : 'Nothing available to refund'));
+              const downloadName = `${String(booking.booking_reference || 'package-booking').replace(/[^a-zA-Z0-9_-]/g, '-')}-summary.html`;
+            %>
+            <tr>
+              <td>
+                <div class="pb-main"><%= booking.booking_reference %></div>
+                <div class="pb-sub">Package ID: <%= booking.package_id || 'N/A' %></div>
+                <% if (booking.page_url) { %>
+                  <div class="pb-actions">
+                    <a href="<%= booking.page_url %>" class="pb-action" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> Source Page</a>
+                  </div>
+                <% } %>
+              </td>
+              <td>
+                <div class="pb-main"><%= booking.customer_name || 'Guest Customer' %></div>
+                <div class="pb-sub"><%= booking.customer_email || 'No email' %></div>
+                <div class="pb-sub"><%= booking.customer_phone || 'No phone' %></div>
+              </td>
+              <td>
+                <div class="pb-main"><%= booking.package_name || (booking.package && booking.package.name) || 'Package' %></div>
+                <div class="pb-sub"><%= booking.package_slug || (booking.package && booking.package.slug) || 'No slug' %></div>
+                <% if (route) { %>
+                  <div class="pb-sub"><i class="bi bi-signpost-2"></i> <%= route %></div>
+                <% } %>
+                <% if (departureInputValue) { %>
+                  <div class="pb-sub"><i class="bi bi-calendar-event"></i> Departure <%= new Date(departureInputValue).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) %></div>
+                <% } %>
+                <div class="pb-sub"><%= hotels.length || raw.hotel_count || 0 %> hotel<%= (hotels.length || raw.hotel_count || 0) === 1 ? '' : 's' %></div>
+                <% if (booking.vendor) { %>
+                  <div class="pb-sub">Vendor: <%= booking.vendor.name || booking.vendor.email || booking.vendor_id %></div>
+                <% } else if (booking.vendor_id) { %>
+                  <div class="pb-sub">Vendor ID: <%= booking.vendor_id %></div>
+                <% } %>
+              </td>
+              <td>
+                <div class="pb-mini-grid">
+                  <div class="pb-money">Total INR <%= money(booking.package_total) %></div>
+                  <div class="pb-sub">Paid INR <%= money(booking.paid_amount) %></div>
+                  <div class="pb-sub">Remaining INR <%= money(booking.remaining_amount) %></div>
+                  <% if (couponDiscount > 0 || couponCode) { %>
+                    <div>
+                      <span class="pb-pill pb-coupon-pill">
+                        <i class="bi bi-ticket-perforated"></i>
+                        <%= couponCode || 'Coupon Applied' %><% if (couponDiscount > 0) { %>: -INR <%= money(couponDiscount) %><% } %>
+                      </span>
+                    </div>
+                  <% } %>
+                  <% if (booking.partial_booking_enabled) { %>
+                    <div><span class="pb-pill" style="background:#eef2ff;color:#4f46e5;"><%= Number(booking.partial_booking_percentage || 0) %>% paid now</span></div>
+                  <% } %>
+                </div>
+              </td>
+              <td>
+                <div class="pb-mini-grid">
+                  <div class="pb-money">Vendor INR <%= money(booking.vendor_amount) %></div>
+                  <div class="pb-sub">Platform INR <%= money(booking.platform_amount) %></div>
+                  <div class="pb-sub"><%= booking.tax_type || 'Tax' %> <%= Number(booking.tax_percent || 0) %>%: INR <%= money(booking.tax_amount) %></div>
+                </div>
+              </td>
+              <td>
+                <span class="pb-pill" style="<%= statusStyle[booking.payment_status] || statusStyle.pending %>"><%= label(booking.payment_status) %></span>
+                <div class="pb-sub">Order: <%= booking.razorpay_order_id || 'N/A' %></div>
+                <div class="pb-sub">Payment: <%= booking.razorpay_payment_id || 'N/A' %></div>
+                <% if (booking.payment_verified_at) { %>
+                  <div class="pb-sub">Verified <%= new Date(booking.payment_verified_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) %></div>
+                <% } %>
+              </td>
+              <td>
+                <span class="pb-pill" style="<%= accountingStyle[booking.accounting_status] || accountingStyle.pending %>"><%= label(booking.accounting_status) %></span>
+                <div class="pb-sub">Entry: <%= booking.accounting_entry_id || 'Not posted' %></div>
+              </td>
+              <td>
+                <% if (createdAt) { %>
+                  <div class="pb-main"><%= createdAt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) %></div>
+                  <div class="pb-sub"><%= createdAt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) %></div>
+                <% } else { %>
+                  <div class="pb-sub">No date</div>
+                <% } %>
+              </td>
+              <td>
+                <div class="pb-row-actions">
+                  <button type="button" class="pb-action pb-action-view" data-bs-toggle="modal" data-bs-target="#bookingSummaryModal<%= modalKey %>">
+                    <i class="bi bi-eye"></i> View
+                  </button>
+                  <button type="button" class="pb-action pb-action-download pb-download-booking" data-summary-id="bookingSummaryContent<%= modalKey %>" data-filename="<%= downloadName %>">
+                    <i class="bi bi-download"></i> Download
+                  </button>
+                  <% if (canPayRemaining) { %>
+                    <button type="button" class="pb-action pb-action-pay" data-bs-toggle="modal" data-bs-target="#payRemainingModal<%= modalKey %>">
+                      <i class="bi bi-cash-coin"></i> Pay Remaining
+                    </button>
+                  <% } else { %>
+                    <button type="button" class="pb-action pb-action-disabled" disabled title="<%= canAccount ? 'No remaining amount' : 'Accounting must be recorded first' %>">
+                      <i class="bi bi-cash-coin"></i> Pay Remaining
+                    </button>
+                  <% } %>
+                  <% if (canRefund) { %>
+                    <button type="button" class="pb-action pb-action-refund" data-bs-toggle="modal" data-bs-target="#refundModal<%= modalKey %>">
+                      <i class="bi bi-arrow-counterclockwise"></i> Return / Refund
+                    </button>
+                  <% } else { %>
+                    <button type="button" class="pb-action pb-action-disabled" disabled title="<%= refundDisabledTitle %>">
+                      <i class="bi bi-arrow-counterclockwise"></i> Return / Refund
+                    </button>
+                  <% } %>
+                </div>
+
+                <div class="modal fade" id="bookingSummaryModal<%= modalKey %>" tabindex="-1" aria-hidden="true">
+                  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5 class="modal-title">Booking Summary</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
+                      <div class="modal-body">
+                        <div class="pb-summary" id="bookingSummaryContent<%= modalKey %>">
+                          <div class="pb-summary-head">
+                            <div>
+                              <h2 class="pb-summary-title"><%= booking.booking_reference %></h2>
+                              <div class="pb-summary-muted">Package ID <%= booking.package_id || 'N/A' %> | <%= booking.package_slug || 'No slug' %></div>
+                            </div>
+                            <div>
+                              <span class="pb-pill" style="<%= statusStyle[booking.payment_status] || statusStyle.pending %>"><%= label(booking.payment_status) %></span>
+                              <span class="pb-pill ms-1" style="<%= accountingStyle[booking.accounting_status] || accountingStyle.pending %>"><%= label(booking.accounting_status) %></span>
+                            </div>
+                          </div>
+
+                          <div class="pb-summary-grid">
+                            <div class="pb-summary-card">
+                              <div class="pb-summary-label">Customer</div>
+                              <div class="pb-summary-value"><%= booking.customer_name || 'Guest Customer' %></div>
+                              <div class="pb-summary-muted"><%= booking.customer_email || 'No email' %></div>
+                              <div class="pb-summary-muted"><%= booking.customer_phone || 'No phone' %></div>
+                            </div>
+                            <div class="pb-summary-card">
+                              <div class="pb-summary-label">Package</div>
+                              <div class="pb-summary-value"><%= booking.package_name || (booking.package && booking.package.name) || 'Package' %></div>
+                              <div class="pb-summary-muted">Duration: <%= booking.duration || raw.duration || 'N/A' %></div>
+                              <div class="pb-summary-muted">Route: <%= route || 'Route not added' %></div>
+                              <div class="pb-summary-muted"><%= hotels.length || raw.hotel_count || 0 %> hotel<%= (hotels.length || raw.hotel_count || 0) === 1 ? '' : 's' %></div>
+                            </div>
+                            <div class="pb-summary-card">
+                              <div class="pb-summary-label">Created</div>
+                              <div class="pb-summary-value"><%= createdAt ? createdAt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'No date' %></div>
+                              <div class="pb-summary-muted"><%= createdAt ? createdAt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '' %></div>
+                              <% if (booking.page_url) { %>
+                                <div class="pb-summary-muted">Source: <a href="<%= booking.page_url %>" target="_blank" rel="noopener">Open package page</a></div>
+                              <% } else { %>
+                                <div class="pb-summary-muted">Source: N/A</div>
+                              <% } %>
+                            </div>
+                          </div>
+
+                          <div class="pb-summary-grid">
+                            <div class="pb-summary-card">
+                              <div class="pb-summary-label">Collected</div>
+                              <div class="pb-summary-value">INR <%= money(booking.package_total) %></div>
+                              <% if (couponDiscount > 0 || couponCode) { %>
+                                <div class="pb-summary-muted">Original base INR <%= money(baseBeforeCoupon) %></div>
+                                <div class="pb-summary-muted">Coupon <%= couponCode || 'Applied' %><% if (couponDiscount > 0) { %>: -INR <%= money(couponDiscount) %><% } %></div>
+                              <% } %>
+                              <div class="pb-summary-muted">Base INR <%= money(baseAfterCoupon || booking.package_base_amount || booking.package_price) %></div>
+                              <div class="pb-summary-muted">Paid INR <%= money(booking.paid_amount) %></div>
+                              <div class="pb-summary-muted">Remaining INR <%= money(booking.remaining_amount) %></div>
+                              <div class="pb-summary-muted"><%= Number(booking.partial_booking_percentage || 0) %>% paid now</div>
+                            </div>
+                            <div class="pb-summary-card">
+                              <div class="pb-summary-label">Split</div>
+                              <div class="pb-summary-value">Vendor INR <%= money(booking.vendor_amount) %></div>
+                              <div class="pb-summary-muted">Platform INR <%= money(booking.platform_amount) %></div>
+                              <div class="pb-summary-muted"><%= booking.tax_type || 'Tax' %> <%= Number(booking.tax_percent || 0) %>%: INR <%= money(booking.tax_amount) %></div>
+                              <div class="pb-summary-muted">Hotel payment total INR <%= money(hotelPaymentTotal) %></div>
+                              <% if (booking.vendor_split_basis) { %>
+                                <div class="pb-summary-muted">Basis: <%= label(booking.vendor_split_basis) %></div>
+                              <% } %>
+                            </div>
+                            <div class="pb-summary-card">
+                              <div class="pb-summary-label">Payment</div>
+                              <div class="pb-summary-value"><%= label(booking.payment_status) %></div>
+                              <div class="pb-summary-muted">Order: <%= booking.razorpay_order_id || 'N/A' %></div>
+                              <div class="pb-summary-muted">Payment: <%= booking.razorpay_payment_id || 'N/A' %></div>
+                              <div class="pb-summary-muted">Verified: <%= verifiedAt ? verifiedAt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A' %></div>
+                            </div>
+                            <div class="pb-summary-card">
+                              <div class="pb-summary-label">Accounting</div>
+                              <div class="pb-summary-value"><%= label(booking.accounting_status) %></div>
+                              <div class="pb-summary-muted">Entry: <%= booking.accounting_entry_id || 'Not posted' %></div>
+                              <div class="pb-summary-muted">Vendor: <%= booking.vendor ? (booking.vendor.name || booking.vendor.email || booking.vendor_id) : (booking.vendor_id || 'N/A') %></div>
+                            </div>
+                          </div>
+
+                          <div class="pb-summary-card pb-summary-card-wide">
+                            <div class="pb-summary-label mb-2">Hotel Payments</div>
+                            <table class="pb-summary-table">
+                              <thead>
+                                <tr>
+                                  <th>Hotel</th>
+                                  <th>Destination</th>
+                                  <th>Stay</th>
+                                  <th>Rating</th>
+                                  <th>Rate</th>
+                                  <th>Amount</th>
+                                  <th>Notes</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <% if (hotels.length) { %>
+                                  <% hotels.forEach((hotel, hotelIndex) => { %>
+                                    <tr>
+                                      <td><strong><%= hotel.name || ('Hotel #' + (hotel.hotel_id || hotelIndex + 1)) %></strong><div class="pb-summary-muted">Hotel ID: <%= hotel.hotel_id || 'N/A' %></div></td>
+                                      <td><%= hotel.destination || 'N/A' %></td>
+                                      <td><%= hotel.rooms || 1 %> room<%= Number(hotel.rooms || 1) === 1 ? '' : 's' %><div class="pb-summary-muted"><%= hotel.nights || 0 %> night<%= Number(hotel.nights || 0) === 1 ? '' : 's' %></div></td>
+                                      <td><%= hotel.star_rating || 'N/A' %> star<div class="pb-summary-muted">Guest <%= hotel.guest_rating || 'N/A' %></div></td>
+                                      <td>INR <%= money(hotel.price_per_night) %></td>
+                                      <td><strong>INR <%= money(hotel.estimated_amount) %></strong></td>
+                                      <td><%= hotel.notes || 'N/A' %></td>
+                                    </tr>
+                                  <% }) %>
+                                <% } else { %>
+                                  <tr><td colspan="7" class="text-center text-muted py-4">No hotel-wise payment added.</td></tr>
+                                <% } %>
+                              </tbody>
+                              <% if (hotels.length) { %>
+                                <tfoot>
+                                  <tr>
+                                    <td colspan="5">Hotel Payment Total</td>
+                                    <td>INR <%= money(hotelPaymentTotal) %></td>
+                                    <td></td>
+                                  </tr>
+                                </tfoot>
+                              <% } %>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary pb-download-booking" data-summary-id="bookingSummaryContent<%= modalKey %>" data-filename="<%= downloadName %>">
+                          <i class="bi bi-download"></i> Download Booking
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="modal fade" id="payRemainingModal<%= modalKey %>" tabindex="-1" aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                      <form class="pb-admin-action-form" method="POST" action="/admin/bookings/package-bookings/<%= booking.id %>/pay-remaining">
+                        <div class="modal-header">
+                          <h5 class="modal-title">Pay Remaining</h5>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                          <div class="pb-main mb-1"><%= booking.booking_reference %></div>
+                          <div class="pb-sub mb-3">Remaining INR <%= money(remainingAmount) %></div>
+                          <div class="pb-modal-grid">
+                            <div>
+                              <label class="pb-modal-label">Amount</label>
+                              <input class="pb-modal-input" type="number" name="amount" min="1" max="<%= remainingAmount %>" step="0.01" value="<%= remainingAmount %>" required>
+                              <div class="pb-modal-help">Cannot exceed current remaining amount.</div>
+                            </div>
+                            <div>
+                              <label class="pb-modal-label">Payment Reference</label>
+                              <input class="pb-modal-input" type="text" name="reference" placeholder="Manual / gateway reference">
+                            </div>
+                            <div>
+                              <label class="pb-modal-label">Razorpay Order ID</label>
+                              <input class="pb-modal-input" type="text" name="razorpay_order_id" placeholder="order_xxx">
+                            </div>
+                            <div>
+                              <label class="pb-modal-label">Razorpay Payment ID</label>
+                              <input class="pb-modal-input" type="text" name="razorpay_payment_id" placeholder="pay_xxx">
+                            </div>
+                          </div>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                          <button type="submit" class="btn btn-success"><i class="bi bi-check2-circle"></i> Record Payment</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+
+                <% if (canRefund) { %>
+                <div class="modal fade" id="refundModal<%= modalKey %>" tabindex="-1" aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                      <form class="pb-admin-action-form" method="POST" action="/admin/bookings/package-bookings/<%= booking.id %>/refund">
+                        <input type="hidden" name="apply_cancellation_rule" value="1">
+                        <div class="modal-header">
+                          <h5 class="modal-title">Return / Refund</h5>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                          <div class="pb-main mb-1"><%= booking.booking_reference %></div>
+                          <div class="pb-sub mb-3">Paid INR <%= money(paidAmount) %> · Remaining INR <%= money(remainingAmount) %></div>
+                          <div class="pb-modal-grid">
+                            <div>
+                              <label class="pb-modal-label">Departure Date</label>
+                              <input class="pb-modal-input" type="date" name="departure_date" value="<%= departureInputValue %>" required>
+                              <div class="pb-modal-help">Used to apply the active cancellation rule.</div>
+                            </div>
+                            <div>
+                              <label class="pb-modal-label">Paid Amount</label>
+                              <input class="pb-modal-input" type="text" value="INR <%= money(paidAmount) %>" readonly>
+                              <div class="pb-modal-help">Refund is calculated by rule and credited to the customer account.</div>
+                            </div>
+                            <div>
+                              <label class="pb-modal-label">Cancel Remaining</label>
+                              <input class="pb-modal-input" type="number" name="cancel_remaining_amount" min="0" max="<%= remainingAmount %>" step="0.01" value="<%= remainingAmount %>">
+                              <div class="pb-modal-help">Unpaid receivable to cancel.</div>
+                            </div>
+                            <div>
+                              <label class="pb-modal-label">Refund Reference</label>
+                              <input class="pb-modal-input" type="text" name="refund_reference" placeholder="rfnd_manual_001">
+                            </div>
+                            <div>
+                              <label class="pb-modal-label">Razorpay Refund ID</label>
+                              <input class="pb-modal-input" type="text" name="razorpay_refund_id" placeholder="rfnd_xxx">
+                            </div>
+                          </div>
+                          <div class="mt-3">
+                            <label class="pb-modal-label">Reason</label>
+                            <input class="pb-modal-input" type="text" name="reason" placeholder="Customer requested cancellation">
+                          </div>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                          <button type="submit" class="btn btn-warning"><i class="bi bi-arrow-counterclockwise"></i> Record Return</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        <% } else { %>
+          <tr>
+            <td colspan="9">
+              <div class="pb-empty">
+                <i class="bi bi-inbox"></i>
+                <div class="mt-2 fw-bold">No package bookings found.</div>
+                <div class="mt-1">When a package payment is verified, it will appear here with the accounting split.</div>
+              </div>
+            </td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <% if (totalBookings > 0) { %>
+    <div class="pagination-row">
+      <div class="text-muted small">Showing <%= startItem %>-<%= endItem %> of <%= totalBookings %></div>
+      <div class="d-flex gap-1">
+        <% if (currentPage > 1) { %>
+          <a href="<%= pageUrl(currentPage - 1) %>" title="Previous"><i class="bi bi-chevron-left"></i></a>
+        <% } else { %>
+          <span class="disabled"><i class="bi bi-chevron-left"></i></span>
+        <% } %>
+        <% pageItems.forEach(item => { %>
+          <% if (item === '...') { %>
+            <span class="disabled">...</span>
+          <% } else if (item === currentPage) { %>
+            <span class="active"><%= item %></span>
+          <% } else { %>
+            <a href="<%= pageUrl(item) %>"><%= item %></a>
+          <% } %>
+        <% }) %>
+        <% if (currentPage < totalPagesSafe) { %>
+          <a href="<%= pageUrl(currentPage + 1) %>" title="Next"><i class="bi bi-chevron-right"></i></a>
+        <% } else { %>
+          <span class="disabled"><i class="bi bi-chevron-right"></i></span>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+</div>
+
+<script>
+  document.querySelectorAll('.pb-download-booking').forEach((button) => {
+    button.addEventListener('click', () => {
+      const summaryId = button.getAttribute('data-summary-id');
+      const summary = summaryId ? document.getElementById(summaryId) : null;
+      if (!summary) {
+        alert('Booking summary is not available for download.');
+        return;
+      }
+
+      const filename = button.getAttribute('data-filename') || 'package-booking-summary.html';
+      const documentTitle = summary.querySelector('.pb-summary-title')?.textContent?.trim() || 'Package Booking Summary';
+      const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${documentTitle}</title>
+  <style>
+    body{font-family:Arial,sans-serif;margin:0;background:#f8fafc;color:#111827;}
+    .download-shell{max-width:1100px;margin:0 auto;padding:28px;}
+    .download-header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px;border-bottom:1px solid #dbe3ef;padding-bottom:14px;}
+    .download-title{font-size:20px;font-weight:900;margin:0;}
+    .download-date{font-size:12px;color:#64748b;margin-top:4px;}
+    .pb-summary{display:grid;gap:14px;}
+    .pb-summary-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;border:1px solid #dbe3ef;background:#fff;border-radius:8px;padding:14px;}
+    .pb-summary-title{font-size:18px;font-weight:900;color:#111827;margin:0;}
+    .pb-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;}
+    .pb-summary-card{border:1px solid #dbe3ef;border-radius:8px;background:#fff;padding:14px;}
+    .pb-summary-card-wide{grid-column:1/-1;}
+    .pb-summary-label{font-size:11px;font-weight:900;text-transform:uppercase;color:#64748b;letter-spacing:.03em;}
+    .pb-summary-value{font-size:15px;font-weight:900;color:#111827;margin-top:5px;}
+    .pb-summary-muted{font-size:12px;color:#64748b;line-height:1.45;margin-top:3px;}
+    .pb-pill{display:inline-flex;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:800;text-transform:capitalize;margin-left:4px;}
+    .pb-summary-table{width:100%;border-collapse:collapse;border:1px solid #dbe3ef;border-radius:8px;overflow:hidden;margin-top:8px;}
+    .pb-summary-table th{background:#f8fafc;color:#475569;text-transform:uppercase;font-size:11px;letter-spacing:.03em;padding:10px;border-bottom:1px solid #dbe3ef;text-align:left;}
+    .pb-summary-table td{padding:10px;border-bottom:1px solid #edf2f7;font-size:12px;color:#334155;vertical-align:top;}
+    .pb-summary-table tfoot td{background:#f8fafc;font-weight:900;color:#111827;}
+    a{color:#2563eb;text-decoration:none;}
+    .text-center{text-align:center;}
+    .text-muted{color:#64748b;}
+    .py-4{padding-top:18px;padding-bottom:18px;}
+    @media print{body{background:#fff}.download-shell{padding:0}.pb-summary-card,.pb-summary-head{break-inside:avoid}}
+  </style>
+</head>
+<body>
+  <main class="download-shell">
+    <div class="download-header">
+      <div>
+        <h1 class="download-title">Package Booking Summary</h1>
+        <div class="download-date">Downloaded ${new Date().toLocaleString('en-IN')}</div>
+      </div>
+    </div>
+    ${summary.innerHTML}
+  </main>
+</body>
+</html>`;
+
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename.endsWith('.html') ? filename : `${filename}.html`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    });
+  });
+
+  document.querySelectorAll('.pb-admin-action-form').forEach((form) => {
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submitBtn = form.querySelector('button[type="submit"]');
+      const originalText = submitBtn ? submitBtn.innerHTML : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving';
+      }
+
+      const formData = new FormData(form);
+      const payload = {};
+      formData.forEach((value, key) => {
+        if (value === '') return;
+        payload[key] = value;
+      });
+
+      try {
+        const response = await fetch(form.action, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || 'Unable to update booking');
+        }
+        window.location.reload();
+      } catch (error) {
+        alert(error.message || 'Unable to update booking');
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalText;
+        }
+      }
+    });
+  });
+</script>

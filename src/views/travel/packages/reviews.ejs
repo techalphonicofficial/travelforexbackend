@@ -1,0 +1,418 @@
+<style>
+  .review-page {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .review-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .review-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1e1e4a;
+    margin: 0;
+  }
+
+  .review-sub {
+    color: #8888bb;
+    margin: 0.2rem 0 0;
+    font-size: 0.88rem;
+  }
+
+  .review-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .review-panel {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(79, 70, 229, 0.07);
+    padding: 1.25rem;
+  }
+
+  .review-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .review-stat {
+    border: 1px solid #eef0f8;
+    border-radius: 12px;
+    padding: 1rem;
+    background: #fafafe;
+  }
+
+  .review-stat span {
+    display: block;
+    color: #8888bb;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 0.25rem;
+  }
+
+  .review-stat strong {
+    color: #1e1e4a;
+    font-size: 1.35rem;
+    font-weight: 800;
+  }
+
+  .review-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .review-form-grid .full {
+    grid-column: 1 / -1;
+  }
+
+  .review-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #5555aa;
+    margin-bottom: 0.35rem;
+  }
+
+  .review-input {
+    border-radius: 10px;
+    border: 1.5px solid #e5e7f0;
+    padding: 0.62rem 0.75rem;
+    width: 100%;
+    font-size: 0.9rem;
+  }
+
+  .review-input:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    outline: none;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.75rem;
+  }
+
+  .status-approved {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .status-pending {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .status-rejected {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  @media (max-width: 768px) {
+    .review-form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="review-page">
+  <div class="review-header">
+    <div>
+      <h1 class="review-title">Package Reviews</h1>
+      <p class="review-sub"><%= pkg.name %> <%= pkg.slug ? '(' + pkg.slug + ')' : '' %></p>
+    </div>
+    <div class="review-actions">
+      <a href="/travel/packages" class="btn btn-light border fw-bold"><i class="bi bi-arrow-left me-1"></i> Packages</a>
+      <a href="/travel/packages/<%= pkg.id %>" class="btn btn-outline-primary fw-bold"><i class="bi bi-eye me-1"></i> View Package</a>
+    </div>
+  </div>
+
+  <div class="review-stats">
+    <div class="review-stat">
+      <span>Total Reviews</span>
+      <strong><%= reviews.length %></strong>
+    </div>
+    <div class="review-stat">
+      <span>Approved Reviews</span>
+      <strong><%= summary.count || 0 %></strong>
+    </div>
+    <div class="review-stat">
+      <span>Average Rating</span>
+      <strong><%= summary.average_rating || 0 %>/5</strong>
+    </div>
+  </div>
+
+  <div class="review-panel">
+    <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap mb-3">
+      <div>
+        <h2 class="h5 fw-bold mb-1">Add Review</h2>
+        <div class="text-muted small">Create a customer review directly for this package.</div>
+      </div>
+    </div>
+
+    <form id="packageReviewForm">
+      <div class="review-form-grid">
+        <div>
+          <label class="review-label" for="rating">Rating</label>
+          <select class="review-input" id="rating" name="rating" required>
+            <option value="5">5</option>
+            <option value="4">4</option>
+            <option value="3">3</option>
+            <option value="2">2</option>
+            <option value="1">1</option>
+          </select>
+        </div>
+        <div>
+          <label class="review-label" for="status">Status</label>
+          <select class="review-input" id="status" name="status">
+            <option value="approved">Approved</option>
+            <option value="pending">Pending</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+        <div>
+          <label class="review-label" for="reviewer_name">Reviewer Name</label>
+          <input class="review-input" id="reviewer_name" name="reviewer_name" type="text" placeholder="Customer name">
+        </div>
+        <div>
+          <label class="review-label" for="reviewer_email">Reviewer Email</label>
+          <input class="review-input" id="reviewer_email" name="reviewer_email" type="email" placeholder="customer@example.com">
+        </div>
+        <div class="full">
+          <label class="review-label" for="title">Title</label>
+          <input class="review-input" id="title" name="title" type="text" placeholder="Short review title">
+        </div>
+        <div class="full">
+          <label class="review-label" for="comment">Comment</label>
+          <textarea class="review-input" id="comment" name="comment" rows="4" placeholder="Review comment"></textarea>
+        </div>
+      </div>
+      <div class="d-flex justify-content-end mt-3">
+        <button type="submit" class="btn btn-primary fw-bold"><i class="bi bi-plus-lg me-1"></i> Add Review</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="review-panel">
+    <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap mb-3">
+      <div>
+        <h2 class="h5 fw-bold mb-1">All Reviews</h2>
+        <div class="text-muted small">Reviews attached to this package.</div>
+      </div>
+    </div>
+
+    <% if (reviews.length) { %>
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th>Reviewer</th>
+              <th>Review</th>
+              <th>Rating</th>
+              <th>Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% reviews.forEach(review => { %>
+              <tr>
+                <td>
+                  <div class="fw-bold"><%= review.reviewer_name || 'Guest' %></div>
+                  <div class="text-muted small"><%= review.reviewer_email || 'No email' %></div>
+                </td>
+                <td style="max-width: 420px;">
+                  <div class="fw-bold"><%= review.title || 'Untitled review' %></div>
+                  <div class="text-muted small"><%= review.comment || 'No comment' %></div>
+                </td>
+                <td><strong><%= review.rating %>/5</strong></td>
+                <td><span class="status-pill status-<%= review.status %>"><%= review.status %></span></td>
+                <td class="text-end">
+                  <button class="btn-icon btn-icon-edit me-1" onclick="openEditReview('<%= review.id %>')" title="Edit review">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button class="btn-icon btn-icon-del" onclick="deleteReview('<%= review.id %>')" title="Delete review">
+                    <i class="bi bi-trash3"></i>
+                  </button>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } else { %>
+      <div class="text-center text-muted py-5">
+        <i class="bi bi-star fs-1 d-block mb-2"></i>
+        No reviews have been added for this package yet.
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<div class="modal fade" id="editReviewModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 rounded-4">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Edit Package Review</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="editReviewForm">
+        <div class="modal-body">
+          <input type="hidden" id="edit_review_id" name="review_id">
+          <div class="review-form-grid">
+            <div>
+              <label class="review-label" for="edit_rating">Rating</label>
+              <select class="review-input" id="edit_rating" name="rating" required>
+                <option value="5">5</option>
+                <option value="4">4</option>
+                <option value="3">3</option>
+                <option value="2">2</option>
+                <option value="1">1</option>
+              </select>
+            </div>
+            <div>
+              <label class="review-label" for="edit_status">Status</label>
+              <select class="review-input" id="edit_status" name="status">
+                <option value="approved">Approved</option>
+                <option value="pending">Pending</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+            <div>
+              <label class="review-label" for="edit_reviewer_name">Reviewer Name</label>
+              <input class="review-input" id="edit_reviewer_name" name="reviewer_name" type="text">
+            </div>
+            <div>
+              <label class="review-label" for="edit_reviewer_email">Reviewer Email</label>
+              <input class="review-input" id="edit_reviewer_email" name="reviewer_email" type="email">
+            </div>
+            <div>
+              <label class="review-label" for="edit_reviewer_phone">Reviewer Phone</label>
+              <input class="review-input" id="edit_reviewer_phone" name="reviewer_phone" type="text">
+            </div>
+            <div>
+              <label class="review-label" for="edit_title">Title</label>
+              <input class="review-input" id="edit_title" name="title" type="text">
+            </div>
+            <div class="full">
+              <label class="review-label" for="edit_comment">Comment</label>
+              <textarea class="review-input" id="edit_comment" name="comment" rows="4"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light border fw-bold" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary fw-bold"><i class="bi bi-check2 me-1"></i> Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  const form = document.getElementById('packageReviewForm');
+  const editForm = document.getElementById('editReviewForm');
+  const reviewData = <%- JSON.stringify(reviews).replace(/</g, '\\u003c') %>;
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving';
+
+    try {
+      const response = await fetch('/travel/packages/<%= pkg.id %>/reviews/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(Object.fromEntries(new FormData(form)))
+      });
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to save review');
+      }
+
+      window.location.reload();
+    } catch (error) {
+      alert(error.message);
+      submitButton.disabled = false;
+      submitButton.innerHTML = '<i class="bi bi-plus-lg me-1"></i> Add Review';
+    }
+  });
+
+  function openEditReview(reviewId) {
+    const review = reviewData.find(item => String(item.id) === String(reviewId));
+    if (!review) return;
+
+    document.getElementById('edit_review_id').value = review.id;
+    document.getElementById('edit_rating').value = review.rating || 5;
+    document.getElementById('edit_status').value = review.status || 'approved';
+    document.getElementById('edit_reviewer_name').value = review.reviewer_name || '';
+    document.getElementById('edit_reviewer_email').value = review.reviewer_email || '';
+    document.getElementById('edit_reviewer_phone').value = review.reviewer_phone || '';
+    document.getElementById('edit_title').value = review.title || '';
+    document.getElementById('edit_comment').value = review.comment || '';
+
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('editReviewModal')).show();
+  }
+
+  editForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const reviewId = document.getElementById('edit_review_id').value;
+    const submitButton = editForm.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving';
+
+    try {
+      const response = await fetch(`/travel/packages/<%= pkg.id %>/reviews/${reviewId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(Object.fromEntries(new FormData(editForm)))
+      });
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to update review');
+      }
+
+      window.location.reload();
+    } catch (error) {
+      alert(error.message);
+      submitButton.disabled = false;
+      submitButton.innerHTML = '<i class="bi bi-check2 me-1"></i> Save Changes';
+    }
+  });
+
+  async function deleteReview(reviewId) {
+    if (!confirm('Delete this package review?')) return;
+
+    try {
+      const response = await fetch(`/travel/packages/<%= pkg.id %>/reviews/${reviewId}`, {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to delete review');
+      }
+
+      window.location.reload();
+    } catch (error) {
+      alert(error.message);
+    }
+  }
+</script>

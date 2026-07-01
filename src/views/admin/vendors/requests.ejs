@@ -1,0 +1,181 @@
+<%
+  const statusFilter = filters && filters.status ? filters.status : 'pending';
+  const searchValue = filters && filters.search ? filters.search : '';
+  const counts = statusCounts || {};
+  const statusTabs = [
+    { key: 'pending', label: 'Pending', count: counts.pending || 0 },
+    { key: 'approved', label: 'Approved', count: counts.approved || 0 },
+    { key: 'rejected', label: 'Rejected', count: counts.rejected || 0 },
+    { key: 'all', label: 'All', count: counts.all || 0 }
+  ];
+  const statusBadge = {
+    pending: 'background:#fef3c7;color:#92400e;',
+    approved: 'background:#dcfce7;color:#166534;',
+    rejected: 'background:#fee2e2;color:#991b1b;'
+  };
+  const dateLabel = (value) => value ? new Date(value).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
+  const timeLabel = (value) => value ? new Date(value).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
+  const requestUrl = (status) => `/admin/vendors/requests?status=${encodeURIComponent(status)}&search=${encodeURIComponent(searchValue)}`;
+%>
+
+<style>
+  .vendor-requests-shell{display:flex;flex-direction:column;gap:1rem;}
+  .vendor-requests-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+  .vendor-requests-title{font-size:1.65rem;font-weight:800;color:#111827;margin:0;}
+  .vendor-requests-muted{color:#64748b;font-size:.88rem;margin:.2rem 0 0;}
+  .vendor-request-tabs{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;}
+  .vendor-request-tab{display:inline-flex;align-items:center;gap:.4rem;border:1px solid #dbe3ef;background:#fff;color:#475569;text-decoration:none;border-radius:8px;padding:.52rem .78rem;font-size:.84rem;font-weight:800;}
+  .vendor-request-tab.active{border-color:#4f46e5;background:#eef2ff;color:#4338ca;}
+  .vendor-request-panel{background:#fff;border:1px solid #e0e7ff;border-radius:8px;box-shadow:0 4px 16px rgba(79,70,229,.06);}
+  .vendor-request-toolbar{padding:1rem;border-bottom:1px solid #eef2ff;}
+  .vendor-request-form{display:flex;align-items:center;gap:.65rem;flex-wrap:wrap;margin:0;}
+  .vendor-request-search{position:relative;min-width:min(420px,100%);flex:1;}
+  .vendor-request-search i{position:absolute;left:.75rem;top:50%;transform:translateY(-50%);color:#94a3b8;}
+  .vendor-request-search input{width:100%;height:42px;border:1px solid #dbe3ef;border-radius:8px;padding:0 .85rem 0 2.25rem;outline:none;color:#1f2937;}
+  .vendor-request-select{height:42px;border:1px solid #dbe3ef;border-radius:8px;background:#fff;color:#334155;padding:0 .75rem;}
+  .vendor-request-btn{height:42px;border:0;border-radius:8px;background:#4f46e5;color:#fff;padding:0 1rem;font-weight:800;}
+  .vendor-request-clear{height:42px;display:inline-flex;align-items:center;border:1px solid #dbe3ef;border-radius:8px;background:#f8fafc;color:#475569;padding:0 .9rem;text-decoration:none;font-weight:800;}
+  .vendor-request-table{width:100%;min-width:1050px;border-collapse:collapse;}
+  .vendor-request-table th{background:#f8fafc;color:#475569;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;padding:.85rem 1rem;border-bottom:1px solid #e0e7ff;}
+  .vendor-request-table td{padding:.9rem 1rem;border-bottom:1px solid #f1f5f9;vertical-align:top;color:#334155;font-size:.86rem;}
+  .vendor-request-table tr:last-child td{border-bottom:0;}
+  .vr-main{font-weight:800;color:#111827;}
+  .vr-sub{font-size:.78rem;color:#64748b;margin-top:.22rem;line-height:1.35;}
+  .vr-badge{display:inline-flex;align-items:center;border-radius:999px;padding:.25rem .62rem;font-size:.74rem;font-weight:800;text-transform:capitalize;white-space:nowrap;}
+  .vr-actions{display:flex;justify-content:flex-end;gap:.4rem;flex-wrap:wrap;}
+  .vr-action{border:1px solid transparent;border-radius:8px;padding:.42rem .72rem;font-size:.78rem;font-weight:800;background:#f8fafc;color:#334155;}
+  .vr-action-approve{background:#ecfdf5;color:#047857;border-color:#bbf7d0;}
+  .vr-action-reject{background:#fff7ed;color:#c2410c;border-color:#fed7aa;}
+  .vr-empty{padding:3rem 1rem;text-align:center;color:#64748b;}
+</style>
+
+<section class="vendor-requests-shell">
+  <div class="vendor-requests-header">
+    <div>
+      <h1 class="vendor-requests-title">Vendor Requests</h1>
+      <p class="vendor-requests-muted">Review vendor signup requests, search by business or owner, and approve the account.</p>
+    </div>
+    <div class="vendor-request-tabs">
+      <% statusTabs.forEach(tab => { %>
+        <a href="<%= requestUrl(tab.key) %>" class="vendor-request-tab <%= statusFilter === tab.key ? 'active' : '' %>">
+          <%= tab.label %>
+          <span><%= tab.count %></span>
+        </a>
+      <% }) %>
+    </div>
+  </div>
+
+  <% if (success) { %>
+    <div class="alert alert-success border-0" style="border-radius:8px;">
+      Vendor request <%= success %> successfully.
+    </div>
+  <% } %>
+
+  <div class="vendor-request-panel">
+    <div class="vendor-request-toolbar">
+      <form class="vendor-request-form" method="GET" action="/admin/vendors/requests">
+        <div class="vendor-request-search">
+          <i class="bi bi-search"></i>
+          <input type="text" name="search" value="<%= searchValue %>" placeholder="Search vendor, owner, email, phone, city, PAN or GST">
+        </div>
+        <select class="vendor-request-select" name="status">
+          <% statusTabs.forEach(tab => { %>
+            <option value="<%= tab.key %>" <%= statusFilter === tab.key ? 'selected' : '' %>><%= tab.label %></option>
+          <% }) %>
+        </select>
+        <button class="vendor-request-btn" type="submit">Search</button>
+        <% if (searchValue || statusFilter !== 'pending') { %>
+          <a class="vendor-request-clear" href="/admin/vendors/requests">Clear</a>
+        <% } %>
+      </form>
+    </div>
+
+    <div class="table-responsive">
+      <table class="vendor-request-table">
+        <thead>
+          <tr>
+            <th>Vendor</th>
+            <th>Owner</th>
+            <th>Business</th>
+            <th>Location</th>
+            <th>Bank</th>
+            <th>Status</th>
+            <th>Requested</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (requests && requests.length) { %>
+            <% requests.forEach(request => { %>
+              <tr>
+                <td>
+                  <div class="vr-main"><%= request.business_name %></div>
+                  <div class="vr-sub"><%= request.email %></div>
+                  <div class="vr-sub"><%= request.phone %></div>
+                </td>
+                <td>
+                  <div class="vr-main"><%= request.user ? request.user.name : (request.legal_name || 'Vendor owner') %></div>
+                  <div class="vr-sub"><%= request.user ? request.user.email : request.email %></div>
+                  <div class="vr-sub"><%= request.user && request.user.phone_number ? request.user.phone_number : request.phone %></div>
+                </td>
+                <td>
+                  <div class="vr-main"><%= request.business_type %></div>
+                  <div class="vr-sub">PAN: <%= request.pan_number || 'N/A' %></div>
+                  <div class="vr-sub">GST: <%= request.gst_number || 'N/A' %></div>
+                  <% if (request.website) { %>
+                    <div class="vr-sub"><a href="<%= request.website %>" target="_blank" rel="noopener">Website</a></div>
+                  <% } %>
+                </td>
+                <td>
+                  <div class="vr-main"><%= request.city %>, <%= request.state %></div>
+                  <div class="vr-sub"><%= request.country %> <%= request.pincode %></div>
+                  <div class="vr-sub"><%= Array.isArray(request.service_regions) && request.service_regions.length ? request.service_regions.join(', ') : 'No regions added' %></div>
+                </td>
+                <td>
+                  <div class="vr-main"><%= request.bank_name %></div>
+                  <div class="vr-sub"><%= request.bank_account_name %></div>
+                  <div class="vr-sub">IFSC: <%= request.bank_ifsc %></div>
+                </td>
+                <td>
+                  <span class="vr-badge" style="<%= statusBadge[request.status] || statusBadge.pending %>"><%= request.status || 'pending' %></span>
+                  <div class="vr-sub">Login: <%= request.user && request.user.status ? 'Active' : 'Inactive' %></div>
+                </td>
+                <td>
+                  <div class="vr-main"><%= dateLabel(request.created_at) %></div>
+                  <div class="vr-sub"><%= timeLabel(request.created_at) %></div>
+                  <% if (request.approved_at) { %>
+                    <div class="vr-sub">Approved <%= dateLabel(request.approved_at) %></div>
+                  <% } %>
+                </td>
+                <td>
+                  <div class="vr-actions">
+                    <% if (request.status !== 'approved') { %>
+                      <form method="POST" action="/admin/vendors/requests/<%= request.id %>/approve">
+                        <button class="vr-action vr-action-approve" type="submit"><i class="bi bi-check2"></i> Approve</button>
+                      </form>
+                    <% } %>
+                    <% if (request.status !== 'rejected') { %>
+                      <form method="POST" action="/admin/vendors/requests/<%= request.id %>/reject">
+                        <button class="vr-action vr-action-reject" type="submit"><i class="bi bi-x-lg"></i> Reject</button>
+                      </form>
+                    <% } %>
+                  </div>
+                </td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr>
+              <td colspan="8">
+                <div class="vr-empty">
+                  <i class="bi bi-inbox fs-1 d-block mb-2 text-light"></i>
+                  <div class="fw-bold">No vendor requests found.</div>
+                  <div class="mt-1">Try another search or switch the status filter.</div>
+                </div>
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

@@ -1,6 +1,52 @@
 const path = require('path');
 const fs = require('fs');
 
+const PACKAGE_HOTELS_KEY = '_hotels';
+
+function normalizePackageHotels(hotels) {
+    if (!Array.isArray(hotels)) return [];
+
+    return hotels
+        .map((hotel, index) => {
+            const hotelId = parseInt(hotel.hotelId || hotel.hotel_id || hotel.hotel || hotel.id, 10);
+            const uiId = String(hotel.id || `hotel-${Date.now()}-${index}`).slice(0, 120);
+
+            return {
+                id: uiId,
+                hotelId: Number.isInteger(hotelId) ? hotelId : null,
+                name: String(hotel.name || '').trim().slice(0, 180),
+                image: String(hotel.image || hotel.image_url || '').trim().slice(0, 255),
+                starRating: parseInt(hotel.starRating || hotel.star_rating, 10) || 0,
+                guestRating: parseFloat(hotel.guestRating || hotel.guest_rating) || 0,
+                pricePerNight: parseFloat(hotel.pricePerNight || hotel.price_per_night) || 0,
+                nights: parseInt(hotel.nights, 10) || 1,
+                rooms: parseInt(hotel.rooms, 10) || 1,
+                notes: String(hotel.notes || '').trim().slice(0, 500)
+            };
+        })
+        .filter(hotel => hotel.hotelId || hotel.name);
+}
+
+function getPackageHotelsFromActivities(activities) {
+    if (!activities || typeof activities !== 'object' || Array.isArray(activities)) return [];
+    return normalizePackageHotels(activities[PACKAGE_HOTELS_KEY] || activities.hotels || []);
+}
+
+function withoutPackageHotels(activities) {
+    if (!activities || typeof activities !== 'object' || Array.isArray(activities)) return {};
+    const cleaned = { ...activities };
+    delete cleaned[PACKAGE_HOTELS_KEY];
+    delete cleaned.hotels;
+    return cleaned;
+}
+
+function withPackageHotels(activities, hotels) {
+    const payload = withoutPackageHotels(activities);
+    const normalizedHotels = normalizePackageHotels(hotels);
+    if (normalizedHotels.length) payload[PACKAGE_HOTELS_KEY] = normalizedHotels;
+    return payload;
+}
+
 class VendorPackageController {
     constructor(vendorService, packageRepo, destinationRepo, categoryRepo, activityRepo, db, models) {
         this.vendorService = vendorService;
@@ -40,6 +86,7 @@ class VendorPackageController {
             const destinations = await this.models.Destination.findAll({ order: [['name', 'ASC']] });
             const categories = await this.categoryRepo.findAll();
             const activities = await this.models.Activity.findAll({ order: [['name', 'ASC']] });
+            const hotels = await this.models.Hotel.findAll({ order: [['name', 'ASC']] });
 
             res.render('vendor/packages/form', {
                 title: 'Create Package',
@@ -47,6 +94,7 @@ class VendorPackageController {
                 destinations,
                 categories,
                 activities,
+                hotels,
                 user: req.session.user,
                 layout: 'layouts/vendor_layout'
             });
@@ -79,15 +127,20 @@ class VendorPackageController {
             const plainPkg = pkg.get({ plain: true });
 
             // Transform for frontend form
-            plainPkg.stays = plainPkg.destinations.map(pd => ({
-                destinationId: pd.destination ? pd.destination.id : null,
-                destinationName: pd.destination ? pd.destination.name : 'Unknown',
-                nights: pd.nights,
-                activities: pd.activities || {}
-            })).filter(s => s.destinationId !== null);
+            plainPkg.stays = plainPkg.destinations.map(pd => {
+                const activities = pd.activities || {};
+                return {
+                    destinationId: pd.destination ? pd.destination.id : null,
+                    destinationName: pd.destination ? pd.destination.name : 'Unknown',
+                    nights: pd.nights,
+                    activities: withoutPackageHotels(activities),
+                    hotels: getPackageHotelsFromActivities(activities)
+                };
+            }).filter(s => s.destinationId !== null);
 
             const destinations = await this.models.Destination.findAll({ order: [['name', 'ASC']] });
             const activities = await this.models.Activity.findAll({ order: [['name', 'ASC']] });
+            const hotels = await this.models.Hotel.findAll({ order: [['name', 'ASC']] });
             const categories = await this.categoryRepo.findAll();
 
             res.render('vendor/packages/form', {
@@ -96,6 +149,7 @@ class VendorPackageController {
                 destinations,
                 categories,
                 activities,
+                hotels,
                 user: req.session.user,
                 layout: 'layouts/vendor_layout'
             });
@@ -108,6 +162,7 @@ class VendorPackageController {
     async save(req, res) {
         const { id, name, duration, price, description, destinations, inclusions, exclusions } = req.body;
         const vendorId = req.session.user.id;
+        const slug = (req.body.slug || name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
         try {
             const transaction = await this.db.transaction();
@@ -116,9 +171,12 @@ class VendorPackageController {
                 let pkg;
                 const packageData = {
                     name,
+                    slug,
                     duration_days: duration,
                     price: price || 0,
                     description: description || '',
+                    main_image: req.body.main_image || null,
+                    main_image_alt: req.body.main_image_alt || null,
                     vendor_id: vendorId,
                     status: false // Always inactive by default for vendor
                 };
@@ -148,7 +206,7 @@ class VendorPackageController {
                             destination_id: dest.destinationId,
                             nights: dest.nights,
                             order: i + 1,
-                            activities: dest.activities || {}
+                            activities: withPackageHotels(dest.activities || {}, dest.hotels || [])
                         }, { transaction });
                     }
                 }
@@ -245,6 +303,24 @@ class VendorPackageController {
             res.json({ success: true, message: 'Media deleted' });
         } catch (error) {
             console.error('Media Delete Error:', error);
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
+    async uploadMainImage(req, res) {
+        try {
+            const vendorId = req.session.user.id;
+            const pkg = await this.models.Package.findOne({ where: { id: req.params.id, vendor_id: vendorId } });
+            
+            if (!pkg) return res.status(404).json({ success: false, message: 'Package not found or unauthorized' });
+            if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+
+            const imageUrl = `/uploads/packages/${req.file.filename}`;
+            await pkg.update({ main_image: imageUrl });
+
+            res.json({ success: true, imageUrl });
+        } catch (error) {
+            console.error('Main Image Upload Error:', error);
             res.status(500).json({ success: false, message: error.message });
         }
     }

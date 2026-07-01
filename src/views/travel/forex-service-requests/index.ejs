@@ -1,0 +1,304 @@
+<%
+  const requests = Array.isArray(forexRequests) ? forexRequests : [];
+  const inrRequests = requests.filter(row => String(row.to_currency || '').toUpperCase() === 'INR');
+  const totalConverted = inrRequests.reduce((sum, row) => sum + Number(row.converted_amount || 0), 0);
+  const totalPayable = inrRequests.reduce((sum, row) => sum + Number(row.total_amount || 0), 0);
+  const customers = new Set(requests.map(row => row.customer_id).filter(Boolean)).size;
+  const newCount = requests.filter(row => String(row.status || 'new').toLowerCase() === 'new').length;
+  const convertedCount = requests.filter(row => String(row.status || '').toLowerCase() === 'converted').length;
+  const customerName = (row) => {
+    const customer = row && row.customer ? row.customer : {};
+    const user = customer.user || {};
+    return user.name || user.email || row.customer_id || 'Customer';
+  };
+  const money = (value, code) => {
+    const amount = Number(value || 0);
+    const currency = String(code || 'INR').toUpperCase();
+    try {
+      return amount.toLocaleString('en-IN', { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    } catch (err) {
+      return `${currency} ${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+  };
+%>
+
+<style>
+  .fx-requests-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .fx-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.85rem;
+  }
+
+  .fx-chip,
+  .fx-panel {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+  }
+
+  .fx-chip {
+    padding: 1rem;
+  }
+
+  .fx-chip-label {
+    color: #64748b;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  .fx-chip-value {
+    color: #0f172a;
+    font-size: 1.35rem;
+    font-weight: 800;
+    margin-top: 0.2rem;
+  }
+
+  .fx-panel {
+    overflow: hidden;
+  }
+
+  .fx-panel-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.2rem 1.25rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .fx-title {
+    color: #0f172a;
+    font-size: 1.45rem;
+    font-weight: 800;
+    margin: 0;
+  }
+
+  .fx-sub {
+    color: #64748b;
+    font-size: 0.86rem;
+    margin: 0.25rem 0 0;
+  }
+
+  .fx-search {
+    max-width: 300px;
+    border-radius: 8px;
+  }
+
+  .fx-table {
+    margin: 0;
+  }
+
+  .fx-table thead th {
+    background: #f8fafc;
+    color: #334155;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    padding: 0.85rem 1rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .fx-table tbody td {
+    color: #0f172a;
+    font-size: 0.86rem;
+    padding: 0.9rem 1rem;
+    vertical-align: middle;
+  }
+
+  .fx-code {
+    background: #eef2ff;
+    border-radius: 999px;
+    color: #4338ca;
+    display: inline-flex;
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 0.18rem 0.5rem;
+  }
+
+  .fx-muted {
+    color: #64748b;
+    font-size: 0.78rem;
+  }
+
+  .fx-status {
+    border-radius: 999px;
+    display: inline-flex;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 0.22rem 0.55rem;
+    text-transform: uppercase;
+  }
+
+  .fx-status-new {
+    background: #eff6ff;
+    color: #2563eb;
+  }
+
+  .fx-status-converted {
+    background: #ecfdf5;
+    color: #059669;
+  }
+
+  .fx-status-other {
+    background: #f8fafc;
+    color: #475569;
+  }
+
+  .fx-action-btn {
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    padding: 0.38rem 0.7rem;
+    white-space: nowrap;
+  }
+
+  .fx-empty {
+    color: #64748b;
+    padding: 3rem 1rem;
+    text-align: center;
+  }
+
+  @media (max-width: 900px) {
+    .fx-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .fx-panel-head { flex-direction: column; }
+    .fx-search { max-width: none; }
+  }
+</style>
+
+<div class="fx-requests-page">
+  <div class="fx-summary">
+    <div class="fx-chip">
+      <div class="fx-chip-label">Total Requests</div>
+      <div class="fx-chip-value"><%= requests.length %></div>
+    </div>
+    <div class="fx-chip">
+      <div class="fx-chip-label">New</div>
+      <div class="fx-chip-value"><%= newCount %></div>
+    </div>
+    <div class="fx-chip">
+      <div class="fx-chip-label">Converted</div>
+      <div class="fx-chip-value"><%= convertedCount %></div>
+    </div>
+    <div class="fx-chip">
+      <div class="fx-chip-label">INR Payable</div>
+      <div class="fx-chip-value"><%= money(totalPayable, 'INR') %></div>
+    </div>
+  </div>
+
+  <div class="fx-panel">
+    <div class="fx-panel-head">
+      <div>
+        <h3 class="fx-title">Forex Service Requests</h3>
+        <p class="fx-sub">Customer-wise forex conversion requests created from the conversion API.</p>
+      </div>
+      <div class="position-relative">
+        <i class="bi bi-search position-absolute text-muted" style="left:12px;top:50%;transform:translateY(-50%);"></i>
+        <input id="requestSearch" class="form-control fx-search ps-5" type="search" placeholder="Search customer or currency" oninput="filterRequests()">
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table fx-table" id="requestTable">
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Status</th>
+            <th>Currency Pair</th>
+            <th>Amount</th>
+            <th>Converted</th>
+            <th>Service Charge</th>
+            <th>Total Payable</th>
+            <th>CRM / Accounting</th>
+            <th>Date</th>
+            <th class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (!requests.length) { %>
+            <tr>
+              <td colspan="10">
+                <div class="fx-empty">
+                  <i class="bi bi-receipt d-block mb-2" style="font-size:2rem;"></i>
+                  No forex service requests yet.
+                </div>
+              </td>
+            </tr>
+          <% } %>
+          <% requests.forEach(row => { %>
+            <tr class="request-row" data-search="<%= `${customerName(row)} ${row.status || 'new'} ${row.from_currency} ${row.to_currency} ${row.customer_id}`.toLowerCase() %>">
+              <td>
+                <div class="fw-bold"><%= customerName(row) %></div>
+                <div class="fx-muted"><%= row.customer && row.customer.phone ? row.customer.phone : row.customer_id %></div>
+              </td>
+              <td>
+                <span class="fx-status fx-status-<%= ['new','converted'].includes(String(row.status || 'new').toLowerCase()) ? String(row.status || 'new').toLowerCase() : 'other' %>">
+                  <%= row.status || 'new' %>
+                </span>
+                <% if (row.converted_at) { %>
+                  <div class="fx-muted"><%= new Date(row.converted_at).toLocaleDateString('en-IN') %></div>
+                <% } %>
+              </td>
+              <td>
+                <span class="fx-code"><%= row.from_currency %></span>
+                <span class="mx-1">&rarr;</span>
+                <span class="fx-code"><%= row.to_currency %></span>
+                <div class="fx-muted">Rate <%= Number(row.conversion_rate || 0).toFixed(6) %></div>
+              </td>
+              <td class="fw-semibold"><%= money(row.amount, row.from_currency) %></td>
+              <td class="fw-semibold"><%= money(row.converted_amount, row.to_currency) %></td>
+              <td>
+                <div class="fw-semibold">-<%= money(row.service_charge_amount, row.to_currency) %></div>
+                <div class="fx-muted"><%= row.service_charge_type %> · <%= Number(row.service_charge_value || 0).toFixed(2) %></div>
+              </td>
+              <td class="fw-bold text-success"><%= money(row.total_amount, row.to_currency) %></td>
+              <td>
+                <% if (row.lead_id) { %>
+                  <a href="/crm/leads/<%= row.lead_id %>" class="fw-bold text-decoration-none">Lead #<%= row.lead_id %></a>
+                <% } else { %>
+                  <span class="fx-muted">No lead</span>
+                <% } %>
+                <div class="fx-muted">
+                  <% if (row.journal_entry_id) { %>
+                    <a href="/accounting/ledger?ref_type=ForexConversionRequest" class="text-decoration-none">Accounting posted</a>
+                  <% } else { %>
+                    Accounting pending
+                  <% } %>
+                </div>
+              </td>
+              <td><%= row.created_at ? new Date(row.created_at).toLocaleString('en-IN') : '-' %></td>
+              <td class="text-end">
+                <% if (String(row.status || 'new').toLowerCase() !== 'converted') { %>
+                  <form action="/travel/forex-service-requests/<%= row.id %>/convert" method="POST" class="d-inline" onsubmit="return confirm('Convert this forex request to lead and accounting?')">
+                    <button class="btn btn-success fx-action-btn" type="submit">
+                      <i class="bi bi-check2-circle me-1"></i>Convert
+                    </button>
+                  </form>
+                <% } else { %>
+                  <span class="fx-muted">Done</span>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  function filterRequests() {
+    const query = String(document.getElementById('requestSearch').value || '').trim().toLowerCase();
+    document.querySelectorAll('.request-row').forEach(row => {
+      row.style.display = row.dataset.search.includes(query) ? '' : 'none';
+    });
+  }
+</script>

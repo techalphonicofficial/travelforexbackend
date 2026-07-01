@@ -1,6 +1,44 @@
 const express = require('express');
 const router = express.Router();
 const { controllers: { categoryController } } = require('../container');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Multer Storage Configuration for Categories
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const dir = 'public/uploads/categories';
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, `cat-${uniqueSuffix}${path.extname(file.originalname)}`);
+    }
+});
+const upload = multer({
+    storage: storage,
+    fileFilter: (req, file, cb) => {
+        const filetypes = /jpeg|jpg|png|webp|avif/;
+        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = filetypes.test(file.mimetype);
+        if (mimetype && extname) return cb(null, true);
+        cb(new Error('Only images are allowed!'));
+    }
+});
+
+// Helper for error catching
+function handleUpload(multerMiddleware) {
+    return (req, res, next) => {
+        multerMiddleware(req, res, (err) => {
+            if (err) {
+                return res.status(400).json({ success: false, message: err.message });
+            }
+            next();
+        });
+    };
+}
 
 /**
  * @openapi
@@ -145,10 +183,11 @@ const { controllers: { categoryController } } = require('../container');
 
 router.get('/', (req, res) => categoryController.getAll(req, res));
 router.get('/home',(req,res)=> categoryController.getHome(req,res));
+router.get('/tour-types',(req,res)=> categoryController.getTourTypes(req,res));
 router.get('/get-category', (req, res) => categoryController.getAll(req, res));
 router.get('/:id', (req, res) => categoryController.getById(req, res));
-router.post('/', (req, res) => categoryController.create(req, res));
-router.put('/:id', (req, res) => categoryController.update(req, res));
+router.post('/', handleUpload(upload.single('feature_image_file')), (req, res) => categoryController.create(req, res));
+router.put('/:id', handleUpload(upload.single('feature_image_file')), (req, res) => categoryController.update(req, res));
 router.post('/bulk-delete', (req, res) => categoryController.bulkDelete(req, res));
 router.delete('/:id', (req, res) => categoryController.delete(req, res));
 router.post('/reorder', (req, res) => categoryController.reorder(req, res));

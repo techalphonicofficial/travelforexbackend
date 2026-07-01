@@ -20,6 +20,24 @@ const Activity = sequelize.define('Activity', {
         type: DataTypes.INTEGER,
         allowNull: true,
         references: { model: 'destinations', key: 'id' }
+    },
+    price: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0.00
+    },
+    duration_minutes: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    source_type: {
+        type: DataTypes.ENUM('manual', 'third_party'),
+        allowNull: false,
+        defaultValue: 'manual'
+    },
+    provider_name: {
+        type: DataTypes.STRING(150),
+        allowNull: true
     }
 }, {
     tableName: 'activities',

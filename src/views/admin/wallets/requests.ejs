@@ -1,0 +1,74 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-0">Vendor Wallet Requests</h3>
+        <p class="text-secondary small">Review and approve pending wallet fund additions.</p>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light text-secondary small">
+                    <tr>
+                        <th class="ps-4 py-3 border-0">VENDOR</th>
+                        <th class="py-3 border-0">TYPE</th>
+                        <th class="py-3 border-0">AMOUNT</th>
+                        <th class="py-3 border-0">DATE</th>
+                        <th class="py-3 border-0">STATUS</th>
+                        <th class="pe-4 py-3 border-0 text-end">ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (requests && requests.length > 0) { %>
+                        <% requests.forEach(req => { %>
+                            <tr>
+                                <td class="ps-4 py-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="fw-bold text-dark mb-1">
+                                            <%= req.wallet && req.wallet.user ? req.wallet.user.name : 'Unknown Vendor' %>
+                                        </div>
+                                    </div>
+                                    <div class="text-muted" style="font-size: 0.8rem;">
+                                        <%= req.wallet && req.wallet.user ? req.wallet.user.email : '' %>
+                                    </div>
+                                </td>
+                                <td class="py-3">
+                                    <span class="badge bg-<%= req.type === 'credit' ? 'success' : 'danger' %>-subtle text-<%= req.type === 'credit' ? 'success' : 'danger' %> rounded-pill">
+                                        <%= req.type === 'credit' ? 'Top-Up' : 'Withdrawal' %>
+                                    </span>
+                                </td>
+                                <td class="py-3 fw-bold text-<%= req.type === 'credit' ? 'success' : 'danger' %>">
+                                    <%= req.type === 'credit' ? '+' : '-' %> ₹<%= parseFloat(req.amount).toLocaleString('en-IN') %>
+                                </td>
+                                <td class="py-3 text-secondary" style="font-size: 0.9rem;">
+                                    <%= new Date(req.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
+                                    <br>
+                                    <small><%= new Date(req.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) %></small>
+                                </td>
+                                <td class="py-3">
+                                    <span class="badge bg-warning text-dark py-2 px-3 rounded-pill">Pending</span>
+                                </td>
+                                <td class="pe-4 py-3 text-end">
+                                    <form action="/admin/wallets/approve/<%= req.id %>" method="POST" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 me-2">Approve</button>
+                                    </form>
+                                    <form action="/admin/wallets/reject/<%= req.id %>" method="POST" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-danger rounded-pill px-3">Reject</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-secondary">
+                                <i class="bi bi-inbox fs-1 text-light mb-2"></i>
+                                <p>No pending wallet requests.</p>
+                            </td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

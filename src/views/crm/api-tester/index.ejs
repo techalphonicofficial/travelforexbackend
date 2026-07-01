@@ -1,0 +1,582 @@
+<%- contentFor('styles') %>
+<style>
+  .apt-panel {
+    background: #0f172a;
+    border-radius: 12px;
+    border: 1px solid #1e293b;
+    color: #e2e8f0;
+    height: 100%;
+  }
+  .apt-panel-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #1e293b;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #94a3b8;
+  }
+  .apt-body { padding: 16px; }
+  .apt-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 6px;
+  }
+  .apt-input {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    color: #e2e8f0;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.8rem;
+    padding: 8px 12px;
+    width: 100%;
+    transition: border-color 0.2s;
+  }
+  .apt-input:focus { outline: none; border-color: #6366f1; }
+  .apt-select {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    color: #e2e8f0;
+    font-size: 0.82rem;
+    padding: 8px 12px;
+    width: 100%;
+    cursor: pointer;
+  }
+  .apt-select:focus { outline: none; border-color: #6366f1; }
+  .apt-textarea {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    color: #38bdf8;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.78rem;
+    padding: 12px;
+    width: 100%;
+    resize: vertical;
+    min-height: 220px;
+    transition: border-color 0.2s;
+    line-height: 1.6;
+  }
+  .apt-textarea:focus { outline: none; border-color: #6366f1; }
+  .apt-response {
+    background: #0a0f1a;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.78rem;
+    padding: 12px;
+    min-height: 220px;
+    max-height: 340px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    line-height: 1.6;
+  }
+  .apt-send-btn {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 10px 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .apt-send-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(99,102,241,0.4); }
+  .apt-send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .method-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 5px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .method-get  { background: #1d4ed8; color: #bfdbfe; }
+  .method-post { background: #15803d; color: #bbf7d0; }
+  .status-ok   { color: #4ade80; }
+  .status-err  { color: #f87171; }
+  .status-warn { color: #facc15; }
+
+  /* Webhook Logs */
+  .wh-log-item {
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    animation: fadeSlideIn 0.3s ease;
+  }
+  .wh-log-item:hover { border-color: #6366f1; background: #0d1526; }
+  .wh-log-item.active { border-color: #6366f1; background: #0d1526; }
+  .wh-empty {
+    text-align: center;
+    color: #475569;
+    padding: 40px 0;
+    font-size: 0.82rem;
+  }
+  .live-dot {
+    width: 8px; height: 8px;
+    background: #4ade80;
+    border-radius: 50%;
+    display: inline-block;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .receiver-url-box {
+    background: #1e293b;
+    border: 1px dashed #334155;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-family: monospace;
+    font-size: 0.78rem;
+    color: #38bdf8;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .split-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; height: calc(100vh - 180px); min-height: 600px; }
+  .split-col { display: flex; flex-direction: column; gap: 16px; overflow: hidden; }
+  .endpoint-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 6px 10px;
+  }
+  .url-display {
+    flex: 1;
+    font-family: monospace;
+    font-size: 0.78rem;
+    color: #94a3b8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tab-pill { display: flex; gap: 4px; background: #1e293b; border-radius: 8px; padding: 4px; }
+  .tab-pill-btn {
+    padding: 5px 14px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab-pill-btn.active { background: #6366f1; color: white; }
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: #0f172a; }
+  ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+</style>
+
+<div class="tf-page-header">
+  <div>
+    <h1 class="tf-page-title">
+      <i class="bi bi-terminal-fill me-2" style="color:#6366f1;"></i>API Tester
+    </h1>
+    <p class="tf-page-sub">Test CRM API endpoints and inspect webhook payloads — right from your dashboard</p>
+  </div>
+  <div class="d-flex align-items-center gap-3">
+    <div class="d-flex align-items-center gap-2">
+      <span class="live-dot"></span>
+      <span style="color:#4ade80; font-size:0.75rem; font-weight:600;">LIVE</span>
+    </div>
+    <a href="/crm/settings" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-gear me-1"></i>Settings
+    </a>
+  </div>
+</div>
+
+<div class="split-layout">
+
+  <!-- ═══════════════ LEFT: API PLAYGROUND ═══════════════ -->
+  <div class="split-col">
+
+    <!-- Endpoint Selector -->
+    <div class="apt-panel" style="flex: 0 0 auto;">
+      <div class="apt-panel-header">
+        <span><i class="bi bi-play-circle me-2" style="color:#6366f1;"></i>Request</span>
+        <div class="tab-pill" id="endpointTabs">
+          <button class="tab-pill-btn active" data-endpoint="submit-lead">Submit Lead</button>
+          <button class="tab-pill-btn" data-endpoint="list-pipelines">List Pipelines</button>
+          <button class="tab-pill-btn" data-endpoint="pipeline-form">Pipeline Form</button>
+        </div>
+      </div>
+      <div class="apt-body">
+
+        <!-- Endpoint URL row -->
+        <div class="apt-label">Endpoint</div>
+        <div class="endpoint-row mb-3">
+          <span class="method-badge method-post" id="methodBadge">POST</span>
+          <span class="url-display" id="urlDisplay"></span>
+        </div>
+
+        <!-- API Key -->
+        <div class="apt-label">API Key <span style="color:#475569; text-transform:none; font-weight:400;">(x-api-key header)</span></div>
+        <input type="text" class="apt-input mb-3" id="apiKeyInput" value="<%= apiKey %>" placeholder="No API key set — open access">
+
+        <!-- Pipeline selector (for certain endpoints) -->
+        <div id="pipelineRow" class="mb-3">
+          <div class="apt-label">Pipeline ID</div>
+          <select class="apt-select" id="pipelineSelect">
+            <% pipelines.forEach(p => { %>
+              <option value="<%= p.id %>"><%= p.id %> — <%= p.name %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <!-- Request Body -->
+        <div id="bodyRow">
+          <div class="d-flex align-items-center justify-content-between mb-1">
+            <div class="apt-label mb-0">Request Body (JSON)</div>
+            <button type="button" style="background:none;border:none;color:#6366f1;font-size:0.72rem;cursor:pointer;" onclick="fillSample()">
+              <i class="bi bi-magic me-1"></i>Fill Sample
+            </button>
+          </div>
+          <textarea class="apt-textarea" id="requestBody"></textarea>
+        </div>
+
+        <button class="apt-send-btn mt-3" id="sendBtn" onclick="sendRequest()">
+          <i class="bi bi-send-fill"></i> Send Request
+        </button>
+      </div>
+    </div>
+
+    <!-- Response -->
+    <div class="apt-panel" style="flex: 1; overflow: hidden;">
+      <div class="apt-panel-header">
+        <span><i class="bi bi-arrow-return-left me-2" style="color:#10b981;"></i>Response</span>
+        <span id="responseStatus" style="font-size:0.75rem;"></span>
+      </div>
+      <div class="apt-body" style="height: calc(100% - 48px); overflow-y: auto;">
+        <div class="apt-response" id="responseBox" style="color:#475569; min-height:160px;">
+          Hit "Send Request" to see the response here...
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════ RIGHT: WEBHOOK RECEIVER ═══════════════ -->
+  <div class="split-col">
+
+    <!-- Receiver URL -->
+    <div class="apt-panel" style="flex: 0 0 auto;">
+      <div class="apt-panel-header">
+        <span><i class="bi bi-broadcast me-2" style="color:#0ea5e9;"></i>Built-in Webhook Receiver</span>
+        <div class="d-flex align-items-center gap-2">
+          <span class="live-dot"></span>
+          <span style="color:#4ade80; font-size:0.7rem;">Listening</span>
+        </div>
+      </div>
+      <div class="apt-body">
+        <div class="apt-label">Your Receiver URL — paste this in CRM Settings → Webhook URL</div>
+        <div class="receiver-url-box">
+          <span id="receiverUrlText"><%= receiverUrl %></span>
+          <button onclick="copyReceiverUrl()" style="background:none;border:none;color:#6366f1;cursor:pointer;font-size:0.9rem;" title="Copy URL">
+            <i class="bi bi-clipboard" id="receiverCopyIcon"></i>
+          </button>
+        </div>
+        <div class="mt-2" style="font-size:0.72rem; color:#475569;">
+          <i class="bi bi-info-circle me-1"></i>Any POST to this URL will appear in the logs below instantly.
+        </div>
+      </div>
+    </div>
+
+    <!-- Webhook Logs -->
+    <div class="apt-panel" style="flex: 1; overflow: hidden;">
+      <div class="apt-panel-header">
+        <span><i class="bi bi-list-ul me-2" style="color:#f59e0b;"></i>Incoming Webhooks
+          <span class="badge ms-2" style="background:#1e293b; color:#94a3b8; font-size:0.65rem;" id="logCountBadge">0</span>
+        </span>
+        <button onclick="clearLogs()" style="background:none;border:none;color:#ef4444;font-size:0.72rem;cursor:pointer;">
+          <i class="bi bi-trash me-1"></i>Clear
+        </button>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; height: calc(100% - 48px); overflow: hidden;">
+
+        <!-- Log list -->
+        <div style="border-right: 1px solid #1e293b; overflow-y: auto; padding: 12px;">
+          <div id="logList">
+            <div class="wh-empty" id="emptyState">
+              <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+              Waiting for webhooks...<br>
+              <span style="font-size:0.72rem; color:#334155;">Set the receiver URL in settings and trigger a lead</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Log detail -->
+        <div style="overflow-y: auto; padding: 12px;" id="logDetail">
+          <div style="color:#334155; font-size:0.78rem; text-align:center; padding-top:40px;">
+            <i class="bi bi-hand-index-thumb d-block mb-2 fs-4"></i>
+            Click a log entry to inspect
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const BASE = window.location.origin;
+  const pipelines = <%- JSON.stringify(pipelines.map(p => ({ id: p.id, name: p.name }))) %>;
+  const RECEIVER_URL = '<%= receiverUrl %>';
+
+  // ── Endpoint Config ────────────────────────────────────────────
+  const endpoints = {
+    'submit-lead': {
+      method: 'POST',
+      url: () => `${BASE}/api/v1/crm/leads/submit`,
+      hasPipeline: true,
+      hasBody: true,
+      sample: () => ({
+        pipeline_id: parseInt(document.getElementById('pipelineSelect').value) || 1,
+        name: 'Test Lead',
+        email: 'test@example.com',
+        phone: '+91 98765 43210',
+        source: 'Dashboard API Tester',
+        notes: 'Testing from PickTrails API Tester',
+        custom_fields: { travel_date: '2025-06-01', budget: '50000' }
+      })
+    },
+    'list-pipelines': {
+      method: 'GET',
+      url: () => `${BASE}/api/v1/crm/pipelines`,
+      hasPipeline: false,
+      hasBody: false,
+      sample: null
+    },
+    'pipeline-form': {
+      method: 'GET',
+      url: () => `${BASE}/api/v1/crm/pipelines/${document.getElementById('pipelineSelect').value}/form`,
+      hasPipeline: true,
+      hasBody: false,
+      sample: null
+    }
+  };
+
+  let currentEndpoint = 'submit-lead';
+
+  function setEndpoint(key) {
+    currentEndpoint = key;
+    const ep = endpoints[key];
+    document.getElementById('methodBadge').textContent = ep.method;
+    document.getElementById('methodBadge').className = `method-badge method-${ep.method.toLowerCase()}`;
+    document.getElementById('urlDisplay').textContent = ep.url();
+    document.getElementById('pipelineRow').style.display = ep.hasPipeline ? '' : 'none';
+    document.getElementById('bodyRow').style.display = ep.hasBody ? '' : 'none';
+    if (ep.hasBody) fillSample();
+
+    document.querySelectorAll('[data-endpoint]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.endpoint === key);
+    });
+  }
+
+  document.querySelectorAll('[data-endpoint]').forEach(btn => {
+    btn.addEventListener('click', () => setEndpoint(btn.dataset.endpoint));
+  });
+
+  document.getElementById('pipelineSelect').addEventListener('change', () => {
+    document.getElementById('urlDisplay').textContent = endpoints[currentEndpoint].url();
+    if (endpoints[currentEndpoint].hasBody) fillSample();
+  });
+
+  function fillSample() {
+    const ep = endpoints[currentEndpoint];
+    if (ep.sample) {
+      document.getElementById('requestBody').value = JSON.stringify(ep.sample(), null, 2);
+    }
+  }
+
+  // ── Send Request ───────────────────────────────────────────────
+  async function sendRequest() {
+    const btn = document.getElementById('sendBtn');
+    const responseBox = document.getElementById('responseBox');
+    const statusSpan = document.getElementById('responseStatus');
+    const ep = endpoints[currentEndpoint];
+    const apiKey = document.getElementById('apiKeyInput').value.trim();
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Sending...';
+    responseBox.style.color = '#475569';
+    responseBox.textContent = 'Waiting for response...';
+    statusSpan.textContent = '';
+
+    const headers = { 'Content-Type': 'application/json' };
+    if (apiKey) headers['x-api-key'] = apiKey;
+
+    let bodyStr = null;
+    if (ep.hasBody) {
+      try {
+        const parsed = JSON.parse(document.getElementById('requestBody').value);
+        bodyStr = JSON.stringify(parsed);
+      } catch (e) {
+        responseBox.style.color = '#f87171';
+        responseBox.textContent = '❌ Invalid JSON in request body:\n' + e.message;
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-send-fill"></i> Send Request';
+        return;
+      }
+    }
+
+    const startTime = Date.now();
+    try {
+      const res = await fetch(ep.url(), {
+        method: ep.method,
+        headers,
+        body: bodyStr
+      });
+      const elapsed = Date.now() - startTime;
+      const text = await res.text();
+      let formatted;
+      try {
+        formatted = JSON.stringify(JSON.parse(text), null, 2);
+      } catch { formatted = text; }
+
+      const isOk = res.ok;
+      responseBox.style.color = isOk ? '#4ade80' : '#f87171';
+      responseBox.textContent = formatted;
+      statusSpan.innerHTML = `<span class="${isOk ? 'status-ok' : 'status-err'}">
+        <i class="bi bi-circle-fill" style="font-size:0.5rem;vertical-align:middle;"></i>
+        ${res.status} ${res.statusText}
+      </span> <span style="color:#475569;">${elapsed}ms</span>`;
+
+    } catch (err) {
+      responseBox.style.color = '#f87171';
+      responseBox.textContent = '❌ Network Error:\n' + err.message;
+      statusSpan.innerHTML = `<span class="status-err">Failed</span>`;
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-send-fill"></i> Send Request';
+    }
+  }
+
+  // ── Receiver URL Copy ──────────────────────────────────────────
+  function copyReceiverUrl() {
+    navigator.clipboard.writeText(RECEIVER_URL).then(() => {
+      document.getElementById('receiverCopyIcon').className = 'bi bi-check-lg';
+      setTimeout(() => { document.getElementById('receiverCopyIcon').className = 'bi bi-clipboard'; }, 2000);
+    });
+  }
+
+  // ── Webhook Logs via SSE ───────────────────────────────────────
+  let logs = [];
+
+  const es = new EventSource('/crm/webhook-receiver/stream');
+
+  es.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    if (data.type === 'init') {
+      logs = data.logs || [];
+      renderAllLogs();
+    } else if (data.type === 'clear') {
+      logs = [];
+      renderAllLogs();
+    } else {
+      // New log entry
+      logs.unshift(data);
+      renderAllLogs();
+      if (logs.length > 0) inspectLog(0);
+    }
+    document.getElementById('logCountBadge').textContent = logs.length;
+  };
+
+  function renderAllLogs() {
+    const list = document.getElementById('logList');
+    const empty = document.getElementById('emptyState');
+
+    if (logs.length === 0) {
+      list.innerHTML = '';
+      list.appendChild(empty);
+      empty.style.display = '';
+      document.getElementById('logDetail').innerHTML = `
+        <div style="color:#334155; font-size:0.78rem; text-align:center; padding-top:40px;">
+          <i class="bi bi-hand-index-thumb d-block mb-2 fs-4"></i>
+          Click a log entry to inspect
+        </div>`;
+      return;
+    }
+
+    empty.style.display = 'none';
+    list.innerHTML = logs.map((log, i) => {
+      const time = new Date(log.time).toLocaleTimeString('en-IN', { hour12: false });
+      const event = log.body?.event || 'POST';
+      return `
+        <div class="wh-log-item ${i === 0 ? 'active' : ''}" onclick="inspectLog(${i})" id="log-item-${i}">
+          <div class="d-flex align-items-center justify-content-between">
+            <span class="method-badge method-post" style="font-size:0.6rem;">POST</span>
+            <span style="color:#475569; font-size:0.68rem;">${time}</span>
+          </div>
+          <div style="color:#94a3b8; font-size:0.72rem; margin-top:4px; font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${event}</div>
+        </div>`;
+    }).join('');
+    document.getElementById('logCountBadge').textContent = logs.length;
+  }
+
+  function inspectLog(index) {
+    // Highlight active
+    document.querySelectorAll('.wh-log-item').forEach((el, i) => {
+      el.classList.toggle('active', i === index);
+    });
+
+    const log = logs[index];
+    if (!log) return;
+
+    const time = new Date(log.time).toLocaleString('en-IN');
+    const bodyStr = JSON.stringify(log.body, null, 2);
+
+    document.getElementById('logDetail').innerHTML = `
+      <div style="font-size:0.72rem; color:#64748b; margin-bottom:8px;">
+        <i class="bi bi-clock me-1"></i>${time}
+      </div>
+      <div class="apt-label">Body</div>
+      <pre style="color:#38bdf8; font-size:0.75rem; background:#0a0f1a; border:1px solid #1e293b; border-radius:6px; padding:10px; overflow:auto; max-height:280px; margin:0 0 10px;">${escHtml(bodyStr)}</pre>
+      <div class="apt-label">Headers</div>
+      <pre style="color:#94a3b8; font-size:0.7rem; background:#0a0f1a; border:1px solid #1e293b; border-radius:6px; padding:10px; overflow:auto; max-height:160px; margin:0;">${escHtml(JSON.stringify(log.headers, null, 2))}</pre>
+    `;
+  }
+
+  async function clearLogs() {
+    if (logs.length === 0) return;
+    await fetch('/crm/webhook-receiver/logs', { method: 'DELETE' });
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // Init
+  setEndpoint('submit-lead');
+</script>

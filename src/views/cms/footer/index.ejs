@@ -1,0 +1,359 @@
+<div class="tf-page-header mb-4">
+  <div>
+    <h1 class="tf-page-title">Footer Settings</h1>
+    <p class="tf-page-sub text-muted">Manage company logo, copyright notice, and dynamic links shown in the website footer</p>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8 col-md-12">
+    <div class="tf-form-card shadow-sm border-0 bg-white p-4 rounded-4">
+      <div class="tf-form-header border-bottom pb-3 mb-4">
+        <ul class="nav nav-tabs card-header-tabs border-bottom-0" id="footerSettingsTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold text-dark border-0 px-4 py-2 rounded-top-3" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic-info" type="button" role="tab" aria-controls="basic-info" aria-selected="true">
+              <i class="bi bi-info-circle-fill me-2 text-primary"></i>Basic Footer Info
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold text-dark border-0 px-4 py-2 rounded-top-3" id="links-tab" data-bs-toggle="tab" data-bs-target="#footer-links" type="button" role="tab" aria-controls="footer-links" aria-selected="false">
+              <i class="bi bi-link-45deg me-2 text-primary"></i>Footer Columns
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <div class="tf-form-body">
+        <form id="footerSettingsForm" enctype="multipart/form-data">
+          <div class="tab-content" id="footerSettingsTabsContent">
+            
+            <!-- BASIC INFO TAB -->
+            <div class="tab-pane fade show active" id="basic-info" role="tabpanel" aria-labelledby="basic-tab">
+              
+              <!-- Company Logo Section -->
+              <div class="mb-4">
+                <label class="form-label fw-bold text-dark fs-6">Company Logo</label>
+                <div class="d-flex gap-4 align-items-center bg-light p-3 rounded-4 border">
+                  <div class="bg-dark rounded-3 p-2 d-flex align-items-center justify-content-center border-dashed" style="width: 120px; height: 120px; border: 2px dashed #cbd5e1; background-color: #0f172a !important;">
+                    <% if (company_logo_url) { %>
+                      <img id="logoPreview" src="<%= company_logo_url %>" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                    <% } else { %>
+                      <img id="logoPreview" src="" style="max-width: 100%; max-height: 100%; object-fit: contain; display: none;">
+                      <i id="logoPlaceholderIcon" class="bi bi-image text-muted fs-1"></i>
+                    <% } %>
+                  </div>
+                  
+                  <div class="flex-grow-1">
+                    <div class="mb-2">
+                      <label class="form-label small text-secondary fw-semibold">Upload New Image File</label>
+                      <input type="file" class="form-control" name="company_logo_file" id="companyLogoFile" accept="image/*" onchange="previewLogo(this)">
+                    </div>
+                    <div>
+                      <label class="form-label small text-secondary fw-semibold">Or Enter External Logo URL</label>
+                      <input type="text" class="form-control form-control-sm" name="company_logo_url" id="companyLogoUrl" value="<%= company_logo_url %>" placeholder="https://example.com/logo.png">
+                    </div>
+                    <div class="form-text text-muted mt-2 small">Supported types: PNG, JPEG, SVG, WebP, AVIF. Keep file size under 2MB.</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Copyright / Content Text -->
+              <div class="mb-4">
+                <label class="form-label fw-bold text-dark fs-6">Footer Copyright Text</label>
+                <textarea class="form-control rounded-3" name="footer_content" rows="4" placeholder="© 2026 PickTrails. All rights reserved." style="resize: none;"><%= footer_content %></textarea>
+                <div class="form-text text-muted small mt-1">This text is shown at the bottom of public pages.</div>
+              </div>
+
+            </div>
+
+            <!-- FOOTER LINKS TAB -->
+            <div class="tab-pane fade" id="footer-links" role="tabpanel" aria-labelledby="links-tab">
+              <div class="mb-3">
+                <p class="text-secondary small">Configure link lists displayed across four columns in the website footer. Dynamic items support custom labels, URLs, and optional emojis for Trust & Safety items.</p>
+                
+                <ul class="nav nav-pills gap-2 mb-3 bg-light p-2 rounded-3" id="footerColTabs" role="tablist">
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link active btn-sm rounded-pill px-3 py-1-5" id="f-company-tab" data-bs-toggle="pill" data-bs-target="#f-company" type="button" role="tab" aria-selected="true">Company</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link btn-sm rounded-pill px-3 py-1-5" id="f-explore-tab" data-bs-toggle="pill" data-bs-target="#f-explore" type="button" role="tab" aria-selected="false">Explore</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link btn-sm rounded-pill px-3 py-1-5" id="f-support-tab" data-bs-toggle="pill" data-bs-target="#f-support" type="button" role="tab" aria-selected="false">Support</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link btn-sm rounded-pill px-3 py-1-5" id="f-trust-tab" data-bs-toggle="pill" data-bs-target="#f-trust" type="button" role="tab" aria-selected="false">Trust &amp; Safety</button>
+                  </li>
+                </ul>
+                
+                <div class="tab-content border rounded-3 p-3 bg-white" id="footerColTabsContent" style="min-height: 250px;">
+                  
+                  <div class="tab-pane fade show active" id="f-company" role="tabpanel">
+                    <div class="d-flex justify-content-between mb-3 align-items-center">
+                      <span class="fw-bold text-dark"><i class="bi bi-building me-1 text-primary"></i> Company Links</span>
+                      <button type="button" class="btn btn-sm btn-outline-primary fw-semibold" onclick="addFooterRow('company')"><i class="bi bi-plus-lg me-1"></i> Add Link</button>
+                    </div>
+                    <div id="fc-company-container" class="d-flex flex-column gap-2"></div>
+                  </div>
+                  
+                  <div class="tab-pane fade" id="f-explore" role="tabpanel">
+                    <div class="d-flex justify-content-between mb-3 align-items-center">
+                      <span class="fw-bold text-dark"><i class="bi bi-compass me-1 text-primary"></i> Explore Links</span>
+                      <button type="button" class="btn btn-sm btn-outline-primary fw-semibold" onclick="addFooterRow('explore')"><i class="bi bi-plus-lg me-1"></i> Add Link</button>
+                    </div>
+                    <div id="fc-explore-container" class="d-flex flex-column gap-2"></div>
+                  </div>
+                  
+                  <div class="tab-pane fade" id="f-support" role="tabpanel">
+                    <div class="d-flex justify-content-between mb-3 align-items-center">
+                      <span class="fw-bold text-dark"><i class="bi bi-question-circle me-1 text-primary"></i> Support Links</span>
+                      <button type="button" class="btn btn-sm btn-outline-primary fw-semibold" onclick="addFooterRow('support')"><i class="bi bi-plus-lg me-1"></i> Add Link</button>
+                    </div>
+                    <div id="fc-support-container" class="d-flex flex-column gap-2"></div>
+                  </div>
+                  
+                  <div class="tab-pane fade" id="f-trust" role="tabpanel">
+                    <div class="d-flex justify-content-between mb-3 align-items-center">
+                      <span class="fw-bold text-dark"><i class="bi bi-shield-check me-1 text-primary"></i> Trust &amp; Safety Items</span>
+                      <button type="button" class="btn btn-sm btn-outline-primary fw-semibold" onclick="addFooterRow('trust_safety')"><i class="bi bi-plus-lg me-1"></i> Add Item</button>
+                    </div>
+                    <div id="fc-trust_safety-container" class="d-flex flex-column gap-2"></div>
+                  </div>
+
+                </div>
+                <!-- Hidden input to hold serialized JSON -->
+                <input type="hidden" name="footer_columns" id="footerColumnsInput">
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Save Button Group -->
+          <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+            <span class="text-secondary small"><i class="bi bi-cloud-arrow-up me-1"></i> Settings are synced immediately</span>
+            <button type="button" class="btn btn-primary px-5 rounded-pill fw-bold shadow-sm" id="saveFooterSettingsBtn">
+              Save Footer Settings
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4 col-md-12">
+    <!-- Help / Sidebar Card -->
+    <div class="tf-form-card shadow-sm border-0 bg-white p-4 rounded-4 h-100">
+      <div class="tf-form-header mb-3 pb-2 border-bottom fw-bold text-dark">
+        <i class="bi bi-info-circle text-info me-2"></i> About Footer Settings
+      </div>
+      <div class="tf-form-body">
+        <div class="d-flex flex-column gap-3">
+          <div class="p-3 bg-light rounded-3">
+            <h6 class="fw-bold text-dark"><i class="bi bi-image me-2 text-primary"></i> Company Logo</h6>
+            <p class="small text-muted mb-0">Use high-resolution PNG or SVG logo files with transparent backgrounds. It will scale beautifully in the frontend navigation header and footer.</p>
+          </div>
+          <div class="p-3 bg-light rounded-3">
+            <h6 class="fw-bold text-dark"><i class="bi bi-list-nested me-2 text-primary"></i> Column Structure</h6>
+            <p class="small text-muted mb-0">Footer links are categorized into four columns. You can define custom titles, target paths (e.g. <code>/about-us</code> or external links), and emoji indicators.</p>
+          </div>
+          <div class="p-3 bg-light rounded-3 border border-primary-subtle" style="background: #eff6ff;">
+            <h6 class="fw-bold text-primary"><i class="bi bi-lightbulb me-2"></i> Dynamic Emojis</h6>
+            <p class="small text-muted mb-0">The <strong>Trust &amp; Safety</strong> column supports an additional Icon Emoji field to make trust badges stand out in the footer layout.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const initialFooterCols = <%- JSON.stringify(footer_columns) %>;
+
+  // ── Preview Logo ──────────────────────────────────────────────
+  function previewLogo(input) {
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById('logoPreview').src = e.target.result;
+        document.getElementById('logoPreview').style.display = 'block';
+        if (document.getElementById('logoPlaceholderIcon')) {
+          document.getElementById('logoPlaceholderIcon').style.display = 'none';
+        }
+        // Clear URL input when a file is selected
+        document.getElementById('companyLogoUrl').value = '';
+      }
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+
+  // Clear file input when URL is typed
+  document.getElementById('companyLogoUrl').addEventListener('input', function() {
+    if (this.value.trim() !== '') {
+      document.getElementById('companyLogoFile').value = '';
+      document.getElementById('logoPreview').src = this.value.trim();
+      document.getElementById('logoPreview').style.display = 'block';
+      if (document.getElementById('logoPlaceholderIcon')) {
+        document.getElementById('logoPlaceholderIcon').style.display = 'none';
+      }
+    }
+  });
+
+  // ── Footer Config Builder ─────────────────────────────────────
+  function addFooterRow(colKey, label = '', url = '', icon = '') {
+    const container = document.getElementById('fc-' + colKey + '-container');
+    const row = document.createElement('div');
+    row.className = 'd-flex gap-2 footer-col-row align-items-center bg-white p-2 border rounded-3 mb-2 shadow-sm animate-fade-in';
+    row.dataset.colKey = colKey;
+    
+    let html = `
+      <div class="flex-grow-1">
+        <input type="text" class="form-control form-control-sm f-label" placeholder="Link Label" value="${label.replace(/"/g, '&quot;')}">
+      </div>
+      <div class="flex-grow-1">
+        <input type="text" class="form-control form-control-sm f-url" placeholder="URL Path" value="${url.replace(/"/g, '&quot;')}">
+      </div>
+    `;
+    
+    if (colKey === 'trust_safety') {
+      html += `
+        <div style="width: 80px;">
+          <input type="text" class="form-control form-control-sm f-icon text-center" placeholder="Emoji" value="${icon.replace(/"/g, '&quot;')}">
+        </div>
+      `;
+    }
+    
+    html += `
+      <div>
+        <button type="button" class="btn btn-sm btn-outline-danger border-0 p-2" onclick="removeFooterRow(this)" title="Delete link">
+          <i class="bi bi-trash-fill"></i>
+        </button>
+      </div>
+    `;
+    
+    row.innerHTML = html;
+    container.appendChild(row);
+  }
+
+  function removeFooterRow(button) {
+    const row = button.closest('.footer-col-row');
+    row.classList.add('animate-fade-out');
+    setTimeout(() => row.remove(), 200);
+  }
+
+  // Initialize rows from DB settings
+  ['company', 'explore', 'support', 'trust_safety'].forEach(col => {
+    if (initialFooterCols[col] && Array.isArray(initialFooterCols[col])) {
+      initialFooterCols[col].forEach(item => {
+        addFooterRow(col, item.label, item.url, item.icon || '');
+      });
+    }
+  });
+
+  function serializeFooterCols() {
+    const cols = { company: [], explore: [], support: [], trust_safety: [] };
+    document.querySelectorAll('.footer-col-row').forEach(row => {
+      const colKey = row.dataset.colKey;
+      const label = row.querySelector('.f-label').value.trim();
+      const url = row.querySelector('.f-url').value.trim();
+      const iconInput = row.querySelector('.f-icon');
+      
+      if (label && url) {
+        const item = { label, url };
+        if (iconInput) item.icon = iconInput.value.trim();
+        cols[colKey].push(item);
+      }
+    });
+    return cols;
+  }
+
+  // ── Save Settings ─────────────────────────────────────────────
+  document.getElementById('saveFooterSettingsBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('saveFooterSettingsBtn');
+    const form = document.getElementById('footerSettingsForm');
+    
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Saving...';
+
+    const formData = new FormData(form);
+    formData.set('footer_columns', JSON.stringify(serializeFooterCols()));
+
+    try {
+      const res = await fetch('/cms/footer/save', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('<i class="bi bi-check-circle-fill me-2"></i> Footer settings saved successfully!', 'success');
+      } else {
+        showToast('<i class="bi bi-exclamation-triangle-fill me-2"></i> Error: ' + data.message, 'danger');
+      }
+    } catch (err) {
+      showToast('<i class="bi bi-x-circle-fill me-2"></i> Network error, please try again.', 'danger');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Save Footer Settings';
+    }
+  });
+
+  // ── Toast Notification ────────────────────────────────────────
+  function showToast(msg, type = 'success') {
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'toastContainer';
+      container.style.cssText = 'position:fixed;top:1.2rem;right:1.2rem;z-index:9999;display:flex;flex-direction:column;gap:8px;';
+      document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} shadow-lg border-0 py-3 px-4 mb-0 rounded-3 text-white d-flex align-items-center`;
+    toast.style.cssText = 'min-width:300px; background-color: ' + (type === 'success' ? '#10b981' : '#ef4444') + '; animation:slideIn .25s ease;';
+    toast.innerHTML = msg;
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.style.animation = 'slideOut .25s ease forwards';
+      setTimeout(() => toast.remove(), 250);
+    }, 3500);
+  }
+</script>
+
+<style>
+  .animate-fade-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+  .animate-fade-out {
+    animation: fadeOut 0.2s ease-out forwards;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeOut {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(5px); }
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(50px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes slideOut {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(50px); }
+  }
+  .nav-pills .nav-link.active {
+    background-color: var(--primary) !important;
+    color: white !important;
+  }
+  .nav-pills .nav-link {
+    color: #475569;
+    font-weight: 500;
+  }
+  .nav-pills .nav-link:hover:not(.active) {
+    background-color: #f1f5f9;
+  }
+  .border-dashed {
+    border-style: dashed !important;
+  }
+</style>

@@ -4,547 +4,858 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %></title>
-  <!-- CSS assets assuming they are available in the project -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-  
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #4f46e5;
-      --primary-dark: #4338ca;
-      --secondary: #818cf8;
-      --accent: #f59e0b;
-      --success: #10b981;
-      --danger: #ef4444;
-      --bg-body: #f8faff;
-      --card-bg: #ffffff;
-      --text-main: #1e1e4a;
-      --text-muted: #64748b;
-      --border-color: #f0f0fa;
+      --ink: #172033;
+      --muted: #667085;
+      --line: #e7eaf0;
+      --surface: #ffffff;
+      --soft: #f6f8fb;
+      --brand: #2563eb;
+      --brand-dark: #1d4ed8;
+      --teal: #0f766e;
+      --amber: #b45309;
+      --rose: #be123c;
     }
+
+    * { box-sizing: border-box; }
 
     body {
-      font-family: 'Outfit', sans-serif;
-      background-color: var(--bg-body);
-      color: var(--text-main);
-      overflow-x: hidden;
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--soft);
     }
 
-    .tp-container {
-      max-width: 1100px;
+    .page-shell {
+      max-width: 1180px;
       margin: 0 auto;
-      padding: 2rem 1rem;
+      padding: 24px 16px 120px;
     }
 
-    /* --- Hero Section --- */
-    .hero-card {
-      background: linear-gradient(135deg, #1e1e4a 0%, #312e81 100%);
-      border-radius: 30px;
-      padding: 3.5rem 3rem;
-      position: relative;
-      overflow: hidden;
-      color: #fff;
-      margin-bottom: 3rem;
-      box-shadow: 0 20px 50px rgba(79, 70, 229, 0.15);
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
     }
 
-    .hero-card::after {
-      content: '';
-      position: absolute;
-      top: -100px;
-      right: -100px;
-      width: 400px;
-      height: 400px;
-      background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
-      border-radius: 50%;
-    }
-
-    .pkg-badge {
+    .back-link {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      padding: 0.6rem 1.2rem;
-      border-radius: 50px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: #fff;
-      margin-bottom: 1.5rem;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .pkg-title {
-      font-size: 3.5rem;
-      font-weight: 800;
-      margin-bottom: 1rem;
-      letter-spacing: -1px;
-      line-height: 1.1;
-    }
-
-    .pkg-meta {
-      display: flex;
-      gap: 2rem;
-      flex-wrap: wrap;
-    }
-
-    .meta-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 1.1rem;
-      opacity: 0.9;
-    }
-
-    .meta-item i {
-      font-size: 1.2rem;
-      color: var(--accent);
-    }
-
-    /* --- Sidebar & Tracking --- */
-    .sticky-nav {
-      position: sticky;
-      top: 2rem;
-    }
-
-    .nav-card {
-      background: #fff;
-      border-radius: 20px;
-      padding: 1.5rem;
-      border: 1px solid var(--border-color);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.02);
-    }
-
-    .nav-title {
-      font-weight: 800;
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-muted);
-      margin-bottom: 1.5rem;
-      display: flex;
-      align-items: center;
       gap: 8px;
-    }
-
-    .dest-link {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 1rem;
-      border-radius: 14px;
-      color: var(--text-main);
+      color: var(--ink);
       text-decoration: none;
-      font-weight: 600;
-      transition: all 0.2s;
-      margin-bottom: 0.5rem;
-      border: 1px solid transparent;
-    }
-
-    .dest-link:hover {
-      background: #f1f5f9;
-      color: var(--primary);
-    }
-
-    .dest-link.active {
-      background: #eef2ff;
-      color: var(--primary);
-      border-color: #c7d2fe;
-    }
-
-    .dest-icon {
-      width: 36px;
-      height: 36px;
-      background: #f1f5f9;
+      font-weight: 700;
+      background: var(--surface);
+      border: 1px solid var(--line);
       border-radius: 10px;
+      padding: 10px 14px;
+    }
+
+    .action-row {
       display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .btn-solid, .btn-quiet {
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 1rem;
+      gap: 8px;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-weight: 800;
+      text-decoration: none;
+      border: 1px solid transparent;
+      min-height: 42px;
     }
 
-    .dest-link.active .dest-icon {
-      background: var(--primary);
+    .btn-solid {
+      background: var(--brand);
       color: #fff;
     }
 
-    /* --- Itinerary Sections --- */
-    .itinerary-section {
-      margin-bottom: 4rem;
+    .btn-solid:hover {
+      background: var(--brand-dark);
+      color: #fff;
+    }
+
+    .btn-quiet {
+      background: var(--surface);
+      border-color: var(--line);
+      color: var(--ink);
+    }
+
+    .hero {
+      min-height: 430px;
+      border-radius: 18px;
+      overflow: hidden;
+      position: relative;
+      background: #0f172a;
+      display: flex;
+      align-items: flex-end;
+      border: 1px solid rgba(15, 23, 42, 0.12);
+    }
+
+    .hero-media {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.92;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.12), rgba(15, 23, 42, 0.78));
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      color: #fff;
+      padding: 42px;
+      max-width: 820px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 14px;
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 4rem);
+      line-height: 1.04;
+      margin: 0 0 16px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .hero-desc {
+      max-width: 760px;
+      font-size: 1rem;
+      line-height: 1.7;
+      opacity: 0.94;
+      margin: 0 0 22px;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      max-width: 650px;
+    }
+
+    .stat {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 12px;
+      padding: 13px 14px;
+      backdrop-filter: blur(8px);
+    }
+
+    .stat span {
+      display: block;
+      font-size: 0.72rem;
+      opacity: 0.76;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .stat strong {
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 24px;
+      margin-top: 24px;
+      align-items: start;
+    }
+
+    .side-panel {
+      position: sticky;
+      top: 18px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .panel-title {
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 12px;
+    }
+
+    .stop-link {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 10px;
+      align-items: center;
+      color: var(--ink);
+      text-decoration: none;
+      border-radius: 10px;
+      padding: 9px;
+    }
+
+    .stop-link:hover {
+      background: #eef4ff;
+      color: var(--brand);
+    }
+
+    .stop-index {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      background: #eef4ff;
+      color: var(--brand);
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 0.85rem;
+    }
+
+    .stop-link strong {
+      display: block;
+      font-size: 0.92rem;
+    }
+
+    .stop-link span {
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 700;
+    }
+
+    .content-stack {
+      display: grid;
+      gap: 24px;
+    }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 24px;
     }
 
     .section-header {
       display: flex;
       align-items: center;
-      gap: 15px;
-      margin-bottom: 2rem;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
     }
 
     .section-header h2 {
-      font-weight: 800;
-      font-size: 1.8rem;
       margin: 0;
+      font-size: 1.28rem;
+      font-weight: 800;
+      letter-spacing: 0;
     }
 
     .section-icon {
-      width: 48px;
-      height: 48px;
-      background: #fff;
-      border-radius: 15px;
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: #eef4ff;
+      color: var(--brand);
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+    }
+
+    .section-title-wrap {
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 1.4rem;
-      color: var(--primary);
-      box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+      gap: 12px;
     }
 
-    /* --- Timeline --- */
+    .overview {
+      color: #475467;
+      line-height: 1.8;
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .gallery-item {
+      border-radius: 12px;
+      overflow: hidden;
+      background: #0f172a;
+      aspect-ratio: 16 / 10;
+      border: 1px solid var(--line);
+    }
+
+    .gallery-item img, .gallery-item video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .destination-block {
+      padding: 20px 0 2px;
+      border-top: 1px solid var(--line);
+    }
+
+    .destination-block:first-of-type {
+      padding-top: 0;
+      border-top: 0;
+    }
+
+    .destination-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .destination-head h3 {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 800;
+    }
+
+    .night-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 7px 11px;
+      background: #ecfdf5;
+      color: var(--teal);
+      font-size: 0.8rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .hotel-stays {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .hotel-card {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr);
+      gap: 14px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fbfdfd;
+      padding: 12px;
+    }
+
+    .hotel-card img, .hotel-card .hotel-placeholder {
+      width: 72px;
+      height: 58px;
+      border-radius: 10px;
+      object-fit: cover;
+      background: #ecfdf5;
+      color: var(--teal);
+      display: grid;
+      place-items: center;
+      border: 1px solid #d7f7ea;
+    }
+
+    .hotel-card h4 {
+      margin: 0 0 5px;
+      font-size: 0.98rem;
+      font-weight: 800;
+    }
+
+    .hotel-card p {
+      margin: 0;
+      color: #667085;
+      font-size: 0.84rem;
+      line-height: 1.5;
+    }
+
     .timeline {
       position: relative;
-      padding-left: 2.5rem;
-    }
-
-    .timeline::before {
-      content: '';
-      position: absolute;
-      left: 7.5px;
-      top: 0;
-      bottom: 0;
-      width: 2px;
-      background: linear-gradient(to bottom, var(--primary) 0%, #eef2ff 100%);
+      display: grid;
+      gap: 14px;
     }
 
     .day-card {
-      background: #fff;
-      border-radius: 20px;
-      padding: 1.8rem;
-      margin-bottom: 2rem;
-      position: relative;
-      border: 1px solid var(--border-color);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.02);
-      transition: transform 0.3s ease;
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr);
+      gap: 18px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fbfcff;
     }
 
-    .day-card:hover {
-      transform: translateY(-5px);
-    }
-
-    .day-card::before {
-      content: '';
-      position: absolute;
-      left: -2.5rem;
-      top: 2rem;
-      width: 17px;
-      height: 17px;
-      background: #fff;
-      border: 4px solid var(--primary);
-      border-radius: 50%;
-      z-index: 2;
-    }
-
-    .day-number {
+    .day-chip {
+      height: 54px;
+      border-radius: 12px;
+      background: #eef4ff;
+      color: var(--brand);
+      display: grid;
+      place-items: center;
+      text-align: center;
       font-weight: 800;
-      color: var(--primary);
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 2px;
+    }
+
+    .day-chip span {
       display: block;
-      margin-bottom: 0.5rem;
+      font-size: 0.72rem;
+      color: #5271b8;
+      text-transform: uppercase;
+      margin-bottom: 1px;
     }
 
-    .day-title {
-      font-weight: 800;
-      font-size: 1.4rem;
-      margin-bottom: 1.5rem;
+    .activity-list {
+      display: grid;
+      gap: 12px;
     }
 
-    /* --- Activities --- */
-    .activity-item {
-      display: flex;
-      gap: 1.5rem;
-      margin-bottom: 1.5rem;
-      position: relative;
+    .activity {
+      display: grid;
+      grid-template-columns: 116px minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #edf0f5;
     }
 
-    .activity-item:not(:last-child) {
-      padding-bottom: 1.5rem;
-    }
-
-    .activity-time {
-      min-width: 100px;
-      text-align: right;
+    .activity:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
     }
 
     .time-badge {
-      display: inline-block;
-      padding: 0.4rem 0.8rem;
-      border-radius: 10px;
-      font-size: 0.75rem;
-      font-weight: 700;
+      display: inline-flex;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 6px 9px;
       background: #f1f5f9;
-      color: var(--text-muted);
+      color: #475467;
+      font-size: 0.76rem;
+      font-weight: 800;
+      min-width: 92px;
+      text-align: center;
     }
 
-    .time-badge.morning { background: #fffbeb; color: #b45309; }
-    .time-badge.noon { background: #fef2f2; color: #b91c1c; }
-    .time-badge.evening { background: #eef2ff; color: #4338ca; }
+    .time-badge.morning { background: #fff7ed; color: var(--amber); }
+    .time-badge.noon { background: #fff1f2; color: var(--rose); }
+    .time-badge.evening { background: #eef4ff; color: var(--brand); }
 
-    .activity-content {
-      flex: 1;
+    .activity h4 {
+      font-size: 0.98rem;
+      margin: 0 0 5px;
+      font-weight: 800;
     }
 
-    .activity-name {
-      font-weight: 700;
-      font-size: 1.1rem;
-      margin-bottom: 0.3rem;
+    .activity p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 0.9rem;
     }
 
-    .activity-desc {
-      color: var(--text-muted);
-      font-size: 0.95rem;
-      line-height: 1.6;
-    }
-
-    /* --- Inclusions/Exclusions --- */
-    .meta-card {
+    .empty-day {
+      color: var(--muted);
       background: #fff;
-      border-radius: 20px;
-      padding: 2rem;
-      height: 100%;
-      border: 1px solid var(--border-color);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+      border: 1px dashed #d7dce5;
+      border-radius: 12px;
+      padding: 14px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
     }
 
     .meta-list {
-      list-style: none;
-      padding: 0;
+      display: grid;
+      gap: 10px;
       margin: 0;
+      padding: 0;
+      list-style: none;
     }
 
-    .meta-list-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      margin-bottom: 1rem;
+    .meta-list li {
+      display: grid;
+      grid-template-columns: 24px 1fr;
+      gap: 10px;
+      align-items: start;
+      color: #344054;
+      line-height: 1.55;
       font-weight: 600;
+      font-size: 0.92rem;
     }
 
-    .meta-list-item i {
-      margin-top: 4px;
+    .meta-list i {
+      margin-top: 3px;
     }
 
-    .text-success i { color: var(--success); }
-    .text-danger i { color: var(--danger); }
-
-    /* --- Footer Action --- */
-    .footer-bar {
+    .floating-actions {
       position: fixed;
-      bottom: 0;
       left: 0;
       right: 0;
-      background: rgba(255, 255, 255, 0.8);
-      backdrop-filter: blur(20px);
-      padding: 1.2rem;
-      border-top: 1px solid var(--border-color);
-      z-index: 100;
+      bottom: 0;
+      background: rgba(246, 248, 251, 0.88);
+      border-top: 1px solid var(--line);
+      backdrop-filter: blur(14px);
+      z-index: 20;
+      padding: 12px 16px;
+    }
+
+    .floating-inner {
+      max-width: 1180px;
+      margin: 0 auto;
       display: flex;
-      justify-content: center;
-      gap: 1rem;
-    }
-
-    .btn-premium {
-      background: var(--primary);
-      color: #fff;
-      border: none;
-      padding: 0.8rem 2.5rem;
-      border-radius: 14px;
-      font-weight: 700;
-      transition: all 0.2s;
-    }
-
-    .btn-premium:hover {
-      background: var(--primary-dark);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
+      justify-content: flex-end;
+      gap: 10px;
     }
 
     @media (max-width: 992px) {
-      .pkg-title { font-size: 2.5rem; }
-      .hero-card { padding: 2.5rem 2rem; }
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .side-panel {
+        position: static;
+      }
+
+      .hero {
+        min-height: 380px;
+      }
+
+      .hero-content {
+        padding: 28px;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .page-shell {
+        padding: 14px 12px 116px;
+      }
+
+      .topbar, .floating-inner {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .action-row {
+        justify-content: stretch;
+      }
+
+      .btn-solid, .btn-quiet, .back-link {
+        width: 100%;
+      }
+
+      .hero {
+        min-height: 420px;
+        border-radius: 14px;
+      }
+
+      .hero-content {
+        padding: 22px;
+      }
+
+      .stat-grid, .meta-grid, .gallery-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .section {
+        padding: 18px;
+      }
+
+      .destination-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .day-card, .activity {
+        grid-template-columns: 1fr;
+      }
+
+      .day-chip {
+        width: 92px;
+      }
     }
   </style>
 </head>
 <body>
+  <%
+    const stops = (pkg.destinations || []).filter(pd => pd.destination);
+    const imageGallery = (pkg.gallery || []).filter(item => item.media_type === 'image');
+    const heroImage = pkg.main_image
+      || (imageGallery[0] && imageGallery[0].url)
+      || (stops[0] && stops[0].destination && stops[0].destination.feature_image)
+      || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80';
+    const gallery = (pkg.gallery || []).slice(0, 6);
+  %>
 
-  <div class="tp-container">
-    
-    <!-- Hero Section -->
-    <div class="hero-card">
-      <div class="pkg-badge">
-        <i class="bi bi-stars"></i> Curated Experience
-      </div>
-      <h1 class="pkg-title"><%= pkg.name %></h1>
-      <div class="pkg-meta">
-        <div class="meta-item">
-          <i class="bi bi-calendar3"></i>
-          <span><%= pkg.duration_days %> Days Journey</span>
-        </div>
-        <div class="meta-item">
-          <i class="bi bi-geo-alt"></i>
-          <span><%= pkg.destinations.length %> Destinations</span>
-        </div>
-        <% if (pkg.price) { %>
-        <div class="meta-item">
-          <i class="bi bi-tag-fill"></i>
-          <span>Starts from ₹<%= pkg.price.toLocaleString('en-IN') %></span>
-        </div>
-        <% } %>
+  <main class="page-shell">
+    <div class="topbar">
+      <a href="/travel/packages" class="back-link"><i class="bi bi-arrow-left"></i> Packages</a>
+      <div class="action-row">
+        <a href="/travel/packages/<%= pkg.id %>/reviews" class="btn-quiet"><i class="bi bi-star"></i> Package Reviews</a>
+        <a href="/travel/packages/<%= pkg.id %>/edit" class="btn-solid"><i class="bi bi-pencil-square"></i> Edit Package</a>
       </div>
     </div>
 
-    <div class="row g-5">
-      <!-- Sidebar Navigation -->
-      <div class="col-lg-4 d-none d-lg-block">
-        <div class="sticky-nav">
-          <div class="nav-card">
-            <div class="nav-title">
-              <i class="bi bi-map"></i> Major Stops
-            </div>
-            <% pkg.destinations.forEach((pd, idx) => { %>
-              <a href="#dest-<%= pd.destination.id %>" class="dest-link">
-                <div class="dest-icon"><%= idx + 1 %></div>
-                <div>
-                  <div class="small text-muted" style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Stop <%= idx + 1 %></div>
-                  <div><%= pd.destination.name %></div>
-                </div>
-              </a>
-            <% }) %>
-          </div>
-        </div>
-      </div>
-
-      <!-- Main Content -->
-      <div class="col-lg-8">
-        
-        <!-- Description -->
+    <section class="hero">
+      <img class="hero-media" src="<%= heroImage %>" alt="<%= pkg.main_image_alt || pkg.name %>">
+      <div class="hero-content">
+        <div class="eyebrow"><i class="bi bi-compass"></i> Curated Travel Package</div>
+        <h1><%= pkg.name %></h1>
         <% if (pkg.description) { %>
-        <div class="itinerary-section">
-          <div class="section-header">
-            <div class="section-icon"><i class="bi bi-chat-left-quote"></i></div>
-            <h2>Overview</h2>
+          <p class="hero-desc"><%= pkg.description %></p>
+        <% } %>
+        <div class="stat-grid">
+          <div class="stat">
+            <span>Duration</span>
+            <strong><%= pkg.duration_days || 0 %> Days</strong>
           </div>
-          <div class="card border-0 shadow-sm rounded-4 p-4">
-            <p class="lead mb-0" style="color: var(--text-muted); font-weight: 500; line-height: 1.8;">
-              <%= pkg.description %>
-            </p>
+          <div class="stat">
+            <span>Stops</span>
+            <strong><%= stops.length %> Destination<%= stops.length === 1 ? '' : 's' %></strong>
+          </div>
+          <div class="stat">
+            <span>Price</span>
+            <strong><%= pkg.price ? 'Rs. ' + Number(pkg.price).toLocaleString('en-IN') : 'On request' %></strong>
           </div>
         </div>
+      </div>
+    </section>
+
+    <div class="main-grid">
+      <aside class="side-panel">
+        <div class="panel-title">Route Overview</div>
+        <% if (stops.length) { %>
+          <% stops.forEach((pd, idx) => { %>
+            <a class="stop-link" href="#dest-<%= pd.destination.id %>">
+              <div class="stop-index"><%= idx + 1 %></div>
+              <div>
+                <strong><%= pd.destination.name %></strong>
+                <span><%= pd.nights %> nights</span>
+              </div>
+            </a>
+          <% }) %>
+        <% } else { %>
+          <div class="text-muted small">No destinations added.</div>
+        <% } %>
+      </aside>
+
+      <div class="content-stack">
+        <% if (pkg.description) { %>
+          <section class="section">
+            <div class="section-header">
+              <div class="section-title-wrap">
+                <div class="section-icon"><i class="bi bi-info-circle"></i></div>
+                <h2>Overview</h2>
+              </div>
+            </div>
+            <p class="overview"><%= pkg.description %></p>
+          </section>
         <% } %>
 
-        <!-- Itinerary -->
-        <div class="itinerary-section">
+        <% if (gallery.length) { %>
+          <section class="section">
+            <div class="section-header">
+              <div class="section-title-wrap">
+                <div class="section-icon"><i class="bi bi-images"></i></div>
+                <h2>Gallery</h2>
+              </div>
+            </div>
+            <div class="gallery-grid">
+              <% gallery.forEach(item => { %>
+                <div class="gallery-item">
+                  <% if (item.media_type === 'video') { %>
+                    <video src="<%= item.url %>" controls></video>
+                  <% } else { %>
+                    <img src="<%= item.url %>" alt="<%= item.alt_text || pkg.name %>">
+                  <% } %>
+                </div>
+              <% }) %>
+            </div>
+          </section>
+        <% } %>
+
+        <section class="section">
           <div class="section-header">
-            <div class="section-icon"><i class="bi bi-signpost-2"></i></div>
-            <h2>Detailed Itinerary</h2>
+            <div class="section-title-wrap">
+              <div class="section-icon"><i class="bi bi-signpost-2"></i></div>
+              <h2>Daily Itinerary</h2>
+            </div>
           </div>
 
-          <% pkg.destinations.forEach((pd, pIdx) => { %>
-            <div id="dest-<%= pd.destination.id %>" class="mb-5">
-              <div class="d-flex align-items-center gap-3 mb-4">
-                <h3 class="fw-bold mb-0" style="font-size: 1.6rem;"><%= pd.destination.name %></h3>
-                <span class="badge bg-light text-primary border px-3 py-2 rounded-pill"><%= pd.nights %> Nights</span>
-              </div>
+          <% if (stops.length) { %>
+            <% stops.forEach((pd) => { %>
+              <div id="dest-<%= pd.destination.id %>" class="destination-block">
+                <div class="destination-head">
+                  <h3><%= pd.destination.name %></h3>
+                  <span class="night-pill"><i class="bi bi-moon-stars"></i> <%= pd.nights %> Nights</span>
+                </div>
 
-              <div class="timeline">
-                <% pd.days.forEach((day, dIdx) => { %>
-                  <div class="day-card">
-                    <span class="day-number">Package Day</span>
-                    <h4 class="day-title text-dark">Day <%= day.day_number %></h4>
-                    
-                    <div class="activities-wrapper">
-                      <% if (day.activities && day.activities.length) { %>
-                        <% day.activities.forEach(act => { %>
-                          <div class="activity-item">
-                            <div class="activity-time">
-                              <span class="time-badge <%= (act.time_slot || '').toLowerCase().replace(/\s/g, '') %>">
-                                <%= act.time_slot || 'Full Day' %>
-                              </span>
-                            </div>
-                            <div class="activity-content">
-                              <div class="activity-name"><%= act.title %></div>
-                              <% if (act.description) { %>
-                                <div class="activity-desc"><%= act.description %></div>
-                              <% } %>
-                            </div>
-                          </div>
-                        <% }) %>
-                      <% } else { %>
-                        <div class="text-muted small">Leisure time or travel to next destination.</div>
-                      <% } %>
-                    </div>
+                <% const stayHotels = Array.isArray(pd.hotels) ? pd.hotels : []; %>
+                <% if (stayHotels.length) { %>
+                  <div class="hotel-stays">
+                    <% stayHotels.forEach(hotel => { %>
+                      <article class="hotel-card">
+                        <% if (hotel.image) { %>
+                          <img src="<%= hotel.image %>" alt="<%= hotel.name || 'Hotel' %>">
+                        <% } else { %>
+                          <div class="hotel-placeholder"><i class="bi bi-building"></i></div>
+                        <% } %>
+                        <div>
+                          <h4><%= hotel.name || 'Hotel Stay' %></h4>
+                          <p>
+                            <%= hotel.nights || pd.nights || 1 %> night<%= Number(hotel.nights || pd.nights || 1) === 1 ? '' : 's' %>
+                            · <%= hotel.rooms || 1 %> room<%= Number(hotel.rooms || 1) === 1 ? '' : 's' %>
+                            <% if (hotel.pricePerNight) { %>
+                              · Rs. <%= Number(hotel.pricePerNight).toLocaleString('en-IN') %>/night
+                            <% } %>
+                            <% if (hotel.starRating) { %>
+                              · <%= hotel.starRating %> star
+                            <% } %>
+                            <% if (hotel.guestRating) { %>
+                              · Guest <%= hotel.guestRating %>
+                            <% } %>
+                          </p>
+                          <% if (hotel.notes) { %>
+                            <p><%= hotel.notes %></p>
+                          <% } %>
+                        </div>
+                      </article>
+                    <% }) %>
                   </div>
-                <% }) %>
+                <% } %>
+
+                <div class="timeline">
+                  <% (pd.days || []).forEach(day => { %>
+                    <article class="day-card">
+                      <div class="day-chip">
+                        <div><span>Day</span><%= day.day_number %></div>
+                      </div>
+                      <div>
+                        <% if (day.activities && day.activities.length) { %>
+                          <div class="activity-list">
+                            <% day.activities.forEach(act => { %>
+                              <div class="activity">
+                                <div>
+                                  <span class="time-badge <%= (act.time_slot || act.duration || '').toLowerCase().replace(/\s/g, '') %>">
+                                    <%= act.time_slot || act.duration || 'Full Day' %>
+                                  </span>
+                                </div>
+                                <div class="d-flex gap-3 align-items-start">
+                                  <% if (act.image) { %>
+                                    <img src="<%= act.image %>" style="width: 80px; height: 55px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); flex-shrink: 0;">
+                                  <% } %>
+                                  <div>
+                                    <h4><%= act.title || act.name || 'Activity' %></h4>
+                                    <% if (act.description) { %>
+                                      <p><%= act.description %></p>
+                                    <% } %>
+                                  </div>
+                                </div>
+                              </div>
+                            <% }) %>
+                          </div>
+                        <% } else { %>
+                          <div class="empty-day">Leisure day, transfers, or free exploration time.</div>
+                        <% } %>
+                      </div>
+                    </article>
+                  <% }) %>
+                </div>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <div class="empty-day">No itinerary has been added for this package yet.</div>
+          <% } %>
+        </section>
+
+        <section class="meta-grid">
+          <div class="section">
+            <div class="section-header">
+              <div class="section-title-wrap">
+                <div class="section-icon"><i class="bi bi-check2-circle"></i></div>
+                <h2>Inclusions</h2>
               </div>
             </div>
-          <% }) %>
-        </div>
-
-        <!-- Inclusions & Exclusions -->
-        <div class="row g-4 mb-5">
-          <div class="col-md-6">
-            <div class="meta-card">
-              <h4 class="fw-bold mb-4 d-flex align-items-center gap-2">
-                <i class="bi bi-check-circle-fill text-success"></i> Inclusions
-              </h4>
-              <ul class="meta-list">
-                <% if (pkg.inclusions && pkg.inclusions.length) { %>
-                  <% pkg.inclusions.forEach(inc => { %>
-                    <li class="meta-list-item">
-                      <i class="bi bi-check2 text-success"></i>
-                      <span><%= inc.text %></span>
-                    </li>
-                  <% }) %>
-                <% } else { %>
-                  <li class="text-muted small">No specific inclusions listed.</li>
-                <% } %>
-              </ul>
-            </div>
+            <ul class="meta-list">
+              <% if (pkg.inclusions && pkg.inclusions.length) { %>
+                <% pkg.inclusions.forEach(inc => { %>
+                  <li><i class="bi bi-check-circle-fill text-success"></i><span><%= inc.text %></span></li>
+                <% }) %>
+              <% } else { %>
+                <li><i class="bi bi-info-circle text-muted"></i><span>No inclusions listed.</span></li>
+              <% } %>
+            </ul>
           </div>
-          <div class="col-md-6">
-            <div class="meta-card">
-              <h4 class="fw-bold mb-4 d-flex align-items-center gap-2">
-                <i class="bi bi-dash-circle-fill text-danger"></i> Exclusions
-              </h4>
-              <ul class="meta-list">
-                <% if (pkg.exclusions && pkg.exclusions.length) { %>
-                  <% pkg.exclusions.forEach(exc => { %>
-                    <li class="meta-list-item">
-                      <i class="bi bi-x-lg text-danger" style="font-size: 0.8rem;"></i>
-                      <span><%= exc.text %></span>
-                    </li>
-                  <% }) %>
-                <% } else { %>
-                  <li class="text-muted small">No specific exclusions listed.</li>
-                <% } %>
-              </ul>
-            </div>
-          </div>
-        </div>
 
+          <div class="section">
+            <div class="section-header">
+              <div class="section-title-wrap">
+                <div class="section-icon"><i class="bi bi-dash-circle"></i></div>
+                <h2>Exclusions</h2>
+              </div>
+            </div>
+            <ul class="meta-list">
+              <% if (pkg.exclusions && pkg.exclusions.length) { %>
+                <% pkg.exclusions.forEach(exc => { %>
+                  <li><i class="bi bi-x-circle-fill text-danger"></i><span><%= exc.text %></span></li>
+                <% }) %>
+              <% } else { %>
+                <li><i class="bi bi-info-circle text-muted"></i><span>No exclusions listed.</span></li>
+              <% } %>
+            </ul>
+          </div>
+        </section>
       </div>
     </div>
-  </div>
+  </main>
 
-  <!-- Footer Navigation -->
-  <div class="footer-bar">
-    <a href="/travel/packages" class="btn btn-light border px-4 rounded-3 fw-bold">Back to List</a>
-    <a href="/travel/packages/<%= pkg.id %>/edit" class="btn btn-premium d-flex align-items-center gap-2">
-      <i class="bi bi-pencil-square"></i> Edit This Package
-    </a>
+  <div class="floating-actions">
+    <div class="floating-inner">
+      <a href="/travel/packages" class="btn-quiet"><i class="bi bi-list-ul"></i> Back to List</a>
+      <a href="/travel/packages/<%= pkg.id %>/reviews" class="btn-quiet"><i class="bi bi-star"></i> Package Reviews</a>
+      <a href="/travel/packages/<%= pkg.id %>/edit" class="btn-solid"><i class="bi bi-pencil-square"></i> Edit Package</a>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { controllers: { pageController, bannerController, blogController, mediaController } } = require('../container');
+const { controllers: { pageController, bannerController, blogController, mediaController }, repositories: { appSettingRepo } } = require('../container');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -13,6 +13,7 @@ const storage = multer.diskStorage({
         else if (req.originalUrl.includes('banners')) entity = 'banners';
         else if (req.originalUrl.includes('blog')) entity = 'blog';
         else if (req.originalUrl.includes('media')) entity = 'media';
+        else if (req.originalUrl.includes('footer')) entity = 'settings';
         
         const dir = `public/uploads/${entity}`;
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -25,6 +26,7 @@ const storage = multer.diskStorage({
         else if (req.originalUrl.includes('banners')) prefix = 'banner';
         else if (req.originalUrl.includes('blog')) prefix = 'blog';
         else if (req.originalUrl.includes('media')) prefix = 'med';
+        else if (req.originalUrl.includes('footer')) prefix = 'logo';
         
         cb(null, `${prefix}-${uniqueSuffix}${path.extname(file.originalname)}`);
     }
@@ -38,6 +40,48 @@ router.get('/pages/:id/edit', (req, res) => pageController.edit(req, res));
 router.post('/pages/save', upload.single('feature_image'), (req, res) => pageController.store(req, res));
 router.post('/pages/:id/update', upload.single('feature_image'), (req, res) => pageController.update(req, res));
 router.delete('/pages/:id', (req, res) => pageController.delete(req, res));
+
+// Footer
+router.get('/footer', async (req, res) => {
+    try {
+        const company_logo_url = await appSettingRepo.get('company_logo_url') || '';
+        const footer_content = await appSettingRepo.get('footer_content') || '';
+        const rawFooterColumns = await appSettingRepo.get('footer_columns');
+        let footer_columns = { company: [], explore: [], support: [], trust_safety: [] };
+        if (rawFooterColumns) {
+            try { footer_columns = JSON.parse(rawFooterColumns); } catch (e) { }
+        }
+        res.render('cms/footer/index', {
+            title: 'Footer Settings',
+            company_logo_url,
+            footer_content,
+            footer_columns
+        });
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+
+router.post('/footer/save', upload.single('company_logo_file'), async (req, res) => {
+    try {
+        let company_logo_url = req.body.company_logo_url || '';
+        if (req.file) {
+            company_logo_url = `/uploads/settings/${req.file.filename}`;
+        }
+        const { footer_content, footer_columns } = req.body;
+
+        await appSettingRepo.set('footer_content', footer_content || '');
+        await appSettingRepo.set('company_logo_url', company_logo_url || '');
+
+        if (footer_columns) {
+            await appSettingRepo.set('footer_columns', typeof footer_columns === 'string' ? footer_columns : JSON.stringify(footer_columns));
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 
 // Banners
 router.get('/banners', (req, res) => bannerController.index(req, res));

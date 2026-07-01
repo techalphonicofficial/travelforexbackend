@@ -1,0 +1,313 @@
+<%- contentFor('body') %>
+
+<%
+const statuses = ['new', 'contacted', 'quoted', 'converted', 'cancelled'];
+%>
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row align-items-center mb-4">
+            <div class="col-sm-6">
+                <h1 class="m-0 text-dark fw-bold">Edit Custom Inquiry</h1>
+            </div>
+            <div class="col-sm-6 text-sm-end">
+                <a href="/admin/bookings/inquiries/<%= inquiry.id %>" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Cancel</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content pb-5">
+    <div class="container-fluid">
+        <div class="card card-primary card-outline shadow-sm border-0 rounded-4">
+            <div class="card-header bg-light border-0 py-3 rounded-top-4">
+                <h5 class="card-title mb-0 fw-bold text-dark"><i class="bi bi-pencil-square me-2"></i>Edit Details for <%= inquiry.destination %> request</h5>
+            </div>
+            <form action="/admin/bookings/inquiries/<%= inquiry.id %>" method="POST">
+                <div class="card-body">
+                    <!-- CUSTOMER DETAILS SECTION -->
+                    <div class="mb-4">
+                        <h6 class="text-primary fw-bold mb-3 border-bottom pb-2"><i class="bi bi-person-badge me-2"></i>Customer Information</h6>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Customer Name</label>
+                                <input type="text" class="form-control" name="customer_name" value="<%= inquiry.customer_name || '' %>" placeholder="e.g. Akash Sharma">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Customer Email</label>
+                                <input type="email" class="form-control" name="customer_email" value="<%= inquiry.customer_email || '' %>" placeholder="e.g. akash@example.com">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Customer Phone</label>
+                                <input type="text" class="form-control" name="customer_phone" value="<%= inquiry.customer_phone || '' %>" placeholder="e.g. +91 9999999999">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TRIP DETAILS SECTION -->
+                    <div class="mb-4">
+                        <h6 class="text-primary fw-bold mb-3 border-bottom pb-2"><i class="bi bi-airplane me-2"></i>Trip Details</h6>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Destination</label>
+                                <input type="text" class="form-control" name="destination" value="<%= inquiry.destination || '' %>" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Style / Vibe</label>
+                                <input type="text" class="form-control" name="travel_with" value="<%= inquiry.travel_with || '' %>" placeholder="e.g. Luxury, Budget, Family">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Duration</label>
+                                <input type="text" class="form-control" name="duration" value="<%= inquiry.duration || '' %>" placeholder="e.g. 7-8 Days">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Departure City</label>
+                                <input type="text" class="form-control" name="departure_city" value="<%= inquiry.departure_city || '' %>">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Departure Date</label>
+                                <input type="text" class="form-control" name="departure_date" value="<%= inquiry.departure_date || '' %>">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Total Travellers</label>
+                                <input type="number" class="form-control" name="total_travellers" value="<%= inquiry.total_travellers || 1 %>" min="1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CITIES & ITINERARY SECTION -->
+                    <div class="mb-4">
+                        <h6 class="text-primary fw-bold mb-3 border-bottom pb-2"><i class="bi bi-geo-alt me-2"></i>Cities &amp; Itinerary</h6>
+                        <input type="hidden" name="cities" id="citiesJsonInput">
+                        <div id="citiesEditor"></div>
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-3" onclick="addCity()">
+                            <i class="bi bi-plus-circle me-1"></i>Add City
+                        </button>
+                    </div>
+
+                    <!-- PRICING & STATUS SECTION -->
+                    <div class="mb-3">
+                        <h6 class="text-primary fw-bold mb-3 border-bottom pb-2"><i class="bi bi-wallet2 me-2"></i>Pricing &amp; Status</h6>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Base Price (₹)</label>
+                                <input type="number" step="0.01" class="form-control" name="base_price" value="<%= inquiry.base_price || '0.00' %>" min="0" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Status</label>
+                                <select class="form-select" name="status" required>
+                                    <% statuses.forEach(statusName => { %>
+                                        <option value="<%= statusName %>" <%= inquiry.status === statusName ? 'selected' : '' %>><%= statusName %></option>
+                                    <% }) %>
+                                </select>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold">Internal Notes</label>
+                                <textarea class="form-control" name="notes" rows="3" placeholder="Add internal follow-up notes here..."><%= inquiry.notes || '' %></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-light border-0 py-3 text-end rounded-bottom-4">
+                    <a href="/admin/bookings/inquiries/<%= inquiry.id %>" class="btn btn-secondary me-2">Cancel</a>
+                    <button type="submit" class="btn btn-primary px-4" style="background: #4f46e5; border-color: #4f46e5;">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+<style>
+.city-block {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+.city-block-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+.day-block {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 0.6rem;
+}
+.activity-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.4rem;
+}
+.activity-row input {
+    flex: 1;
+}
+.btn-icon-sm {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+    border-radius: 6px;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    transition: color 0.15s;
+}
+.btn-icon-sm:hover { color: #ef4444; }
+.btn-icon-sm.add:hover { color: #22c55e; }
+</style>
+
+<script>
+let cities = <%- JSON.stringify(Array.isArray(inquiry.cities) ? inquiry.cities : []) %>;
+
+function renderCities() {
+    const container = document.getElementById('citiesEditor');
+    if (cities.length === 0) {
+        container.innerHTML = '<p class="text-muted small">No cities added yet. Click "Add City" to start.</p>';
+        return;
+    }
+    container.innerHTML = cities.map((city, ci) => `
+        <div class="city-block" id="city-${ci}">
+            <div class="city-block-header">
+                <i class="bi bi-geo-alt-fill text-primary"></i>
+                <input type="text" class="form-control form-control-sm fw-bold city-name-input"
+                    style="font-size:1rem; border:none; background:transparent; box-shadow:none; padding:0; width:auto; flex:1;"
+                    data-ci="${ci}"
+                    value="${escHtml(city.name || '')}"
+                    placeholder="City name">
+                <input type="text" class="form-control form-control-sm text-muted city-country-input"
+                    style="font-size:0.8rem; border:none; background:transparent; box-shadow:none; padding:0; max-width:150px;"
+                    data-ci="${ci}"
+                    value="${escHtml(city.country || '')}"
+                    placeholder="Country">
+                <button type="button" class="btn-icon-sm ms-auto" onclick="removeCity(${ci})" title="Remove city">
+                    <i class="bi bi-x-circle-fill"></i>
+                </button>
+            </div>
+
+            <div style="font-size:0.75rem; color:#4f46e5; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px; border-top:1px dashed #cbd5e1; padding-top:8px;">
+                Day-wise Itinerary:
+            </div>
+
+            <div id="days-${ci}">
+                ${(city.activities || []).map((day, di) => renderDayBlock(ci, di, day)).join('')}
+            </div>
+
+            <button type="button" class="btn btn-sm btn-outline-success mt-1" onclick="addDay(${ci})">
+                <i class="bi bi-plus me-1"></i>Add Day
+            </button>
+        </div>
+    `).join('');
+}
+
+function renderDayBlock(ci, di, day) {
+    const acts = Array.isArray(day.activities) ? day.activities : [];
+    return `
+        <div class="day-block" id="day-${ci}-${di}">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <strong style="font-size:0.85rem;">Day ${day.dayNumber || (di + 1)}:</strong>
+                <button type="button" class="btn-icon-sm" onclick="removeDay(${ci}, ${di})"><i class="bi bi-trash"></i></button>
+            </div>
+            <div id="acts-${ci}-${di}">
+                ${acts.map((act, ai) => renderActivityRow(ci, di, ai, act)).join('')}
+            </div>
+            <button type="button" class="btn btn-sm btn-link p-0 text-success" onclick="addActivity(${ci}, ${di})">
+                <i class="bi bi-plus-circle me-1"></i>Add Activity
+            </button>
+        </div>
+    `;
+}
+
+function renderActivityRow(ci, di, ai, act) {
+    return `
+        <div class="activity-row" id="act-${ci}-${di}-${ai}">
+            <input type="text" class="form-control form-control-sm act-time" style="max-width:90px;" placeholder="Time"
+                data-ci="${ci}" data-di="${di}" data-ai="${ai}"
+                value="${escHtml(act.time || '')}">
+            <input type="text" class="form-control form-control-sm act-desc" placeholder="Description"
+                data-ci="${ci}" data-di="${di}" data-ai="${ai}"
+                value="${escHtml(act.description || '')}">
+            <input type="text" class="form-control form-control-sm act-loc" style="max-width:120px;" placeholder="Location"
+                data-ci="${ci}" data-di="${di}" data-ai="${ai}"
+                value="${escHtml(act.location || '')}">
+            <button type="button" class="btn-icon-sm" onclick="removeActivity(${ci}, ${di}, ${ai})"><i class="bi bi-x-lg"></i></button>
+        </div>
+    `;
+}
+
+function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function addCity() {
+    cities.push({ name: '', country: '', activities: [{ dayNumber: 1, activities: [] }] });
+    renderCities();
+}
+
+function removeCity(ci) {
+    cities.splice(ci, 1);
+    renderCities();
+}
+
+function addDay(ci) {
+    if (!cities[ci].activities) cities[ci].activities = [];
+    const nextDay = cities[ci].activities.length + 1;
+    cities[ci].activities.push({ dayNumber: nextDay, activities: [] });
+    renderCities();
+}
+
+function removeDay(ci, di) {
+    cities[ci].activities.splice(di, 1);
+    cities[ci].activities.forEach((d, i) => d.dayNumber = i + 1);
+    renderCities();
+}
+
+function addActivity(ci, di) {
+    if (!cities[ci].activities[di].activities) cities[ci].activities[di].activities = [];
+    cities[ci].activities[di].activities.push({ time: '', description: '', location: '' });
+    renderCities();
+}
+
+function removeActivity(ci, di, ai) {
+    cities[ci].activities[di].activities.splice(ai, 1);
+    renderCities();
+}
+
+// Collect all current input values into the cities array before submit
+function collectCitiesFromDOM() {
+    document.querySelectorAll('.city-name-input').forEach(el => {
+        const ci = parseInt(el.dataset.ci);
+        if (cities[ci] !== undefined) cities[ci].name = el.value;
+    });
+    document.querySelectorAll('.city-country-input').forEach(el => {
+        const ci = parseInt(el.dataset.ci);
+        if (cities[ci] !== undefined) cities[ci].country = el.value;
+    });
+    document.querySelectorAll('.act-time').forEach(el => {
+        const ci = parseInt(el.dataset.ci), di = parseInt(el.dataset.di), ai = parseInt(el.dataset.ai);
+        if (cities[ci]?.activities?.[di]?.activities?.[ai] !== undefined)
+            cities[ci].activities[di].activities[ai].time = el.value;
+    });
+    document.querySelectorAll('.act-desc').forEach(el => {
+        const ci = parseInt(el.dataset.ci), di = parseInt(el.dataset.di), ai = parseInt(el.dataset.ai);
+        if (cities[ci]?.activities?.[di]?.activities?.[ai] !== undefined)
+            cities[ci].activities[di].activities[ai].description = el.value;
+    });
+    document.querySelectorAll('.act-loc').forEach(el => {
+        const ci = parseInt(el.dataset.ci), di = parseInt(el.dataset.di), ai = parseInt(el.dataset.ai);
+        if (cities[ci]?.activities?.[di]?.activities?.[ai] !== undefined)
+            cities[ci].activities[di].activities[ai].location = el.value;
+    });
+}
+
+document.querySelector('form').addEventListener('submit', function() {
+    collectCitiesFromDOM();
+    document.getElementById('citiesJsonInput').value = JSON.stringify(cities);
+});
+
+renderCities();
+</script>

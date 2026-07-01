@@ -1,42 +1,409 @@
-<div class="card" style="max-width: 600px; margin: 0 auto;">
-    <h3>Create New User</h3>
-    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 2rem;">Add a new employee or manager to the travel dashboard.</p>
+<style>
+    .user-create-page {
+        max-width: 980px;
+        margin: 0 auto;
+    }
 
-    <form action="/users" method="POST">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-            <div class="form-group" style="margin-bottom: 1.25rem;">
-                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;">Full Name</label>
-                <input type="text" name="name" placeholder="John Doe" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem;">
-            </div>
-            <div class="form-group" style="margin-bottom: 1.25rem;">
-                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;">Email Address</label>
-                <input type="email" name="email" placeholder="john@example.com" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem;">
-            </div>
-        </div>
+    .user-create-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        align-items: flex-end;
+        margin-bottom: 1.25rem;
+    }
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-            <div class="form-group" style="margin-bottom: 1.25rem;">
-                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;">Phone Number</label>
-                <input type="text" name="phone" placeholder="+1 234 567 890" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem;">
-            </div>
-            <div class="form-group" style="margin-bottom: 1.25rem;">
-                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;">Role</label>
-                <select name="role_id" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem; background: white;">
-                    <% roles.forEach(role => { %>
-                        <option value="<%= role.id %>"><%= role.name %></option>
-                    <% }) %>
-                </select>
-            </div>
-        </div>
+    .user-create-kicker {
+        color: #6366f1;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0;
+        text-transform: uppercase;
+        margin-bottom: 0.35rem;
+    }
 
-        <div class="form-group" style="margin-bottom: 1.25rem;">
-            <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;">Password</label>
-            <input type="password" name="password" placeholder="••••••••" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem;">
-        </div>
+    .user-create-title {
+        color: #121633;
+        font-size: 1.75rem;
+        font-weight: 800;
+        margin: 0;
+    }
 
-        <div style="display: flex; gap: 1rem; margin-top: 2rem; justify-content: flex-end;">
-            <a href="/users" class="btn" style="background: #f1f5f9; color: var(--text-main);">Cancel</a>
-            <button type="submit" class="btn btn-primary">Create User</button>
+    .user-create-subtitle {
+        color: #667085;
+        font-size: 0.92rem;
+        margin: 0.4rem 0 0;
+    }
+
+    .user-back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        height: 38px;
+        padding: 0 0.85rem;
+        border: 1px solid #dfe3ee;
+        border-radius: 8px;
+        color: #344054;
+        background: #fff;
+        font-size: 0.88rem;
+        font-weight: 700;
+        text-decoration: none;
+        box-shadow: 0 8px 18px rgba(18, 22, 51, 0.05);
+        transition: border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+        white-space: nowrap;
+    }
+
+    .user-back-link:hover {
+        border-color: #bfc7d8;
+        color: #4f46e5;
+        box-shadow: 0 10px 24px rgba(18, 22, 51, 0.08);
+    }
+
+    .user-create-panel {
+        display: grid;
+        grid-template-columns: 260px minmax(0, 1fr);
+        overflow: hidden;
+        border: 1px solid #e4e8f1;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 20px 45px rgba(18, 22, 51, 0.08);
+    }
+
+    .user-create-rail {
+        padding: 1.5rem;
+        background: #f8fbfb;
+        border-right: 1px solid #e4e8f1;
+    }
+
+    .user-create-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 46px;
+        height: 46px;
+        margin-bottom: 1rem;
+        border-radius: 8px;
+        background: #e6f7f3;
+        color: #0f766e;
+        font-size: 1.35rem;
+    }
+
+    .user-rail-title {
+        color: #121633;
+        font-size: 1rem;
+        font-weight: 800;
+        margin-bottom: 0.45rem;
+    }
+
+    .user-rail-copy {
+        color: #667085;
+        font-size: 0.86rem;
+        line-height: 1.6;
+        margin-bottom: 1.25rem;
+    }
+
+    .user-setup-list {
+        display: grid;
+        gap: 0.8rem;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .user-setup-list li {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        color: #344054;
+        font-size: 0.85rem;
+        font-weight: 700;
+    }
+
+    .user-setup-list i {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: #eef2ff;
+        color: #4f46e5;
+        font-size: 0.95rem;
+    }
+
+    .user-create-form {
+        padding: 1.65rem;
+    }
+
+    .user-form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem 1.1rem;
+    }
+
+    .user-form-field {
+        min-width: 0;
+    }
+
+    .user-form-field.full {
+        grid-column: 1 / -1;
+    }
+
+    .user-form-label {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        color: #25304f;
+        font-size: 0.82rem;
+        font-weight: 800;
+        margin-bottom: 0.42rem;
+    }
+
+    .user-required {
+        color: #dc2626;
+        font-weight: 800;
+    }
+
+    .user-input-wrap {
+        position: relative;
+    }
+
+    .user-input-icon {
+        position: absolute;
+        left: 0.88rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #8a94a6;
+        font-size: 1rem;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .user-input,
+    .user-select {
+        width: 100%;
+        height: 48px;
+        border: 1px solid #d8deea;
+        border-radius: 8px;
+        background: #fff;
+        color: #121633;
+        font-size: 0.94rem;
+        font-weight: 600;
+        padding: 0 0.95rem 0 2.65rem;
+        outline: none;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    }
+
+    .user-select {
+        cursor: pointer;
+        padding-right: 2.2rem;
+    }
+
+    .user-input::placeholder {
+        color: #8a94a6;
+        font-weight: 500;
+    }
+
+    .user-input:focus,
+    .user-select:focus {
+        border-color: #4f46e5;
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
+    }
+
+    .user-field-hint {
+        color: #7a8497;
+        font-size: 0.78rem;
+        margin: 0.45rem 0 0;
+    }
+
+    .user-form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid #edf0f6;
+    }
+
+    .user-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        min-height: 42px;
+        padding: 0.65rem 1rem;
+        border-radius: 8px;
+        font-weight: 800;
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+    }
+
+    .user-btn:hover {
+        transform: translateY(-1px);
+    }
+
+    .user-btn-secondary {
+        border: 1px solid #d8deea;
+        background: #fff;
+        color: #344054;
+    }
+
+    .user-btn-secondary:hover {
+        border-color: #bfc7d8;
+        color: #121633;
+        background: #f8fafc;
+    }
+
+    .user-btn-primary {
+        border: 1px solid #4f46e5;
+        background: #4f46e5;
+        color: #fff;
+        box-shadow: 0 12px 24px rgba(79, 70, 229, 0.22);
+    }
+
+    .user-btn-primary:hover {
+        border-color: #4338ca;
+        background: #4338ca;
+        color: #fff;
+        box-shadow: 0 14px 28px rgba(79, 70, 229, 0.28);
+    }
+
+    @media (max-width: 860px) {
+        .user-create-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .user-create-panel {
+            grid-template-columns: 1fr;
+        }
+
+        .user-create-rail {
+            border-right: 0;
+            border-bottom: 1px solid #e4e8f1;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .user-create-page {
+            max-width: none;
+        }
+
+        .user-create-form,
+        .user-create-rail {
+            padding: 1.15rem;
+        }
+
+        .user-form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .user-form-actions {
+            flex-direction: column-reverse;
+        }
+
+        .user-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<section class="user-create-page">
+    <div class="user-create-header">
+        <div>
+            <div class="user-create-kicker">Access control</div>
+            <h3 class="user-create-title">Create New User</h3>
+            <p class="user-create-subtitle">Add a new employee or manager to the travel dashboard.</p>
         </div>
-    </form>
-</div>
+        <a href="/users" class="user-back-link">
+            <i class="bi bi-arrow-left"></i>
+            Users
+        </a>
+    </div>
+
+    <div class="user-create-panel">
+        <aside class="user-create-rail">
+            <div class="user-create-icon">
+                <i class="bi bi-person-plus"></i>
+            </div>
+            <div class="user-rail-title">Team account</div>
+            <p class="user-rail-copy">Set up the profile, dashboard role, and login credential in one clean step.</p>
+
+            <ul class="user-setup-list">
+                <li><i class="bi bi-person-badge"></i> Profile details</li>
+                <li><i class="bi bi-shield-check"></i> Role assignment</li>
+                <li><i class="bi bi-key"></i> Secure access</li>
+            </ul>
+        </aside>
+
+        <form action="/users" method="POST" class="user-create-form">
+            <input type="hidden" name="type" value="employee">
+            <div class="user-form-grid">
+                <div class="user-form-field">
+                    <label for="userName" class="user-form-label">
+                        Full Name <span class="user-required">*</span>
+                    </label>
+                    <div class="user-input-wrap">
+                        <i class="bi bi-person user-input-icon"></i>
+                        <input id="userName" class="user-input" type="text" name="name" placeholder="Enter full name" autocomplete="name" required>
+                    </div>
+                </div>
+
+                <div class="user-form-field">
+                    <label for="userEmail" class="user-form-label">
+                        Email Address <span class="user-required">*</span>
+                    </label>
+                    <div class="user-input-wrap">
+                        <i class="bi bi-envelope user-input-icon"></i>
+                        <input id="userEmail" class="user-input" type="email" name="email" placeholder="name@company.com" autocomplete="email" required>
+                    </div>
+                </div>
+
+                <div class="user-form-field">
+                    <label for="userPhone" class="user-form-label">Phone Number</label>
+                    <div class="user-input-wrap">
+                        <i class="bi bi-telephone user-input-icon"></i>
+                        <input id="userPhone" class="user-input" type="tel" name="phone_number" placeholder="+91 98765 43210" autocomplete="tel">
+                    </div>
+                </div>
+
+                <div class="user-form-field">
+                    <label for="userRole" class="user-form-label">
+                        Role <span class="user-required">*</span>
+                    </label>
+                    <div class="user-input-wrap">
+                        <i class="bi bi-shield-lock user-input-icon"></i>
+                        <select id="userRole" class="user-select" name="role_id" required>
+                            <% roles.forEach(role => { %>
+                                <option value="<%= role.id %>"><%= role.name %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="user-form-field full">
+                    <label for="userPassword" class="user-form-label">
+                        Password <span class="user-required">*</span>
+                    </label>
+                    <div class="user-input-wrap">
+                        <i class="bi bi-lock user-input-icon"></i>
+                        <input id="userPassword" class="user-input" type="password" name="password" placeholder="Enter temporary password" autocomplete="new-password" required>
+                    </div>
+                    <p class="user-field-hint">The user can update this after signing in.</p>
+                </div>
+            </div>
+
+            <div class="user-form-actions">
+                <a href="/users" class="user-btn user-btn-secondary">
+                    <i class="bi bi-x-lg"></i>
+                    Cancel
+                </a>
+                <button type="submit" class="user-btn user-btn-primary">
+                    <i class="bi bi-check2-circle"></i>
+                    Create User
+                </button>
+            </div>
+        </form>
+    </div>
+</section>

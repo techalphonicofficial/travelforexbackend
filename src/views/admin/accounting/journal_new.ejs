@@ -1,0 +1,208 @@
+<style>
+  .acc-nav{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.6rem;}
+  .acc-nav a{display:inline-flex;align-items:center;gap:.4rem;padding:.42rem 1rem;border-radius:10px;font-size:.82rem;font-weight:600;text-decoration:none;background:#fff;color:#4f46e5;border:1.5px solid rgba(79,70,229,.2);box-shadow:0 2px 8px rgba(79,70,229,.07);transition:all .15s;}
+  .acc-nav a:hover,.acc-nav a.active{background:#4f46e5;color:#fff;border-color:#4f46e5;}
+  .acc-page-title{font-size:1.3rem;font-weight:800;color:#1e1b4b;display:flex;align-items:center;gap:.5rem;margin-bottom:1.4rem;}
+  .acc-page-title i{color:#4f46e5;}
+  .jnl-panel{background:#fff;border-radius:16px;box-shadow:0 4px 20px rgba(79,70,229,.08);padding:1.8rem;}
+  .jnl-label{font-size:.78rem;font-weight:700;color:#4444aa;margin-bottom:.28rem;text-transform:uppercase;letter-spacing:.04em;}
+  .jnl-input{width:100%;border-radius:10px;border:1.5px solid #e5e7f0;padding:.55rem .85rem;font-size:.87rem;font-family:'Inter',sans-serif;transition:border .2s,box-shadow .2s;background:#fafafa;}
+  .jnl-input:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1);outline:none;background:#fff;}
+  .jnl-select{width:100%;border-radius:10px;border:1.5px solid #e5e7f0;padding:.52rem .85rem;font-size:.87rem;background:#fafafa;cursor:pointer;}
+  .jnl-select:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1);outline:none;}
+  .jnl-lines-table{width:100%;border-collapse:collapse;margin-top:.5rem;}
+  .jnl-lines-table thead th{padding:.55rem .75rem;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#5555aa;background:linear-gradient(90deg,#f0f0fa,#e8e8f5);border:0;}
+  .jnl-lines-table tbody td{padding:.4rem .45rem;vertical-align:middle;}
+  .jnl-lines-table tbody tr{border-bottom:1px solid #f4f4fb;}
+  .jnl-lines-table input,.jnl-lines-table select{border-radius:8px;border:1.5px solid #e5e7f0;padding:.4rem .65rem;font-size:.84rem;background:#fafafa;width:100%;transition:border .2s;}
+  .jnl-lines-table input:focus,.jnl-lines-table select:focus{border-color:#4f46e5;outline:none;box-shadow:0 0 0 3px rgba(79,70,229,.08);}
+  .jnl-totals{display:flex;gap:1.5rem;justify-content:flex-end;padding:.8rem 0;font-size:.88rem;font-weight:600;}
+  .jnl-tot-dr{color:#059669;}
+  .jnl-tot-cr{color:#dc2626;}
+  .jnl-bal-ok{color:#059669;font-size:.8rem;font-weight:600;display:flex;align-items:center;gap:.3rem;}
+  .jnl-bal-err{color:#dc2626;font-size:.8rem;font-weight:600;display:flex;align-items:center;gap:.3rem;}
+</style>
+
+<div class="acc-nav">
+  <a href="/accounting/dashboard"><i class="bi bi-grid-1x2-fill"></i> Dashboard</a>
+  <a href="/accounting/vouchers"><i class="bi bi-receipt-cutoff"></i> Vouchers</a>
+  <a href="/accounting/ledger"><i class="bi bi-journal-text"></i> General Ledger</a>
+  <a href="/accounting/accounts"><i class="bi bi-list-columns-reverse"></i> Chart of Accounts</a>
+  <a href="/accounting/trial-balance"><i class="bi bi-scale"></i> Trial Balance</a>
+  <a href="/accounting/pnl"><i class="bi bi-graph-up-arrow"></i> P&amp;L Statement</a>
+  <a href="/accounting/vouchers/new" class="active"><i class="bi bi-pencil-square"></i> New Voucher</a>
+</div>
+
+<div class="acc-page-title"><i class="bi bi-pencil-square"></i> New Voucher</div>
+
+<% if(error) { %>
+<div style="background:#fef2f2;border:1.5px solid #fca5a5;color:#991b1b;border-radius:10px;padding:.75rem 1.1rem;margin-bottom:1.2rem;font-size:.85rem;font-weight:600;display:flex;align-items:center;gap:.5rem;">
+  <i class="bi bi-exclamation-triangle-fill"></i> <%= error %>
+</div>
+<% } %>
+
+<form method="POST" action="/accounting/vouchers" id="jnlForm">
+  <div class="jnl-panel">
+
+    <!-- Header fields -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.2rem;">
+      <div>
+        <div class="jnl-label">Voucher Type *</div>
+        <select name="voucher_type" class="jnl-input jnl-select" required>
+          <% (voucherTypes || []).forEach(type => { %>
+            <option value="<%= type.value %>" <%= type.value === 'journal' ? 'selected' : '' %>><%= type.label %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div>
+        <div class="jnl-label">Voucher Date *</div>
+        <input type="date" name="entry_date" class="jnl-input" value="<%= new Date().toISOString().slice(0,10) %>" required>
+      </div>
+      <div>
+        <div class="jnl-label">Description *</div>
+        <input type="text" name="description" class="jnl-input" placeholder="e.g. Package booking – Bali (Priya Sharma)" required>
+      </div>
+      <div>
+        <div class="jnl-label">Reference Type</div>
+        <select name="reference_type" class="jnl-input jnl-select">
+          <option value="">— None —</option>
+          <option value="ManualEntry">Manual Entry</option>
+          <option value="PackageBooking">Package Booking</option>
+          <option value="VendorPayment">Vendor Payment</option>
+          <option value="ForexTransaction">Forex Transaction</option>
+          <option value="Expense">Expense</option>
+          <option value="Payroll">Payroll</option>
+          <option value="TaxPayment">Tax Payment</option>
+          <option value="Refund">Refund</option>
+        </select>
+      </div>
+      <div>
+        <div class="jnl-label">Reference ID</div>
+        <input type="text" name="reference_id" class="jnl-input" placeholder="e.g. BK-005, VP-003">
+      </div>
+    </div>
+
+    <!-- Lines Table -->
+    <div style="font-size:.82rem;font-weight:700;color:#4444aa;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.6rem;">
+      Voucher Lines <span style="font-weight:500;color:#8888bb;">(Min 2 lines · Debits must equal Credits)</span>
+    </div>
+
+    <table class="jnl-lines-table" id="linesTable">
+      <thead>
+        <tr>
+          <th style="width:36%;">Account</th>
+          <th style="width:22%;">Debit (₹)</th>
+          <th style="width:22%;">Credit (₹)</th>
+          <th style="width:16%;">Memo</th>
+          <th style="width:4%;"></th>
+        </tr>
+      </thead>
+      <tbody id="linesBody">
+        <tr>
+          <td>
+            <select name="account_id[]" class="acc-sel" required>
+              <option value="">— Select Account —</option>
+              <% accounts.forEach(a => { %>
+              <option value="<%= a.id %>"><%= a.code %> · <%= a.name %></option>
+              <% }) %>
+            </select>
+          </td>
+          <td><input type="number" name="debit[]"  class="debit-inp"  step="0.01" min="0" placeholder="0.00" value="0"></td>
+          <td><input type="number" name="credit[]" class="credit-inp" step="0.01" min="0" placeholder="0.00" value="0"></td>
+          <td><input type="text"   name="memo[]"   placeholder="Note…"></td>
+          <td><button type="button" class="remove-line" style="background:#fef2f2;border:none;color:#dc2626;border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:.9rem;">×</button></td>
+        </tr>
+        <tr>
+          <td>
+            <select name="account_id[]" class="acc-sel" required>
+              <option value="">— Select Account —</option>
+              <% accounts.forEach(a => { %>
+              <option value="<%= a.id %>"><%= a.code %> · <%= a.name %></option>
+              <% }) %>
+            </select>
+          </td>
+          <td><input type="number" name="debit[]"  class="debit-inp"  step="0.01" min="0" placeholder="0.00" value="0"></td>
+          <td><input type="number" name="credit[]" class="credit-inp" step="0.01" min="0" placeholder="0.00" value="0"></td>
+          <td><input type="text"   name="memo[]"   placeholder="Note…"></td>
+          <td><button type="button" class="remove-line" style="background:#fef2f2;border:none;color:#dc2626;border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:.9rem;">×</button></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Add Line -->
+    <button type="button" id="addLine" style="margin-top:.7rem;background:#eef2ff;color:#4f46e5;border:none;border-radius:9px;padding:.42rem 1rem;font-size:.83rem;font-weight:600;cursor:pointer;">
+      <i class="bi bi-plus-lg"></i> Add Line
+    </button>
+
+    <!-- Totals & Balance Check -->
+    <div class="jnl-totals" id="totalsRow">
+      <span class="jnl-tot-dr">Total Debit: ₹<span id="totalDr">0.00</span></span>
+      <span class="jnl-tot-cr">Total Credit: ₹<span id="totalCr">0.00</span></span>
+      <span id="balStatus"></span>
+    </div>
+
+    <!-- Submit -->
+    <div style="display:flex;gap:.8rem;justify-content:flex-end;margin-top:1rem;border-top:1px solid #f0f0fa;padding-top:1.1rem;">
+      <a href="/accounting/ledger" style="background:#f0f0fa;color:#8888bb;border-radius:10px;padding:.52rem 1.2rem;font-size:.86rem;font-weight:600;text-decoration:none;">Cancel</a>
+      <button type="submit" id="submitBtn" style="background:linear-gradient(135deg,#4f46e5,#818cf8);color:#fff;border:none;border-radius:10px;padding:.52rem 1.4rem;font-size:.88rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(79,70,229,.3);">
+        <i class="bi bi-save-fill"></i> Post Voucher
+      </button>
+    </div>
+  </div>
+</form>
+
+<script>
+(function(){
+  const accountOptions = `<option value="">— Select Account —</option>` +
+    [<% accounts.forEach((a,i)=>{ %>'<option value="<%= a.id %>"><%= a.code %> · <%= a.name.replace(/'/g,"\\'") %></option>'<%= i<accounts.length-1?',':'' %><% }) %>].join('');
+
+  function calcTotals() {
+    let dr = 0, cr = 0;
+    document.querySelectorAll('.debit-inp').forEach(i  => dr += parseFloat(i.value)||0);
+    document.querySelectorAll('.credit-inp').forEach(i => cr += parseFloat(i.value)||0);
+    document.getElementById('totalDr').textContent = dr.toLocaleString('en-IN',{minimumFractionDigits:2});
+    document.getElementById('totalCr').textContent = cr.toLocaleString('en-IN',{minimumFractionDigits:2});
+    const bal = document.getElementById('balStatus');
+    if(Math.abs(dr-cr) < 0.01) {
+      bal.className='jnl-bal-ok'; bal.innerHTML='<i class="bi bi-check-circle-fill"></i> Balanced ✓';
+    } else {
+      bal.className='jnl-bal-err'; bal.innerHTML='<i class="bi bi-exclamation-triangle-fill"></i> Diff: ₹'+(Math.abs(dr-cr)).toLocaleString('en-IN',{minimumFractionDigits:2});
+    }
+  }
+
+  function bindRow(row) {
+    row.querySelectorAll('input[type=number]').forEach(i => i.addEventListener('input', calcTotals));
+    row.querySelector('.remove-line').addEventListener('click', function(){
+      if(document.querySelectorAll('#linesBody tr').length > 2) { row.remove(); calcTotals(); }
+    });
+  }
+
+  document.querySelectorAll('#linesBody tr').forEach(bindRow);
+
+  document.getElementById('addLine').addEventListener('click', function(){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><select name="account_id[]" class="acc-sel" required>${accountOptions}</select></td>
+      <td><input type="number" name="debit[]"  class="debit-inp"  step="0.01" min="0" placeholder="0.00" value="0"></td>
+      <td><input type="number" name="credit[]" class="credit-inp" step="0.01" min="0" placeholder="0.00" value="0"></td>
+      <td><input type="text"   name="memo[]"   placeholder="Note…"></td>
+      <td><button type="button" class="remove-line" style="background:#fef2f2;border:none;color:#dc2626;border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:.9rem;">×</button></td>
+    `;
+    document.getElementById('linesBody').appendChild(tr);
+    bindRow(tr);
+    calcTotals();
+  });
+
+  document.getElementById('jnlForm').addEventListener('submit', function(e){
+    let dr=0, cr=0;
+    document.querySelectorAll('.debit-inp').forEach(i  => dr += parseFloat(i.value)||0);
+    document.querySelectorAll('.credit-inp').forEach(i => cr += parseFloat(i.value)||0);
+    if(Math.abs(dr-cr) > 0.01) {
+      e.preventDefault();
+      alert('Cannot post: Journal entry is not balanced. Total Debits ≠ Total Credits.');
+    }
+  });
+
+  calcTotals();
+})();
+</script>

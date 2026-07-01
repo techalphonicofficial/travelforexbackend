@@ -15,7 +15,38 @@
         font-size: 1.2rem;
         margin-bottom: 1rem;
     }
+    .vendor-booking-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 0.85rem 0;
+        border-bottom: 1px solid var(--glass-border);
+    }
+    .vendor-booking-row:last-child { border-bottom: 0; }
+    .vendor-booking-ref {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--nav-text);
+    }
+    .vendor-booking-sub {
+        font-size: 0.72rem;
+        color: var(--nav-muted);
+        margin-top: 0.18rem;
+    }
+    .vendor-booking-amount {
+        text-align: right;
+        font-size: 0.85rem;
+        font-weight: 800;
+        color: #10b981;
+        white-space: nowrap;
+    }
 </style>
+
+<%
+    const money = (value) => Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    const recentVendorBookings = typeof recentBookings !== 'undefined' && Array.isArray(recentBookings) ? recentBookings : [];
+%>
 
 <div class="stats-grid">
     <div class="glass-card">
@@ -47,7 +78,7 @@
             <i class="fas fa-users"></i>
         </div>
         <p style="color: var(--nav-muted); font-size: 0.85rem; font-weight: 500;">Total Bookings</p>
-        <h2 style="font-size: 1.8rem; margin-top: 0.4rem; color: var(--nav-text);">0</h2>
+        <h2 style="font-size: 1.8rem; margin-top: 0.4rem; color: var(--nav-text);"><%= stats.totalBookings || 0 %></h2>
     </div>
 </div>
 
@@ -55,6 +86,40 @@
     <div class="glass-card" style="min-height: 350px;">
         <h3 style="margin-bottom: 1.5rem; font-size: 1.1rem;">Recent Performance</h3>
         <canvas id="performanceChart"></canvas>
+    </div>
+
+    <div class="glass-card">
+        <h3 style="margin-bottom: 1.5rem; font-size: 1.1rem;">Package Bookings</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:1rem;">
+            <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.14);border-radius:12px;padding:0.8rem;">
+                <p style="font-size:0.7rem;color:var(--nav-muted);font-weight:700;margin:0 0 0.35rem;">Booking Value</p>
+                <p style="font-size:1.05rem;color:#10b981;font-weight:800;margin:0;">₹<%= money(stats.totalBookingValue) %></p>
+            </div>
+            <div style="background:rgba(79,70,229,0.08);border:1px solid rgba(79,70,229,0.14);border-radius:12px;padding:0.8rem;">
+                <p style="font-size:0.7rem;color:var(--nav-muted);font-weight:700;margin:0 0 0.35rem;">Vendor Share</p>
+                <p style="font-size:1.05rem;color:var(--primary);font-weight:800;margin:0;">₹<%= money(stats.vendorPayableValue) %></p>
+            </div>
+        </div>
+        <% if (recentVendorBookings.length > 0) { %>
+            <% recentVendorBookings.forEach(booking => { %>
+                <div class="vendor-booking-row">
+                    <div>
+                        <div class="vendor-booking-ref"><%= booking.booking_reference %></div>
+                        <div class="vendor-booking-sub"><%= booking.package_name || 'Package booking' %></div>
+                        <div class="vendor-booking-sub"><%= booking.customer_name || 'Guest customer' %> · <%= new Date(booking.created_at).toLocaleDateString('en-IN') %></div>
+                    </div>
+                    <div class="vendor-booking-amount">
+                        ₹<%= money(booking.vendor_amount) %>
+                        <div class="vendor-booking-sub"><%= booking.payment_status %></div>
+                    </div>
+                </div>
+            <% }) %>
+        <% } else { %>
+            <div style="text-align:center;padding:2rem;">
+                <i class="fas fa-suitcase-rolling" style="font-size:2rem;color:var(--nav-muted);opacity:0.3;display:block;margin-bottom:10px;"></i>
+                <p style="color:var(--nav-muted);font-size:0.85rem;">No package bookings yet</p>
+            </div>
+        <% } %>
     </div>
 
     <div class="glass-card">

@@ -1,0 +1,172 @@
+<!-- Shared Accounting Nav Styles (reused across all pages) -->
+<style>
+  .acc-nav{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.6rem;}
+  .acc-nav a{display:inline-flex;align-items:center;gap:.4rem;padding:.42rem 1rem;border-radius:10px;font-size:.82rem;font-weight:600;text-decoration:none;background:#fff;color:#4f46e5;border:1.5px solid rgba(79,70,229,.2);box-shadow:0 2px 8px rgba(79,70,229,.07);transition:all .15s;}
+  .acc-nav a:hover,.acc-nav a.active{background:#4f46e5;color:#fff;border-color:#4f46e5;box-shadow:0 4px 14px rgba(79,70,229,.3);}
+  .acc-page-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.4rem;}
+  .acc-page-title{font-size:1.3rem;font-weight:800;color:#1e1b4b;display:flex;align-items:center;gap:.5rem;}
+  .acc-page-title i{color:#4f46e5;}
+  .acc-panel{background:#fff;border-radius:16px;box-shadow:0 4px 20px rgba(79,70,229,.07);}
+  .tf-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem;}
+  .tf-search{position:relative;}
+  .tf-search input{padding:.45rem .8rem .45rem 2.1rem;border-radius:10px;border:1.5px solid #e5e7f0;background:#fafafa;font-size:.87rem;width:200px;transition:border .2s,box-shadow .2s;}
+  .tf-search input:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1);outline:none;}
+  .tf-search .tf-si{position:absolute;left:.65rem;top:50%;transform:translateY(-50%);color:#8888bb;font-size:.9rem;pointer-events:none;}
+  .tf-select{border-radius:10px;border:1.5px solid #e5e7f0;background:#fafafa;font-size:.85rem;padding:.42rem .8rem;color:#333;cursor:pointer;}
+  .tf-select:focus{border-color:#4f46e5;outline:none;}
+  .acc-table{width:100%;border-collapse:collapse;}
+  .acc-table thead tr{background:linear-gradient(90deg,#f0f0fa,#e8e8f5);}
+  .acc-table thead th{padding:.75rem 1rem;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#5555aa;border:0;}
+  .acc-table tbody tr{border-bottom:1px solid #f4f4fb;transition:background .12s;}
+  .acc-table tbody tr.entry-group-end{border-bottom:2.5px solid #e8e8f5;}
+  .acc-table tbody tr:hover{background:#fafafe;}
+  .acc-table tbody td{padding:.7rem 1rem;font-size:.85rem;color:#333;vertical-align:middle;}
+  .acc-dr{color:#059669;font-weight:700;}
+  .acc-cr{color:#dc2626;font-weight:700;}
+  .acc-ref-badge{background:#eef2ff;color:#4f46e5;border-radius:6px;padding:2px 8px;font-size:.72rem;font-weight:600;}
+  .acc-code-badge{background:#f4f4fb;color:#5555aa;border-radius:6px;padding:2px 8px;font-size:.72rem;font-weight:700;border:1px solid #e5e7f0;}
+  .acc-entry-desc{font-weight:600;color:#1e1b4b;font-size:.84rem;}
+</style>
+
+<!-- Nav -->
+<div class="acc-nav">
+  <a href="/accounting/dashboard"><i class="bi bi-grid-1x2-fill"></i> Dashboard</a>
+  <a href="/accounting/vouchers"><i class="bi bi-receipt-cutoff"></i> Vouchers</a>
+  <a href="/accounting/ledger" class="active"><i class="bi bi-journal-text"></i> General Ledger</a>
+  <a href="/accounting/accounts"><i class="bi bi-list-columns-reverse"></i> Chart of Accounts</a>
+  <a href="/accounting/trial-balance"><i class="bi bi-scale"></i> Trial Balance</a>
+  <a href="/accounting/pnl"><i class="bi bi-graph-up-arrow"></i> P&amp;L Statement</a>
+  <a href="/accounting/vouchers/new"><i class="bi bi-pencil-square"></i> New Voucher</a>
+</div>
+
+<div class="acc-page-hdr">
+  <div class="acc-page-title"><i class="bi bi-journal-text"></i> General Ledger</div>
+  <a href="/accounting/vouchers/new" class="btn-add-primary"><i class="bi bi-plus-lg"></i> New Voucher</a>
+</div>
+
+<% if(typeof req !== 'undefined' && req && req.query && req.query.success) { %>
+<div style="background:#ecfdf5;border:1.5px solid #6ee7b7;color:#065f46;border-radius:10px;padding:.75rem 1.1rem;margin-bottom:1rem;font-size:.85rem;font-weight:600;display:flex;align-items:center;gap:.5rem;">
+  <i class="bi bi-check-circle-fill"></i> Journal entry created successfully.
+</div>
+<% } %>
+
+<!-- Filters -->
+<form method="GET" action="/accounting/ledger">
+  <div class="tf-toolbar" style="margin-bottom:1rem;">
+    <div class="tf-search">
+      <i class="bi bi-search tf-si"></i>
+      <input type="text" name="ref_type" placeholder="Filter by type…" value="<%= filters.ref_type || '' %>">
+    </div>
+    <input type="text" name="voucher_no" placeholder="Voucher no..." value="<%= filters.voucher_no || '' %>" class="tf-select" style="min-width:150px;">
+    <select name="voucher_type" class="tf-select">
+      <option value="">All Voucher Types</option>
+      <% (voucherTypes || []).forEach(type => { %>
+        <option value="<%= type.value %>" <%= filters.voucher_type === type.value ? 'selected' : '' %>><%= type.label %></option>
+      <% }) %>
+    </select>
+    <input type="date" name="dateFrom" value="<%= filters.dateFrom || '' %>" class="tf-select" title="Date From">
+    <input type="date" name="dateTo"   value="<%= filters.dateTo   || '' %>" class="tf-select" title="Date To">
+    <button type="submit" style="background:#4f46e5;color:#fff;border:none;border-radius:10px;padding:.42rem 1rem;font-size:.85rem;font-weight:600;cursor:pointer;">
+      <i class="bi bi-funnel-fill"></i> Filter
+    </button>
+    <a href="/accounting/ledger" style="background:#f0f0fa;color:#8888bb;border-radius:10px;padding:.42rem .9rem;font-size:.85rem;font-weight:600;text-decoration:none;">
+      <i class="bi bi-x-lg"></i> Clear
+    </a>
+    <span style="margin-left:auto;font-size:.78rem;color:#8888bb;font-weight:500;">
+      <%= totalCount %> entr<%= totalCount===1?'y':'ies' %> found
+    </span>
+  </div>
+</form>
+
+<!-- Table -->
+<div class="acc-panel" style="overflow:hidden;">
+  <div style="overflow-x:auto;">
+    <table class="acc-table">
+      <thead>
+        <tr>
+          <th style="width:130px;">Date</th>
+          <th>Voucher</th>
+          <th>Description</th>
+          <th>Reference</th>
+          <th>Account</th>
+          <th class="text-end">Debit (₹)</th>
+          <th class="text-end" style="padding-right:1.2rem;">Credit (₹)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if(entries && entries.length > 0) { %>
+          <% entries.forEach(entry => { %>
+            <% const voucher = entry.voucher || null; %>
+            <% entry.lines.forEach((line, idx) => { %>
+            <tr class="<%= idx === entry.lines.length-1 ? 'entry-group-end' : '' %>">
+              <% if(idx === 0) { %>
+                <td rowspan="<%= entry.lines.length %>" style="vertical-align:top;padding-top:.85rem;white-space:nowrap;">
+                  <div style="font-size:.8rem;font-weight:600;color:#1e1b4b;"><%= new Date(entry.entry_date).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) %></div>
+                  <div style="font-size:.68rem;color:#b0b0d0;margin-top:.15rem;">#<%= entry.id.substring(0,8).toUpperCase() %></div>
+                </td>
+                <td rowspan="<%= entry.lines.length %>" style="vertical-align:top;padding-top:.85rem;">
+                  <% if(voucher) { %>
+                    <a href="/accounting/vouchers/<%= voucher.id %>" style="font-weight:800;color:#4f46e5;text-decoration:none;"><%= voucher.voucher_no %></a>
+                    <div style="font-size:.7rem;color:#8888bb;margin-top:.18rem;text-transform:capitalize;"><%= String(voucher.voucher_type || '').replace(/_/g,' ') %></div>
+                    <div style="font-size:.68rem;color:#059669;margin-top:.12rem;text-transform:capitalize;"><%= voucher.status %></div>
+                  <% } else { %>
+                    <span style="font-size:.75rem;color:#8888bb;font-weight:700;">Legacy journal</span>
+                  <% } %>
+                </td>
+                <td rowspan="<%= entry.lines.length %>" style="vertical-align:top;padding-top:.85rem;">
+                  <div class="acc-entry-desc"><%= entry.description %></div>
+                </td>
+                <td rowspan="<%= entry.lines.length %>" style="vertical-align:top;padding-top:.85rem;">
+                  <% if(entry.reference_type) { %>
+                    <span class="acc-ref-badge"><%= entry.reference_type %></span>
+                  <% } %>
+                  <% if(entry.reference_id) { %>
+                    <div style="font-size:.7rem;color:#8888bb;margin-top:.2rem;"><%= entry.reference_id %></div>
+                  <% } %>
+                </td>
+              <% } %>
+              <td>
+                <div style="display:flex;align-items:center;gap:.5rem;">
+                  <span class="acc-code-badge"><%= line.account.code %></span>
+                  <span style="font-size:.83rem;color:#444466;"><%= line.account.name %></span>
+                </div>
+                <% if(line.memo) { %><div style="font-size:.7rem;color:#8888bb;margin-top:.15rem;font-style:italic;"><%= line.memo %></div><% } %>
+              </td>
+              <td class="text-end acc-dr">
+                <%= parseFloat(line.debit) > 0 ? '₹' + parseFloat(line.debit).toLocaleString('en-IN',{minimumFractionDigits:2}) : '—' %>
+              </td>
+              <td class="text-end acc-cr" style="padding-right:1.2rem;">
+                <%= parseFloat(line.credit) > 0 ? '₹' + parseFloat(line.credit).toLocaleString('en-IN',{minimumFractionDigits:2}) : '—' %>
+              </td>
+            </tr>
+            <% }) %>
+          <% }) %>
+        <% } else { %>
+        <tr>
+          <td colspan="7" style="text-align:center;padding:3.5rem 1rem;color:#8888bb;">
+            <i class="bi bi-journal-x" style="font-size:2.5rem;display:block;margin-bottom:.6rem;opacity:.3;"></i>
+            No journal entries found. <a href="/accounting/vouchers/new">Create one?</a>
+          </td>
+        </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <% if(totalPages > 1) { %>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:.9rem 1.1rem;border-top:1px solid #f0f0fa;flex-wrap:wrap;gap:.5rem;">
+    <span style="font-size:.78rem;color:#8888bb;">Page <%= currentPage %> of <%= totalPages %></span>
+    <div style="display:flex;gap:.3rem;">
+      <% for(let p=1;p<=totalPages;p++) { %>
+      <a href="?page=<%= p %><%= filters.dateFrom?'&dateFrom='+filters.dateFrom:'' %><%= filters.dateTo?'&dateTo='+filters.dateTo:'' %><%= filters.ref_type?'&ref_type='+filters.ref_type:'' %><%= filters.voucher_no?'&voucher_no='+filters.voucher_no:'' %><%= filters.voucher_type?'&voucher_type='+filters.voucher_type:'' %>"
+        style="width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:600;text-decoration:none;
+               background:<%= p===currentPage?'#4f46e5':'#fff' %>;color:<%= p===currentPage?'#fff':'#4444aa' %>;
+               border:1.5px solid <%= p===currentPage?'#4f46e5':'#e5e7f0' %>;">
+        <%= p %>
+      </a>
+      <% } %>
+    </div>
+  </div>
+  <% } %>
+</div>

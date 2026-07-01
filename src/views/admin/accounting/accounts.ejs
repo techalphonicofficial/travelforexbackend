@@ -1,0 +1,71 @@
+<style>
+  .acc-nav{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.6rem;}
+  .acc-nav a{display:inline-flex;align-items:center;gap:.4rem;padding:.42rem 1rem;border-radius:10px;font-size:.82rem;font-weight:600;text-decoration:none;background:#fff;color:#4f46e5;border:1.5px solid rgba(79,70,229,.2);box-shadow:0 2px 8px rgba(79,70,229,.07);transition:all .15s;}
+  .acc-nav a:hover,.acc-nav a.active{background:#4f46e5;color:#fff;border-color:#4f46e5;}
+  .acc-page-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.4rem;}
+  .acc-page-title{font-size:1.3rem;font-weight:800;color:#1e1b4b;display:flex;align-items:center;gap:.5rem;}
+  .acc-page-title i{color:#4f46e5;}
+  .acc-panel{background:#fff;border-radius:16px;box-shadow:0 4px 20px rgba(79,70,229,.07);margin-bottom:1.2rem;}
+  .acc-type-header{padding:.65rem 1rem;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#fff;display:flex;align-items:center;gap:.4rem;}
+  .acc-coa-row{display:grid;grid-template-columns:90px 1fr 100px;align-items:center;padding:.7rem 1rem;border-bottom:1px solid #f4f4fb;transition:background .12s;}
+  .acc-coa-row:last-child{border-bottom:0;}
+  .acc-coa-row:hover{background:#fafafe;}
+  .acc-code{font-family:monospace;font-size:.82rem;font-weight:700;color:#4f46e5;background:#eef2ff;padding:2px 8px;border-radius:6px;}
+  .acc-name{font-size:.85rem;font-weight:600;color:#1e1b4b;}
+  .acc-desc{font-size:.73rem;color:#8888bb;margin-top:.1rem;}
+  .acc-pill{font-size:.68rem;font-weight:700;padding:2px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.04em;}
+</style>
+
+<div class="acc-nav">
+  <a href="/accounting/dashboard"><i class="bi bi-grid-1x2-fill"></i> Dashboard</a>
+  <a href="/accounting/vouchers"><i class="bi bi-receipt-cutoff"></i> Vouchers</a>
+  <a href="/accounting/ledger"><i class="bi bi-journal-text"></i> General Ledger</a>
+  <a href="/accounting/accounts" class="active"><i class="bi bi-list-columns-reverse"></i> Chart of Accounts</a>
+  <a href="/accounting/trial-balance"><i class="bi bi-scale"></i> Trial Balance</a>
+  <a href="/accounting/pnl"><i class="bi bi-graph-up-arrow"></i> P&amp;L Statement</a>
+  <a href="/accounting/vouchers/new"><i class="bi bi-pencil-square"></i> New Voucher</a>
+</div>
+
+<div class="acc-page-hdr">
+  <div class="acc-page-title"><i class="bi bi-list-columns-reverse"></i> Chart of Accounts</div>
+  <div style="font-size:.8rem;color:#8888bb;font-weight:500;">
+    <%= Object.values(grouped).flat().length %> accounts total
+  </div>
+</div>
+
+<%
+  const typeConfig = {
+    asset:     { label:'Assets',      icon:'bi-bank',                color:'#4f46e5', bg:'linear-gradient(90deg,#4f46e5,#818cf8)' },
+    liability: { label:'Liabilities', icon:'bi-arrow-left-circle',   color:'#ef4444', bg:'linear-gradient(90deg,#ef4444,#f87171)' },
+    equity:    { label:'Equity',      icon:'bi-building',             color:'#8b5cf6', bg:'linear-gradient(90deg,#8b5cf6,#a78bfa)' },
+    revenue:   { label:'Revenue',     icon:'bi-graph-up-arrow',       color:'#10b981', bg:'linear-gradient(90deg,#10b981,#34d399)' },
+    expense:   { label:'Expenses',    icon:'bi-arrow-down-circle',    color:'#f59e0b', bg:'linear-gradient(90deg,#f59e0b,#fbbf24)' },
+  };
+%>
+
+<% Object.entries(typeConfig).forEach(([type, cfg]) => { %>
+  <% if(grouped[type] && grouped[type].length > 0) { %>
+  <div class="acc-panel" style="overflow:hidden;">
+    <div class="acc-type-header" style="background:<%= cfg.bg %>;">
+      <i class="bi <%= cfg.icon %>"></i>
+      <%= cfg.label %>
+      <span style="margin-left:auto;background:rgba(255,255,255,.2);border-radius:20px;padding:1px 9px;font-size:.7rem;"><%= grouped[type].length %></span>
+    </div>
+    <% grouped[type].forEach(acc => { %>
+    <div class="acc-coa-row">
+      <span class="acc-code"><%= acc.code %></span>
+      <div>
+        <div class="acc-name"><%= acc.name %></div>
+        <% if(acc.description) { %><div class="acc-desc"><%= acc.description %></div><% } %>
+      </div>
+      <div style="text-align:right;">
+        <span class="acc-pill" style="background:rgba(79,70,229,.1);color:<%= cfg.color %>;"><%= acc.type %></span>
+        <% if(!acc.is_active) { %>
+          <div style="font-size:.68rem;color:#ef4444;font-weight:600;margin-top:.15rem;">INACTIVE</div>
+        <% } %>
+      </div>
+    </div>
+    <% }) %>
+  </div>
+  <% } %>
+<% }) %>

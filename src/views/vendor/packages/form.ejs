@@ -1,3 +1,306 @@
+<style>
+    .vp-form-shell {
+        max-width: 1220px;
+        margin: 0 auto;
+    }
+
+    .vp-form-shell .glass-card:hover {
+        transform: none;
+    }
+
+    .vp-panel {
+        border-radius: 16px;
+        border: 1px solid #e4e8f1;
+        background: #fff;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+    }
+
+    .vp-destination-card {
+        border: 1px solid #e4e8f1;
+        border-radius: 16px;
+        padding: 1.25rem;
+        background: #fff;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+    }
+
+    .vp-destination-top {
+        display: grid;
+        grid-template-columns: minmax(260px, 1fr) 130px 48px;
+        gap: 1rem;
+        align-items: end;
+        margin-bottom: 1rem;
+    }
+
+    .vp-field-label {
+        display: block;
+        color: var(--nav-muted);
+        font-size: 0.75rem;
+        font-weight: 800;
+        letter-spacing: 0;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+    }
+
+    .vp-input,
+    .vp-select,
+    .vp-textarea {
+        width: 100%;
+        border: 1px solid #dbe2ee;
+        border-radius: 10px;
+        background: #fff;
+        color: var(--nav-text);
+        font-size: 0.92rem;
+        font-weight: 600;
+        outline: none;
+        padding: 0.75rem 0.9rem;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .vp-input:focus,
+    .vp-select:focus,
+    .vp-textarea:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
+    }
+
+    .vp-btn-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        border: 1px solid #fecaca;
+        background: #fff1f2;
+        color: #e11d48;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .vp-hotel-section {
+        border: 1px solid #dbe2ee;
+        border-radius: 14px;
+        background: #fbfdfd;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .vp-hotel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.75rem;
+    }
+
+    .vp-small-action {
+        border: 1px solid #b7ead9;
+        border-radius: 10px;
+        background: #ecfdf5;
+        color: #047857;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.82rem;
+        font-weight: 800;
+        padding: 0.45rem 0.7rem;
+    }
+
+    .vp-hotel-unit,
+    .vp-activity-unit {
+        border: 1px solid #e4e8f1;
+        border-radius: 12px;
+        background: #fff;
+        padding: 0.85rem;
+        display: flex;
+        justify-content: space-between;
+        gap: 0.85rem;
+        align-items: flex-start;
+        margin-bottom: 0.6rem;
+    }
+
+    .vp-thumb {
+        width: 48px;
+        height: 48px;
+        border: 1px solid #dbe2ee;
+        border-radius: 10px;
+        background: #f1f5f9;
+        object-fit: cover;
+        flex-shrink: 0;
+    }
+
+    .vp-thumb-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #0f766e;
+        font-size: 1.15rem;
+    }
+
+    .vp-meta-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        border-radius: 999px;
+        padding: 0.15rem 0.5rem;
+        background: #eef2ff;
+        color: var(--primary);
+        font-size: 0.72rem;
+        font-weight: 800;
+    }
+
+    .vp-empty-state {
+        border: 1px dashed #cbd5e1;
+        border-radius: 12px;
+        background: #f8fafc;
+        color: var(--nav-muted);
+        font-size: 0.84rem;
+        font-weight: 600;
+        padding: 0.9rem;
+        text-align: center;
+    }
+
+    .vp-day-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 1rem;
+        overflow-x: auto;
+        padding-bottom: 5px;
+    }
+
+    .vp-day-tab {
+        border: 1px solid #dbe2ee;
+        border-radius: 10px;
+        background: #fff;
+        color: var(--nav-text);
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 800;
+        padding: 0.5rem 0.85rem;
+        white-space: nowrap;
+    }
+
+    .vp-day-tab.active {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: #fff;
+    }
+
+    .vp-day-panel {
+        border: 1px solid #e4e8f1;
+        border-radius: 14px;
+        background: #f8fafc;
+        padding: 0.9rem;
+    }
+
+    .vp-add-activity {
+        width: 100%;
+        border: 1.5px dashed var(--primary);
+        border-radius: 12px;
+        background: rgba(79, 70, 229, 0.04);
+        color: var(--primary);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        font-weight: 800;
+        padding: 0.75rem;
+    }
+
+    .vp-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        background: rgba(15, 23, 42, 0.62);
+        backdrop-filter: blur(8px);
+    }
+
+    .vp-modal-card {
+        width: min(100%, 460px);
+        border: 1px solid #e4e8f1;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 30px 80px rgba(15, 23, 42, 0.28);
+        padding: 1.35rem;
+    }
+
+    .vp-modal-title {
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        font-size: 1.18rem;
+        font-weight: 900;
+        margin: 0 0 1.1rem;
+    }
+
+    .vp-modal-grid {
+        display: grid;
+        gap: 0.95rem;
+    }
+
+    .vp-upload-line {
+        display: grid;
+        grid-template-columns: 56px minmax(0, 1fr);
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    .vp-modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.65rem;
+        margin-top: 1.15rem;
+    }
+
+    .vp-btn {
+        border: 1px solid #dbe2ee;
+        border-radius: 10px;
+        background: #fff;
+        color: var(--nav-text);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        font-weight: 800;
+        min-height: 40px;
+        padding: 0.55rem 1rem;
+    }
+
+    .vp-btn-primary {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: #fff;
+        box-shadow: 0 12px 24px rgba(79, 70, 229, 0.22);
+    }
+
+    @media (max-width: 760px) {
+        .vp-destination-top {
+            grid-template-columns: 1fr;
+        }
+
+        .vp-btn-icon {
+            width: 100%;
+        }
+
+        .vp-modal-actions {
+            flex-direction: column-reverse;
+        }
+
+        .vp-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="vp-form-shell">
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
     <div>
         <h2 style="font-weight: 800; color: var(--nav-text); font-size: 1.6rem;">
@@ -31,6 +334,12 @@
                     placeholder="e.g. 5 Days Kerala Special" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--glass-border)'">
             </div>
             <div>
+                <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--nav-muted); margin-bottom: 0.6rem;">Slug</label>
+                <input type="text" id="packageSlug" value="<%= pkg ? (pkg.slug || '') : '' %>"
+                    style="width: 100%; background: #fff; border: 1.5px solid var(--glass-border); border-radius: 12px; padding: 0.8rem 1rem; color: var(--nav-text); font-size: 0.95rem; outline: none; transition: border-color 0.2s;"
+                    placeholder="5-days-kerala-special" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--glass-border)'">
+            </div>
+            <div>
                 <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--nav-muted); margin-bottom: 0.6rem;">Price (INR) *</label>
                 <div style="position: relative;">
                     <span style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--nav-muted); font-weight: 600;">₹</span>
@@ -44,6 +353,34 @@
                 <input type="number" id="packageDuration" value="<%= pkg ? pkg.duration_days : 0 %>"
                     style="width: 100%; background: #f8fafc; border: 1.5px solid var(--glass-border); border-radius: 12px; padding: 0.8rem 1rem; color: var(--nav-muted); font-weight: 600;"
                     readonly>
+            </div>
+        </div>
+        
+        <div style="margin-top: 1.5rem;">
+            <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--nav-muted); margin-bottom: 0.6rem;">Main Package Image *</label>
+            <div style="display: flex; gap: 20px; align-items: flex-start;">
+                <div id="mainImagePreview" style="width: 200px; aspect-ratio: 16/9; border-radius: 12px; border: 1.5px solid var(--glass-border); overflow: hidden; background: #f1f5f9; display: flex; align-items: center; justify-content: center; position: relative;">
+                    <% if (pkg && pkg.main_image) { %>
+                        <img src="<%= pkg.main_image %>" style="width: 100%; height: 100%; object-fit: cover;">
+                    <% } else { %>
+                        <i class="bi bi-image" style="font-size: 2rem; color: var(--nav-muted); opacity: 0.4;"></i>
+                    <% } %>
+                </div>
+                <div style="flex-grow: 1;">
+                    <p style="font-size: 0.8rem; color: var(--nav-muted); margin-bottom: 1rem;">This will be the primary image shown in searches and on the homepage. High quality landscape images (16:9) work best.</p>
+                    <input type="file" id="mainImageInput" hidden accept="image/*" onchange="uploadMainImage(this)">
+                    <button type="button" onclick="document.getElementById('mainImageInput').click()" class="glass-card" style="padding: 0.6rem 1.2rem; border: 1px solid var(--primary); color: var(--primary); font-weight: 600; font-size: 0.85rem;">
+                        <i class="bi bi-upload" style="margin-right: 8px;"></i> <%= pkg && pkg.main_image ? 'Change Image' : 'Upload Main Image' %>
+                    </button>
+                    <input type="hidden" id="packageMainImage" value="<%= pkg ? pkg.main_image : '' %>">
+                    
+                    <div style="margin-top: 1rem;">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--nav-muted); margin-bottom: 0.4rem;">Main Image Alt Text</label>
+                        <input type="text" id="packageMainImageAlt" value="<%= pkg ? pkg.main_image_alt : '' %>"
+                            placeholder="Describe the image for SEO"
+                            style="width: 100%; background: #f8fafc; border: 1.5px solid var(--glass-border); border-radius: 8px; padding: 0.5rem 0.8rem; font-size: 0.85rem; color: var(--nav-text);">
+                    </div>
+                </div>
             </div>
         </div>
         <div style="margin-top: 1.5rem;">
@@ -150,46 +487,127 @@
     </div>
 </div>
 
+</div>
+
 <!-- Activity Modal -->
-<div id="activityModal"
-    style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
-    <div class="glass-card" style="width: 100%; max-width: 400px; background: var(--bg-dark);">
-        <h4 style="margin-bottom: 1.5rem;">Add Activity</h4>
-        <div style="display: flex; flex-direction: column; gap: 1rem;">
+<div id="activityModal" class="vp-modal">
+    <div class="vp-modal-card">
+        <h4 class="vp-modal-title" id="modalTitle"><i class="bi bi-plus-circle"></i> Add Activity</h4>
+        <div class="vp-modal-grid">
             <div>
-                <label
-                    style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem;">Activity
-                    Name</label>
-                <input type="text" id="modalActivityName"
-                    style="width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 10px; padding: 0.6rem; color: white;">
+                <label class="vp-field-label">Activity Name</label>
+                <input type="text" id="modalActivityName" class="vp-input" placeholder="e.g. Beach shack dinner">
             </div>
             <div>
-                <label
-                    style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem;">Duration</label>
-                <input type="text" id="modalActivityDuration" placeholder="e.g. 2 hours"
-                    style="width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 10px; padding: 0.6rem; color: white;">
+                <label class="vp-field-label">Duration</label>
+                <input type="text" id="modalActivityDuration" class="vp-input" placeholder="e.g. Full Day">
             </div>
-            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1rem;">
-                <button onclick="closeActivityModal()" class="glass-card" style="padding: 0.5rem 1rem;">Cancel</button>
-                <button onclick="confirmAddActivity()" class="glass-card"
-                    style="padding: 0.5rem 1.5rem; background: var(--primary); border: none; color: white;">Add</button>
+            <div>
+                <label class="vp-field-label">Description</label>
+                <textarea id="modalActivityDescription" class="vp-textarea" placeholder="Activity details..." rows="3"></textarea>
             </div>
+            <div>
+                <label class="vp-field-label">Activity Image</label>
+                <div class="vp-upload-line">
+                    <div id="modalActivityImagePreview" class="vp-thumb vp-thumb-icon">
+                        <i class="bi bi-image"></i>
+                    </div>
+                    <div>
+                        <input type="file" id="modalActivityImageFile" accept="image/*" hidden onchange="uploadActivityImage(this)">
+                        <button type="button" class="vp-btn" id="modalActivityImageBtn" onclick="document.getElementById('modalActivityImageFile').click()">
+                            <i class="bi bi-upload"></i> Upload Image
+                        </button>
+                        <input type="hidden" id="modalActivityImage" value="">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="vp-modal-actions">
+            <button type="button" onclick="closeActivityModal()" class="vp-btn">Cancel</button>
+            <button type="button" onclick="confirmAddActivity()" class="vp-btn vp-btn-primary" id="confirmActivityBtn">
+                <i class="bi bi-check2-circle"></i> Add
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Hotel Modal -->
+<div id="hotelModal" class="vp-modal">
+    <div class="vp-modal-card">
+        <h4 class="vp-modal-title" id="hotelModalTitle"><i class="bi bi-building-add"></i> Add Hotel</h4>
+        <div class="vp-modal-grid">
+            <div>
+                <label class="vp-field-label">Hotel</label>
+                <select id="modalHotelSelect" class="vp-select"></select>
+                <div id="modalHotelHelp" style="color: var(--nav-muted); font-size: 0.78rem; margin-top: 0.45rem;">Hotels are filtered by destination.</div>
+            </div>
+            <div id="modalHotelPreview" class="vp-hotel-unit" style="margin-bottom: 0;">
+                <div class="d-flex gap-3 align-items-center">
+                    <div class="vp-thumb vp-thumb-icon"><i class="bi bi-building"></i></div>
+                    <div>
+                        <div style="font-weight: 800; color: var(--nav-text);">Select a hotel</div>
+                        <div style="color: var(--nav-muted); font-size: 0.82rem;">Price and rating will appear here.</div>
+                    </div>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.85rem;">
+                <div>
+                    <label class="vp-field-label">Nights</label>
+                    <input type="number" id="modalHotelNights" class="vp-input" min="1" value="1">
+                </div>
+                <div>
+                    <label class="vp-field-label">Rooms</label>
+                    <input type="number" id="modalHotelRooms" class="vp-input" min="1" value="1">
+                </div>
+            </div>
+            <div>
+                <label class="vp-field-label">Notes</label>
+                <textarea id="modalHotelNotes" class="vp-textarea" rows="2" placeholder="Room type, meal plan, check-in note..."></textarea>
+            </div>
+        </div>
+        <div class="vp-modal-actions">
+            <button type="button" onclick="closeHotelModal()" class="vp-btn">Cancel</button>
+            <button type="button" onclick="confirmAddHotel()" class="vp-btn vp-btn-primary" id="confirmHotelBtn">
+                <i class="bi bi-check2-circle"></i> Add Hotel
+            </button>
         </div>
     </div>
 </div>
 
 <script>
     const destinationsData = <%- JSON.stringify(destinations).replace(/</g, '\\u003c') %>;
+    const hotelsData = <%- JSON.stringify(typeof hotels !== 'undefined' ? hotels : []).replace(/</g, '\\u003c') %>;
     const initialPkg = <%- JSON.stringify(pkg).replace(/</g, '\\u003c') %>;
 
     let destinations = [];
     let inclusions = [];
     let exclusions = [];
 
+    function slugify(value) {
+        return (value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    }
+
+    function generateId() {
+        return Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+    }
+
+    function escapeHtml(value) {
+        if (!value) return '';
+        return String(value).replace(/[&<>"']/g, function (m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            if (m === '"') return '&quot;';
+            if (m === "'") return '&#39;';
+            return m;
+        });
+    }
+
     if (initialPkg) {
         destinations = initialPkg.stays || [];
         inclusions = (initialPkg.inclusions || []).map(i => i.text);
         exclusions = (initialPkg.exclusions || []).map(e => e.text);
+        if (initialPkg.slug) document.getElementById('packageSlug').dataset.touched = 'true';
     }
 
     function renderDestinations() {
@@ -197,37 +615,47 @@
         list.innerHTML = '';
 
         destinations.forEach((dest, idx) => {
+            if (!dest.activities) dest.activities = {};
+            if (!Array.isArray(dest.hotels)) dest.hotels = [];
+
             const div = document.createElement('div');
-            div.style = 'background: #fff; border: 1px solid var(--glass-border); border-radius: 20px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);';
+            div.className = 'vp-destination-card';
             div.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; gap: 1.5rem; flex-wrap: wrap;">
-                    <div style="flex: 1; min-width: 250px;">
-                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--nav-muted); margin-bottom: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Destination</label>
-                        <div style="position: relative;">
-                            <select class="dest-select" style="width: 100%; background: #f8fafc; border: 1.5px solid var(--glass-border); border-radius: 12px; padding: 0.85rem 1rem; color: var(--nav-text); font-weight: 600; outline: none; appearance: none; transition: all 0.2s; cursor: pointer;">
-                                <option value="">Select Destination</option>
-                                ${destinationsData.map(d => `<option value="${d.id}" ${dest.destinationId == d.id ? 'selected' : ''}>${d.name}</option>`).join('')}
-                            </select>
-                            <i class="bi bi-chevron-down" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--nav-muted); font-size: 0.8rem;"></i>
-                        </div>
+                <div class="vp-destination-top">
+                    <div>
+                        <label class="vp-field-label">Destination</label>
+                        <select class="vp-select dest-select">
+                            <option value="">Select Destination</option>
+                            ${destinationsData.map(d => `<option value="${d.id}" ${dest.destinationId == d.id ? 'selected' : ''}>${escapeHtml(d.name)}</option>`).join('')}
+                        </select>
                     </div>
-                    <div style="width: 120px;">
-                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--nav-muted); margin-bottom: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Nights</label>
-                        <div style="position: relative;">
-                            <input type="number" class="nights-input" value="${dest.nights || 0}" min="1" 
-                                style="width: 100%; background: #f8fafc; border: 1.5px solid var(--glass-border); border-radius: 12px; padding: 0.85rem 1rem; color: var(--nav-text); font-weight: 700; outline: none; transition: all 0.2s;">
-                        </div>
+                    <div>
+                        <label class="vp-field-label">Nights</label>
+                        <input type="number" class="vp-input nights-input" value="${dest.nights || 2}" min="1">
                     </div>
-                    <button onclick="removeDestination(${idx})" style="width: 48px; height: 48px; border-radius: 12px; background: #fff1f2; border: 1px solid #fecaca; color: #e11d48; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.background='#ffe4e6'" onmouseout="this.style.background='#fff1f2'"><i class="bi bi-trash3-fill"></i></button>
+                    <button type="button" onclick="removeDestination(${idx})" class="vp-btn-icon" title="Remove destination">
+                        <i class="bi bi-trash3-fill"></i>
+                    </button>
+                </div>
+                <div class="vp-hotel-section">
+                    <div class="vp-hotel-head">
+                        <div class="vp-field-label" style="margin-bottom: 0;"><i class="bi bi-building me-1 text-success"></i> Hotels</div>
+                        <button type="button" class="vp-small-action" onclick="openHotelModal(${idx})">
+                            <i class="bi bi-plus-circle"></i> Add Hotel
+                        </button>
+                    </div>
+                    <div id="hotelsList-${idx}">
+                        ${renderHotelsList(dest.hotels, idx)}
+                    </div>
                 </div>
                 <div>
-                    <p style="font-size: 0.8rem; font-weight: 700; color: var(--nav-muted); margin-bottom: 0.8rem; text-transform: uppercase;">Daily Itinerary</p>
-                    <div class="day-tabs" style="display: flex; gap: 8px; margin-bottom: 1.2rem; overflow-x: auto; padding-bottom: 5px;">
+                    <p class="vp-field-label">Daily Itinerary</p>
+                    <div class="vp-day-tabs">
                         ${Array.from({ length: parseInt(dest.nights || 0) + 1 }).map((_, dayIdx) => `
-                            <button onclick="showDayActivities(${idx}, ${dayIdx + 1})" class="day-tab ${dayIdx === 0 ? 'active' : ''}" style="padding: 6px 14px; border-radius: 10px; border: 1.5px solid var(--glass-border); background: ${dayIdx === 0 ? 'var(--primary)' : '#fff'}; color: ${dayIdx === 0 ? '#fff' : 'var(--nav-text)'}; cursor: pointer; white-space: nowrap; font-size: 0.85rem; font-weight: 600; transition: all 0.2s;">Day ${dayIdx + 1}</button>
+                            <button type="button" onclick="showDayActivities(${idx}, ${dayIdx + 1})" class="vp-day-tab day-tab ${dayIdx === 0 ? 'active' : ''}">Day ${dayIdx + 1}</button>
                         `).join('')}
                     </div>
-                    <div id="dayActivities-${idx}" style="background: #fff; border-radius: 12px; padding: 1rem; border: 1px solid var(--glass-border);">
+                    <div id="dayActivities-${idx}" class="vp-day-panel">
                         ${renderDayActivities(idx, 1)}
                     </div>
                 </div>
@@ -238,6 +666,8 @@
                 destinations[idx].destinationId = e.target.value;
                 const d = destinationsData.find(dd => dd.id == e.target.value);
                 destinations[idx].destinationName = d ? d.name : '';
+                destinations[idx].hotels = [];
+                renderDestinations();
             };
             div.querySelector('.nights-input').onchange = (e) => {
                 destinations[idx].nights = e.target.value;
@@ -254,35 +684,312 @@
         if (!dest.activities[dayNum]) dest.activities[dayNum] = [];
 
         return `
-            <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: grid; gap: 12px;">
                 ${dest.activities[dayNum].map((act, actIdx) => `
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 12px 16px; border-radius: 14px; border: 1px solid var(--glass-border); box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--primary);"></div>
-                            <div>
-                                <p style="font-weight: 700; font-size: 0.95rem; color: var(--nav-text); margin: 0;">${act.name}</p>
-                                <span style="font-size: 0.75rem; color: var(--nav-muted); font-weight: 600;"><i class="bi bi-clock-history" style="margin-right: 4px;"></i> ${act.duration || 'Flexible'}</span>
+                    <div class="vp-activity-unit">
+                        <div style="display: flex; align-items: flex-start; gap: 12px; flex-grow: 1;">
+                            ${act.image ? `<img src="${act.image}" class="vp-thumb" alt="${escapeHtml(act.name)}">` : `<div class="vp-thumb vp-thumb-icon" style="color: var(--primary);"><i class="bi bi-compass"></i></div>`}
+                            <div class="flex-grow-1">
+                                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <strong style="color: var(--nav-text);">${escapeHtml(act.name)}</strong>
+                                    <span class="vp-meta-pill"><i class="bi bi-clock-history"></i> ${escapeHtml(act.duration || 'Flexible')}</span>
+                                </div>
+                                ${act.description ? `<p style="font-size: 0.82rem; color: var(--nav-muted); margin: 5px 0 0; line-height: 1.45;">${escapeHtml(act.description)}</p>` : ''}
                             </div>
                         </div>
-                        <button onclick="removeActivity(${destIdx}, ${dayNum}, ${actIdx})" style="background: #fff1f2; border: none; color: #e11d48; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"><i class="bi bi-dash-lg"></i></button>
+                        <div style="display: flex; gap: 8px;">
+                            <button type="button" onclick="openEditActivityModal(${destIdx}, ${dayNum}, ${actIdx})" class="vp-btn" style="width: 34px; min-height: 34px; padding: 0; color: var(--primary);"><i class="bi bi-pencil-fill"></i></button>
+                            <button type="button" onclick="removeActivity(${destIdx}, ${dayNum}, ${actIdx})" class="vp-btn" style="width: 34px; min-height: 34px; padding: 0; color: #e11d48;"><i class="bi bi-trash-fill"></i></button>
+                        </div>
                     </div>
                 `).join('')}
-                <button onclick="openActivityModal(${destIdx}, ${dayNum})" style="background: rgba(79, 70, 229, 0.03); border: 1.5px dashed var(--primary); color: var(--primary); padding: 12px; border-radius: 12px; cursor: pointer; font-size: 0.85rem; font-weight: 700; margin-top: 5px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;" onmouseover="this.style.background='rgba(79, 70, 229, 0.08)'" onmouseout="this.style.background='rgba(79, 70, 229, 0.03)'">
+                <button type="button" onclick="openActivityModal(${destIdx}, ${dayNum})" class="vp-add-activity">
                     <i class="bi bi-plus-circle-fill"></i> Add Activity for Day ${dayNum}
                 </button>
             </div>
         `;
     }
 
+    function getHotelsForDestination(destIdx) {
+        const destId = destinations[destIdx]?.destinationId;
+        if (!destId) return [];
+        return hotelsData.filter(hotel => String(hotel.destination_id) === String(destId));
+    }
+
+    function getHotelCatalogItem(hotelId) {
+        return hotelsData.find(hotel => String(hotel.id) === String(hotelId));
+    }
+
+    function formatMoney(value) {
+        const amount = parseFloat(value) || 0;
+        if (!amount) return 'Price not set';
+        return `₹${amount.toLocaleString('en-IN')}`;
+    }
+
+    function renderStars(count) {
+        const rating = Math.max(0, Math.min(parseInt(count, 10) || 0, 5));
+        if (!rating) return '';
+        return Array.from({ length: rating }, () => '<i class="bi bi-star-fill"></i>').join('');
+    }
+
+    function renderHotelsList(hotels, destIdx) {
+        if (!hotels || hotels.length === 0) {
+            return '<div class="vp-empty-state">No hotel added for this stay yet.</div>';
+        }
+
+        return hotels.map((hotel, hotelIdx) => `
+            <div class="vp-hotel-unit">
+                <div style="display: flex; gap: 12px; align-items: flex-start; flex-grow: 1;">
+                    ${hotel.image ? `<img src="${hotel.image}" class="vp-thumb" alt="${escapeHtml(hotel.name)}">` : '<div class="vp-thumb vp-thumb-icon"><i class="bi bi-building"></i></div>'}
+                    <div class="flex-grow-1">
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <strong style="color: var(--nav-text);">${escapeHtml(hotel.name || 'Selected Hotel')}</strong>
+                            ${hotel.starRating ? `<span class="vp-meta-pill">${renderStars(hotel.starRating)}</span>` : ''}
+                            ${hotel.guestRating ? `<span class="vp-meta-pill"><i class="bi bi-hand-thumbs-up"></i> ${escapeHtml(hotel.guestRating)}</span>` : ''}
+                        </div>
+                        <div style="color: var(--nav-muted); font-size: 0.82rem; margin-top: 4px;">
+                            ${escapeHtml(hotel.nights || 1)} night${parseInt(hotel.nights, 10) === 1 ? '' : 's'} ·
+                            ${escapeHtml(hotel.rooms || 1)} room${parseInt(hotel.rooms, 10) === 1 ? '' : 's'} ·
+                            ${escapeHtml(formatMoney(hotel.pricePerNight))}/night
+                        </div>
+                        ${hotel.notes ? `<div style="color: var(--nav-muted); font-size: 0.82rem; margin-top: 4px;">${escapeHtml(hotel.notes)}</div>` : ''}
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" onclick="openHotelModal(${destIdx}, ${hotelIdx})" class="vp-btn" style="width: 34px; min-height: 34px; padding: 0; color: var(--primary);"><i class="bi bi-pencil-fill"></i></button>
+                    <button type="button" onclick="removeHotel(${destIdx}, ${hotelIdx})" class="vp-btn" style="width: 34px; min-height: 34px; padding: 0; color: #e11d48;"><i class="bi bi-trash-fill"></i></button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function populateHotelSelect(destIdx, selectedHotelId = '') {
+        const select = document.getElementById('modalHotelSelect');
+        const help = document.getElementById('modalHotelHelp');
+        const hotels = getHotelsForDestination(destIdx);
+
+        if (!select) return;
+
+        if (!destinations[destIdx]?.destinationId) {
+            select.innerHTML = '<option value="">Select destination first</option>';
+            select.disabled = true;
+            if (help) help.textContent = 'Select a destination before adding hotels.';
+            return;
+        }
+
+        if (!hotels.length) {
+            select.innerHTML = '<option value="">No hotels available for this destination</option>';
+            select.disabled = true;
+            if (help) help.innerHTML = 'No hotel found for this destination. Ask admin to add hotels from Travel Hotels.';
+            return;
+        }
+
+        select.disabled = false;
+        if (help) help.textContent = 'Hotels are filtered by destination.';
+        select.innerHTML = `
+            <option value="">Select Hotel</option>
+            ${hotels.map(hotel => `<option value="${hotel.id}" ${String(selectedHotelId) === String(hotel.id) ? 'selected' : ''}>${escapeHtml(hotel.name)}</option>`).join('')}
+        `;
+    }
+
+    function updateHotelPreview() {
+        const selectedHotelId = document.getElementById('modalHotelSelect')?.value;
+        const preview = document.getElementById('modalHotelPreview');
+        const hotel = getHotelCatalogItem(selectedHotelId);
+        if (!preview) return;
+
+        if (!hotel) {
+            preview.innerHTML = `
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <div class="vp-thumb vp-thumb-icon"><i class="bi bi-building"></i></div>
+                    <div>
+                        <div style="font-weight: 800; color: var(--nav-text);">Select a hotel</div>
+                        <div style="color: var(--nav-muted); font-size: 0.82rem;">Price and rating will appear here.</div>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        preview.innerHTML = `
+            <div style="display: flex; gap: 12px; align-items: center;">
+                ${hotel.image_url ? `<img src="${hotel.image_url}" class="vp-thumb" alt="${escapeHtml(hotel.name)}">` : '<div class="vp-thumb vp-thumb-icon"><i class="bi bi-building"></i></div>'}
+                <div>
+                    <div style="font-weight: 800; color: var(--nav-text);">${escapeHtml(hotel.name)}</div>
+                    <div style="color: var(--nav-muted); font-size: 0.82rem;">
+                        ${hotel.star_rating ? `${escapeHtml(hotel.star_rating)} star · ` : ''}
+                        ${hotel.guest_rating ? `Guest ${escapeHtml(hotel.guest_rating)} · ` : ''}
+                        ${escapeHtml(formatMoney(hotel.price_per_night))}/night
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    let currentHotelDest = null;
+    let editingHotelIdx = null;
+
+    function openHotelModal(destIdx, hotelIdx = null) {
+        const dest = destinations[destIdx];
+        if (!dest || !dest.destinationId) {
+            alert('Please select destination before adding hotel');
+            return;
+        }
+
+        currentHotelDest = destIdx;
+        editingHotelIdx = hotelIdx;
+        if (!Array.isArray(dest.hotels)) dest.hotels = [];
+
+        const existingHotel = hotelIdx !== null ? dest.hotels[hotelIdx] : null;
+        populateHotelSelect(destIdx, existingHotel?.hotelId || '');
+        document.getElementById('modalHotelNights').value = existingHotel?.nights || dest.nights || 1;
+        document.getElementById('modalHotelRooms').value = existingHotel?.rooms || 1;
+        document.getElementById('modalHotelNotes').value = existingHotel?.notes || '';
+        document.getElementById('hotelModalTitle').innerHTML = existingHotel
+            ? '<i class="bi bi-pencil-square"></i> Edit Hotel'
+            : '<i class="bi bi-building-add"></i> Add Hotel';
+        document.getElementById('confirmHotelBtn').innerHTML = existingHotel
+            ? '<i class="bi bi-check2-circle"></i> Save Changes'
+            : '<i class="bi bi-check2-circle"></i> Add Hotel';
+
+        updateHotelPreview();
+        document.getElementById('hotelModal').style.display = 'flex';
+    }
+
+    function closeHotelModal() {
+        document.getElementById('hotelModal').style.display = 'none';
+    }
+
+    function confirmAddHotel() {
+        const hotelId = document.getElementById('modalHotelSelect')?.value;
+        const hotel = getHotelCatalogItem(hotelId);
+        if (!hotel) {
+            alert('Please select a hotel');
+            return;
+        }
+
+        const dest = destinations[currentHotelDest];
+        if (!dest) return;
+        if (!Array.isArray(dest.hotels)) dest.hotels = [];
+
+        const duplicate = dest.hotels.find((item, idx) => String(item.hotelId) === String(hotel.id) && idx !== editingHotelIdx);
+        if (duplicate) {
+            alert('This hotel is already added for this stay');
+            return;
+        }
+
+        const hotelData = {
+            id: editingHotelIdx !== null ? dest.hotels[editingHotelIdx].id : generateId(),
+            hotelId: hotel.id,
+            destinationId: hotel.destination_id,
+            name: hotel.name || '',
+            image: hotel.image_url || '',
+            starRating: parseInt(hotel.star_rating, 10) || 0,
+            guestRating: parseFloat(hotel.guest_rating) || 0,
+            pricePerNight: parseFloat(hotel.price_per_night) || 0,
+            nights: parseInt(document.getElementById('modalHotelNights').value, 10) || 1,
+            rooms: parseInt(document.getElementById('modalHotelRooms').value, 10) || 1,
+            notes: document.getElementById('modalHotelNotes').value.trim()
+        };
+
+        if (editingHotelIdx !== null) dest.hotels[editingHotelIdx] = hotelData;
+        else dest.hotels.push(hotelData);
+
+        closeHotelModal();
+        renderDestinations();
+    }
+
+    function removeHotel(destIdx, hotelIdx) {
+        if (!destinations[destIdx]?.hotels) return;
+        destinations[destIdx].hotels.splice(hotelIdx, 1);
+        renderDestinations();
+    }
+
     let currentModalDest = null;
     let currentModalDay = null;
+    let editingActivityIdx = null;
 
     function openActivityModal(destIdx, dayNum) {
         currentModalDest = destIdx;
         currentModalDay = dayNum;
+        editingActivityIdx = null;
+
         document.getElementById('modalActivityName').value = '';
         document.getElementById('modalActivityDuration').value = '';
+        document.getElementById('modalActivityDescription').value = '';
+
+        // Reset image preview and hidden input
+        document.getElementById('modalActivityImage').value = '';
+        document.getElementById('modalActivityImagePreview').innerHTML = '<i class="bi bi-image"></i>';
+        document.getElementById('modalActivityImageBtn').innerHTML = '<i class="bi bi-upload"></i> Upload Image';
+
+        // Set title and button
+        document.getElementById('modalTitle').innerHTML = '<i class="bi bi-plus-circle"></i> Add Activity';
+        document.getElementById('confirmActivityBtn').innerHTML = '<i class="bi bi-check2-circle"></i> Add';
+
         document.getElementById('activityModal').style.display = 'flex';
+    }
+
+    function openEditActivityModal(destIdx, dayNum, actIdx) {
+        currentModalDest = destIdx;
+        currentModalDay = dayNum;
+        editingActivityIdx = actIdx;
+
+        const act = destinations[destIdx].activities[dayNum][actIdx];
+        if (!act) return;
+
+        document.getElementById('modalActivityName').value = act.name || '';
+        document.getElementById('modalActivityDuration').value = act.duration || '';
+        document.getElementById('modalActivityDescription').value = act.description || '';
+
+        // Set image preview and hidden input
+        document.getElementById('modalActivityImage').value = act.image || '';
+        if (act.image) {
+            document.getElementById('modalActivityImagePreview').innerHTML = `<img src="${act.image}" style="width: 100%; height: 100%; object-fit: cover;">`;
+            document.getElementById('modalActivityImageBtn').innerHTML = '<i class="bi bi-check-lg"></i> Change Image';
+        } else {
+            document.getElementById('modalActivityImagePreview').innerHTML = '<i class="bi bi-image"></i>';
+            document.getElementById('modalActivityImageBtn').innerHTML = '<i class="bi bi-upload"></i> Upload Image';
+        }
+
+        // Set title and button
+        document.getElementById('modalTitle').innerHTML = '<i class="bi bi-pencil-square"></i> Edit Activity';
+        document.getElementById('confirmActivityBtn').innerHTML = '<i class="bi bi-check2-circle"></i> Save';
+
+        document.getElementById('activityModal').style.display = 'flex';
+    }
+
+    async function uploadActivityImage(input) {
+        if (!input.files || !input.files[0]) return;
+
+        const formData = new FormData();
+        formData.append('activity_image', input.files[0]);
+
+        try {
+            const btn = document.getElementById('modalActivityImageBtn');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Uploading...';
+            btn.style.pointerEvents = 'none';
+
+            const res = await fetch(`/vendor/packages/activity-image`, {
+                method: 'POST',
+                body: formData
+            });
+            const result = await res.json();
+
+            if (result.success) {
+                document.getElementById('modalActivityImage').value = result.imageUrl;
+                document.getElementById('modalActivityImagePreview').innerHTML = `<img src="${result.imageUrl}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                btn.innerHTML = '<i class="bi bi-check-lg"></i> Change Image';
+            } else {
+                alert('Upload failed: ' + result.message);
+                btn.innerHTML = originalHtml;
+            }
+            btn.style.pointerEvents = 'auto';
+        } catch (err) {
+            alert('Server error uploading image');
+        }
+        input.value = '';
     }
 
     function closeActivityModal() {
@@ -290,14 +997,28 @@
     }
 
     function confirmAddActivity() {
-        const name = document.getElementById('modalActivityName').value;
-        const duration = document.getElementById('modalActivityDuration').value;
+        const name = document.getElementById('modalActivityName').value.trim();
+        const duration = document.getElementById('modalActivityDuration').value.trim();
+        const description = document.getElementById('modalActivityDescription').value.trim();
+        const image = document.getElementById('modalActivityImage').value;
         if (!name) return;
 
-        if (!destinations[currentModalDest].activities[currentModalDay]) {
-            destinations[currentModalDest].activities[currentModalDay] = [];
+        if (editingActivityIdx !== null) {
+            // Update existing activity
+            const act = destinations[currentModalDest].activities[currentModalDay][editingActivityIdx];
+            if (act) {
+                act.name = name;
+                act.duration = duration;
+                act.description = description;
+                act.image = image;
+            }
+        } else {
+            // Add new activity
+            if (!destinations[currentModalDest].activities[currentModalDay]) {
+                destinations[currentModalDest].activities[currentModalDay] = [];
+            }
+            destinations[currentModalDest].activities[currentModalDay].push({ name, duration, description, image });
         }
-        destinations[currentModalDest].activities[currentModalDay].push({ name, duration });
 
         closeActivityModal();
         document.getElementById(`dayActivities-${currentModalDest}`).innerHTML = renderDayActivities(currentModalDest, currentModalDay);
@@ -312,15 +1033,13 @@
         const container = document.getElementById(`dayActivities-${destIdx}`).parentElement;
         container.querySelectorAll('.day-tab').forEach((btn, idx) => {
             const isActive = (idx + 1) === dayNum;
-            btn.style.background = isActive ? 'var(--primary)' : '#fff';
-            btn.style.color = isActive ? '#fff' : 'var(--nav-text)';
-            btn.style.borderColor = isActive ? 'var(--primary)' : 'var(--glass-border)';
+            btn.classList.toggle('active', isActive);
         });
         document.getElementById(`dayActivities-${destIdx}`).innerHTML = renderDayActivities(destIdx, dayNum);
     }
 
     function addDestination() {
-        destinations.push({ destinationId: '', nights: 2, activities: {} });
+        destinations.push({ destinationId: '', nights: 2, activities: {}, hotels: [] });
         renderDestinations();
     }
 
@@ -454,15 +1173,64 @@
         }
     }
 
+    async function uploadMainImage(input) {
+        if (!input.files || !input.files[0]) return;
+        const pkgId = document.getElementById('packageId').value;
+        if (!pkgId) {
+            alert('Please save the package basic details first before uploading the main image.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('main_image', input.files[0]);
+
+        try {
+            const btn = input.nextElementSibling;
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="spinner-border spinner-border-sm" style="margin-right: 8px;"></i> Uploading...';
+            btn.disabled = true;
+
+            const res = await fetch(`/vendor/packages/${pkgId}/main-image`, {
+                method: 'POST',
+                body: formData
+            });
+            const result = await res.json();
+
+            if (result.success) {
+                document.getElementById('packageMainImage').value = result.imageUrl;
+                document.getElementById('mainImagePreview').innerHTML = `<img src="${result.imageUrl}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                btn.innerHTML = '<i class="bi bi-check-lg" style="margin-right: 8px;"></i> Change Image';
+            } else {
+                alert('Upload failed: ' + result.message);
+                btn.innerHTML = originalHtml;
+            }
+            btn.disabled = false;
+        } catch (err) {
+            alert('Server error uploading image');
+        }
+    }
+
     document.getElementById('addDestinationBtn').onclick = addDestination;
+    document.getElementById('modalHotelSelect')?.addEventListener('change', updateHotelPreview);
+    document.getElementById('packageName').addEventListener('input', (e) => {
+        const slugInput = document.getElementById('packageSlug');
+        if (!slugInput.dataset.touched) slugInput.value = slugify(e.target.value);
+    });
+    document.getElementById('packageSlug').addEventListener('input', (e) => {
+        e.target.dataset.touched = 'true';
+        e.target.value = slugify(e.target.value);
+    });
 
     document.getElementById('savePackageBtn').onclick = async () => {
         const data = {
             id: document.getElementById('packageId').value,
             name: document.getElementById('packageName').value,
+            slug: document.getElementById('packageSlug').value,
             price: document.getElementById('packagePrice').value,
             duration: document.getElementById('packageDuration').value,
             description: document.getElementById('packageDescription').value,
+            main_image: document.getElementById('packageMainImage').value,
+            main_image_alt: document.getElementById('packageMainImageAlt').value,
             destinations,
             inclusions,
             exclusions

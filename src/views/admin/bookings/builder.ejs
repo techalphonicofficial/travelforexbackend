@@ -1,0 +1,1500 @@
+<%- contentFor('body') %>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+body {
+    background-color: #f8fafc;
+    font-family: 'Inter', sans-serif;
+}
+
+.builder-step { display: none; }
+.builder-step.active { display: block; animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+.glass-card {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 2.5rem;
+    box-shadow: 0 10px 40px -10px rgba(0,0,0,0.08);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    margin-bottom: 2rem;
+}
+
+.card-header-custom {
+    background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+    color: white;
+    border-radius: 20px 20px 0 0 !important;
+    padding: 1.5rem 2.5rem !important;
+    border-bottom: none;
+    box-shadow: 0 4px 15px -3px rgba(79, 70, 229, 0.3);
+}
+
+.card-header-custom h3 {
+    font-weight: 700;
+    font-size: 1.4rem;
+    letter-spacing: -0.5px;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #475569;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+
+.form-control, .select2-container--default .select2-selection--multiple, .select2-container--default .select2-selection--single {
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    border: 1.5px solid #e2e8f0;
+    background: #f8fafc;
+    font-size: 0.95rem;
+    color: #1e293b;
+    transition: all 0.2s;
+    height: auto !important;
+    min-height: 48px;
+}
+
+.form-control:focus, .select2-container--focus .select2-selection--multiple {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1) !important;
+    background: #ffffff;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1d4ed8;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-weight: 500;
+    font-size: 0.85rem;
+    margin-top: 6px;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: #2563eb;
+    margin-right: 5px;
+}
+
+.btn-primary-custom {
+    background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+    color: white;
+    border: none;
+    padding: 0.85rem 2rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-primary-custom:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+    color: white;
+}
+
+.summary-card {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 10px 40px -10px rgba(0,0,0,0.08);
+    border: 1px solid #e2e8f0;
+    position: sticky;
+    top: 2rem;
+}
+
+.summary-title {
+    font-weight: 800;
+    color: #1e293b;
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #f1f5f9;
+    padding-bottom: 1rem;
+}
+
+.price-display {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #10b981;
+    letter-spacing: -1px;
+    margin: 1rem 0;
+}
+
+.day-card { 
+    border-left: 4px solid #4f46e5; 
+    margin-bottom: 1.5rem; 
+    border-radius: 16px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03); 
+    border-top: 1px solid #f1f5f9; 
+    border-right: 1px solid #f1f5f9; 
+    border-bottom: 1px solid #f1f5f9; 
+    background: #ffffff;
+}
+
+.hotel-selection, .activity-selection { 
+    border: 2px dashed #cbd5e1; 
+    padding: 1.5rem; 
+    border-radius: 12px; 
+    background: #f8fafc; 
+    margin-top: 10px; 
+    cursor: pointer; 
+    text-align: center; 
+    transition: all 0.2s; 
+    color: #64748b;
+    font-weight: 500;
+}
+
+.hotel-selection:hover, .activity-selection:hover { 
+    background: #eff6ff; 
+    border-color: #93c5fd; 
+    color: #2563eb;
+    transform: translateY(-2px); 
+}
+
+.manual-dest-price {
+    font-weight: 600;
+    color: #1e293b;
+    padding: 0.4rem 0.75rem;
+    border-radius: 0 8px 8px 0;
+}
+
+.input-group-text {
+    background-color: #f1f5f9;
+    border-color: #e2e8f0;
+    border-radius: 8px 0 0 8px;
+    font-weight: 600;
+    color: #64748b;
+}
+
+/* Cities Itinerary Editor */
+.city-block {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+}
+.city-block-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px dashed #cbd5e1;
+}
+.city-block-header .city-name-input {
+    font-size: 1rem;
+    font-weight: 700;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+    flex: 1;
+    color: #1e293b;
+}
+.city-block-header .city-country-input {
+    font-size: 0.82rem;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+    max-width: 150px;
+    color: #64748b;
+}
+.city-day-block {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.7rem 0.85rem;
+    margin-bottom: 0.6rem;
+}
+.city-day-label {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #4f46e5;
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.activity-row {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    margin-bottom: 0.4rem;
+}
+.activity-row input {
+    flex: 1;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.85rem;
+    color: #1e293b;
+    background: #fff;
+}
+.activity-row input:focus {
+    border-color: #4f46e5;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(79,70,229,0.12);
+}
+.btn-icon-remove {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0.2rem 0.3rem;
+    color: #94a3b8;
+    font-size: 0.8rem;
+    transition: color 0.15s;
+    border-radius: 6px;
+    line-height: 1;
+}
+.btn-icon-remove:hover { color: #ef4444; background: #fef2f2; }
+.cities-panel {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+}
+.cities-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.2rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #f1f5f9;
+}
+.cities-panel-header h5 {
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0;
+    font-size: 1.05rem;
+}
+.package-preview {
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 1.25rem;
+    margin-top: 1rem;
+}
+.package-preview.empty {
+    color: #64748b;
+    text-align: center;
+    font-weight: 600;
+}
+.package-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.85rem;
+}
+.package-preview-item {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.85rem;
+}
+.package-preview-item span,
+.summary-line span {
+    display: block;
+    font-size: 0.72rem;
+    color: #64748b;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.package-preview-item strong {
+    display: block;
+    color: #0f172a;
+    font-size: 0.98rem;
+    margin-top: 0.2rem;
+}
+.summary-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+.summary-line span {
+    display: inline;
+}
+.summary-line strong {
+    color: #0f172a;
+    text-align: right;
+}
+.summary-muted-box {
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 0.9rem;
+    color: #475569;
+    font-size: 0.9rem;
+}
+.payment-mode-control {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+.payment-mode-control input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+.payment-mode-control label {
+    border: 1.5px solid #e2e8f0;
+    background: #f8fafc;
+    border-radius: 12px;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    font-weight: 800;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.payment-mode-control input:checked + label {
+    background: #eef2ff;
+    border-color: #4f46e5;
+    color: #3730a3;
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.08);
+}
+.hotel-preview-list {
+    display: grid;
+    gap: 0.65rem;
+    margin-top: 1rem;
+}
+.hotel-preview-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.75rem;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.8rem 0.9rem;
+}
+.hotel-preview-row strong {
+    color: #0f172a;
+}
+.hotel-preview-row small {
+    display: block;
+    color: #64748b;
+    margin-top: 0.15rem;
+}
+</style>
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-4 mt-2 align-items-center">
+            <div class="col-sm-6">
+                <h1 class="m-0 text-dark" style="font-weight: 800; letter-spacing: -0.5px;"><i class="fas fa-suitcase-rolling text-primary mr-2"></i> Create Package Booking</h1>
+                <p class="text-muted mb-0 mt-1">Select an existing customer and package, then confirm the booking amount.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Left Column: Builder -->
+            <div class="col-md-8">
+                
+                <!-- STEP 1: INITIALIZE TRIP -->
+                <div id="step-1" class="glass-card builder-step active p-0 overflow-hidden">
+                    <div class="card-header card-header-custom">
+                        <h3 class="card-title mb-0"><i class="fas fa-box-open mr-2"></i> Package Booking</h3>
+                    </div>
+                    <div class="card-body p-4 p-md-5">
+                        <%
+                        let nameVal = '';
+                        let emailVal = '';
+                        let phoneVal = '';
+                        let startVal = '';
+                        let endVal = '';
+                        let selectedDestIds = [];
+
+                        if (typeof booking !== 'undefined' && booking) {
+                            if (booking.customer && booking.customer.user) {
+                                nameVal = booking.customer.user.name || '';
+                                emailVal = booking.customer.user.email || '';
+                            }
+                            if (booking.customer) {
+                                phoneVal = booking.customer.phone || '';
+                            }
+                            if (booking.custom_trip) {
+                                if (booking.custom_trip.start_date) {
+                                    startVal = new Date(booking.custom_trip.start_date).toISOString().substring(0,10);
+                                }
+                                if (booking.custom_trip.end_date) {
+                                    endVal = new Date(booking.custom_trip.end_date).toISOString().substring(0,10);
+                                }
+                                if (booking.custom_trip.destination_id) {
+                                    selectedDestIds.push(booking.custom_trip.destination_id);
+                                }
+                                if (booking.custom_trip.days) {
+                                    booking.custom_trip.days.forEach(day => {
+                                        if (day.destination_id && !selectedDestIds.includes(day.destination_id)) {
+                                            selectedDestIds.push(day.destination_id);
+                                        }
+                                    });
+                                }
+                            }
+                        } else if (typeof inquiry !== 'undefined' && inquiry) {
+                            nameVal = inquiry.customer_name || '';
+                            emailVal = inquiry.customer_email || '';
+                            phoneVal = inquiry.customer_phone || '';
+                            
+                            if (inquiry.departure_date) {
+                                const pDate = Date.parse(inquiry.departure_date);
+                                if (!isNaN(pDate)) {
+                                    const sDate = new Date(pDate);
+                                    startVal = sDate.toISOString().substring(0,10);
+                                    
+                                    let days = 7;
+                                    if (inquiry.duration) {
+                                        const match = inquiry.duration.match(/(\d+)/);
+                                        if (match) days = parseInt(match[1], 10);
+                                    }
+                                    const eDate = new Date(sDate);
+                                    eDate.setDate(sDate.getDate() + days);
+                                    endVal = eDate.toISOString().substring(0,10);
+                                }
+                            }
+
+                            if (inquiry.cities) {
+                                inquiry.cities.forEach(c => {
+                                    if (c.id) selectedDestIds.push(c.id);
+                                });
+                            }
+                        }
+                            const customerRows = Array.isArray(customers) ? customers : [];
+                            let selectedCustomerId = '';
+                            if (typeof inquiry !== 'undefined' && inquiry && inquiry.customer_email) {
+                                const inquiryEmail = String(inquiry.customer_email || '').toLowerCase();
+                                const matchedCustomer = customerRows.find(c => c.user && String(c.user.email || '').toLowerCase() === inquiryEmail);
+                                selectedCustomerId = matchedCustomer ? matchedCustomer.id : '';
+                            }
+                            let adultVal = 1;
+                            if (typeof inquiry !== 'undefined' && inquiry && inquiry.total_travellers) {
+                                const parsedAdults = parseInt(inquiry.total_travellers, 10);
+                                if (!isNaN(parsedAdults) && parsedAdults > 0) adultVal = parsedAdults;
+                            }
+                        %>
+                        <form id="initTripForm">
+                            <% if (typeof inquiry !== 'undefined' && inquiry) { %>
+                                <input type="hidden" id="inquiryId" value="<%= inquiry.id %>">
+                            <% } %>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-4">
+                                        <label class="form-label">Customer</label>
+                                        <select id="customerId" class="form-control select2" data-placeholder="Select customer..." required>
+                                            <option value="">Select customer...</option>
+                                            <% customerRows.forEach(c => { 
+                                                const cu = c.user || {};
+                                                const customerPhone = c.phone || cu.phone_number || '';
+                                            %>
+                                                <option value="<%= c.id %>"
+                                                        <%= String(selectedCustomerId) === String(c.id) ? 'selected' : '' %>
+                                                        data-name="<%= cu.name || '' %>"
+                                                        data-email="<%= cu.email || '' %>"
+                                                        data-phone="<%= customerPhone %>">
+                                                    <%= cu.name || 'Customer' %><%= cu.email ? ` - ${cu.email}` : '' %><%= customerPhone ? ` - ${customerPhone}` : '' %>
+                                                </option>
+                                            <% }) %>
+                                        </select>
+                                        <small class="text-muted mt-2 d-block"><i class="fas fa-user-plus mr-1"></i>If the customer is not listed, add them from User Management first.</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group mb-4">
+                                        <label class="form-label">Adults</label>
+                                        <input type="number" id="adultCount" class="form-control" min="1" step="1" value="<%= adultVal %>" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group mb-4">
+                                        <label class="form-label">Payment</label>
+                                        <div class="payment-mode-control">
+                                            <input type="radio" id="paymentModePartial" name="paymentMode" value="partial" checked>
+                                            <label for="paymentModePartial">Partial</label>
+                                            <input type="radio" id="paymentModeFull" name="paymentMode" value="full">
+                                            <label for="paymentModeFull">Full</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group mb-4">
+                                <label class="form-label">Package</label>
+                                <select id="packageId" class="form-control select2" data-placeholder="Select package..." required>
+                                    <option value="">Select package...</option>
+                                    <% packages.forEach(p => { %>
+                                        <option value="<%= p.id %>">
+                                            <%= p.name %><%= p.duration_days ? ` - ${p.duration_days}D` : '' %><%= p.price ? ` - INR ${Number(p.price).toLocaleString('en-IN')}` : '' %>
+                                        </option>
+                                    <% }) %>
+                                </select>
+                                <small class="text-muted mt-2 d-block"><i class="fas fa-info-circle mr-1"></i>Package details are fetched for preview only. Confirming will create a package booking.</small>
+                            </div>
+
+                            <div id="packagePreview" class="package-preview empty">
+                                Select a package to view route, duration, GST and partial booking amounts.
+                            </div>
+
+                            <div class="mt-4 text-right">
+                                <button type="submit" id="btnInitTrip" class="btn-primary-custom w-100">
+                                    <i class="fas fa-rotate mr-2"></i> Fetch Package Details
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- STEP 2: BUILD ITINERARY -->
+                <div id="step-2" class="builder-step">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="m-0">Day-by-Day Itinerary</h4>
+                        <span class="badge badge-info px-3 py-2" id="tripDurationBadge"></span>
+                    </div>
+
+                    <!-- CITIES & ITINERARY EDITOR PANEL -->
+                    <div class="cities-panel" id="citiesPanelWrapper">
+                        <div class="cities-panel-header">
+                            <h5><i class="bi bi-geo-alt-fill me-2" style="color:#4f46e5;"></i>Cities &amp; Itinerary</h5>
+                            <div class="d-flex gap-2 align-items-center">
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="addBuilderCity()" style="border-radius:8px;">
+                                    <i class="bi bi-plus-circle me-1"></i>Add City
+                                </button>
+                                <button type="button" class="btn btn-sm btn-success" id="btnSaveCities" onclick="saveBuilderCities()" style="border-radius:8px;">
+                                    <i class="bi bi-floppy me-1"></i>Save Itinerary
+                                </button>
+                            </div>
+                        </div>
+                        <div id="builderCitiesContainer"></div>
+                        <div id="citiesSaveMsg" class="mt-2" style="font-size:0.85rem;"></div>
+                    </div>
+
+                    <div id="itineraryContainer">
+                        <!-- Days will be rendered here dynamically -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column: Live Price & Confirm -->
+            <div class="col-md-4">
+                <div class="summary-card">
+                    <h4 class="summary-title"><i class="fas fa-receipt text-primary mr-2"></i> Booking Summary</h4>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="text-muted font-weight-bold">Status</span>
+                        <span id="tripStatus" class="badge badge-warning px-3 py-2" style="border-radius: 8px;">Select Package</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="text-muted font-weight-bold">Customer</span>
+                        <span id="summaryCustomer" class="text-right font-weight-bold text-dark">Not selected</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="text-muted font-weight-bold">Package</span>
+                        <span id="summaryPackage" class="text-right font-weight-bold text-dark">Not selected</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="text-muted font-weight-bold">Adults</span>
+                        <span id="summaryAdults" class="badge badge-light px-3 py-2" style="border-radius: 8px;">1</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="text-muted font-weight-bold">Duration</span>
+                        <span id="summaryDurationBadge" class="badge badge-info px-3 py-2" style="border-radius: 8px; background-color: #3b82f6;">0 Days</span>
+                    </div>
+                    
+                    <div class="mt-4 pt-3" style="border-top: 2px dashed #e2e8f0;">
+                        <span class="text-muted font-weight-bold text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Total Package Price</span>
+                        <h2 id="livePrice" class="price-display">INR 0.00</h2>
+                    </div>
+
+                    <div id="destBreakdownContainer" class="summary-muted-box">
+                        Select a package to calculate booking amounts.
+                    </div>
+
+                    <button id="btnConfirmBooking" class="btn-primary-custom w-100 mt-4" disabled>
+                        <i class="fas fa-check-circle mr-2"></i> Confirm Booking
+                    </button>
+                    <div id="checkoutMessage" class="mt-2 text-center text-sm"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Modals -->
+<!-- Hotel Modal -->
+<div class="modal fade" id="hotelModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Select Hotel</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body" id="hotelListContainer">
+                <p class="text-center text-muted">Loading hotels...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Activity Modal -->
+<div class="modal fade" id="activityModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Select Activity</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body" id="activityListContainer">
+                <p class="text-center text-muted">Loading activities...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const bookingData = <%- typeof booking !== 'undefined' && booking ? JSON.stringify(booking) : 'null' %>;
+const inquiryData = <%- typeof inquiry !== 'undefined' && inquiry ? JSON.stringify({id: inquiry.id, cities: inquiry.cities || []}) : 'null' %>;
+let currentTrip = bookingData ? bookingData.custom_trip : null;
+let currentDayContext = null;
+let currentPackageQuote = null;
+
+function formatMoney(amount) {
+    const value = Number(amount || 0);
+    return 'INR ' + value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, ch => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    }[ch]));
+}
+
+// ============================================================
+// CITIES & ITINERARY EDITOR (same as inquiry-edit)
+// ============================================================
+let builderCities = [];
+
+// Initialize cities from inquiry data
+if (inquiryData && Array.isArray(inquiryData.cities)) {
+    builderCities = JSON.parse(JSON.stringify(inquiryData.cities));
+}
+
+function renderBuilderCities() {
+    const container = document.getElementById('builderCitiesContainer');
+    if (!container) return;
+    if (builderCities.length === 0) {
+        container.innerHTML = '<p class="text-muted small mb-0">No cities added yet. Click "Add City" to start building your itinerary.</p>';
+        return;
+    }
+    container.innerHTML = builderCities.map((city, ci) => `
+        <div class="city-block" id="bcity-${ci}">
+            <div class="city-block-header">
+                <i class="bi bi-geo-alt-fill" style="color:#4f46e5;font-size:1.1rem;"></i>
+                <input type="text" class="city-name-input form-control" placeholder="City name"
+                    value="${bEsc(city.name || '')}" onchange="updateBuilderCityField(${ci},'name',this.value)">
+                <input type="text" class="city-country-input form-control" placeholder="Country"
+                    value="${bEsc(city.country || '')}" onchange="updateBuilderCityField(${ci},'country',this.value)">
+                <button type="button" class="btn-icon-remove ms-auto" onclick="removeBuilderCity(${ci})" title="Remove city">
+                    <i class="bi bi-x-circle-fill" style="font-size:1.1rem;"></i>
+                </button>
+            </div>
+
+            <div style="font-size:0.72rem;color:#4f46e5;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;">Day-wise Itinerary:</div>
+
+            ${(city.activities || []).map((day, di) => renderBuilderDayBlock(ci, di, day)).join('')}
+
+            <button type="button" class="btn btn-sm btn-outline-success mt-1" style="border-radius:8px;font-size:0.82rem;" onclick="addBuilderDay(${ci})">
+                <i class="bi bi-plus me-1"></i>Add Day
+            </button>
+        </div>
+    `).join('');
+}
+
+function renderBuilderDayBlock(ci, di, day) {
+    const acts = Array.isArray(day.activities) ? day.activities : [];
+    return `
+        <div class="city-day-block">
+            <div class="city-day-label">
+                <span>Day ${day.dayNumber || (di + 1)}</span>
+                <button type="button" class="btn-icon-remove" onclick="removeBuilderDay(${ci},${di})">
+                    <i class="bi bi-trash" style="font-size:0.85rem;"></i>
+                </button>
+            </div>
+            <div id="bacts-${ci}-${di}">
+                ${acts.map((act, ai) => renderBuilderActivityRow(ci, di, ai, act)).join('')}
+            </div>
+            <button type="button" class="btn btn-sm btn-link p-0 text-success" style="font-size:0.82rem;" onclick="addBuilderActivity(${ci},${di})">
+                <i class="bi bi-plus-circle me-1"></i>Add Activity
+            </button>
+        </div>
+    `;
+}
+
+function renderBuilderActivityRow(ci, di, ai, act) {
+    return `
+        <div class="activity-row">
+            <input type="text" style="max-width:90px;" placeholder="09:00 AM"
+                value="${bEsc(act.time || '')}" onchange="updateBuilderActivity(${ci},${di},${ai},'time',this.value)">
+            <input type="text" placeholder="Activity description"
+                value="${bEsc(act.description || '')}" onchange="updateBuilderActivity(${ci},${di},${ai},'description',this.value)">
+            <input type="text" style="max-width:120px;" placeholder="Location"
+                value="${bEsc(act.location || '')}" onchange="updateBuilderActivity(${ci},${di},${ai},'location',this.value)">
+            <button type="button" class="btn-icon-remove" onclick="removeBuilderActivity(${ci},${di},${ai})">
+                <i class="bi bi-x-lg" style="font-size:0.8rem;"></i>
+            </button>
+        </div>
+    `;
+}
+
+function bEsc(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function updateBuilderCityField(ci, field, value) { builderCities[ci][field] = value; }
+function updateBuilderActivity(ci, di, ai, field, value) {
+    builderCities[ci].activities[di].activities[ai][field] = value;
+}
+
+function addBuilderCity() {
+    builderCities.push({ name: '', country: '', activities: [{ dayNumber: 1, activities: [] }] });
+    renderBuilderCities();
+}
+
+function removeBuilderCity(ci) {
+    builderCities.splice(ci, 1);
+    renderBuilderCities();
+}
+
+function addBuilderDay(ci) {
+    if (!builderCities[ci].activities) builderCities[ci].activities = [];
+    const next = builderCities[ci].activities.length + 1;
+    builderCities[ci].activities.push({ dayNumber: next, activities: [] });
+    renderBuilderCities();
+}
+
+function removeBuilderDay(ci, di) {
+    builderCities[ci].activities.splice(di, 1);
+    builderCities[ci].activities.forEach((d, i) => d.dayNumber = i + 1);
+    renderBuilderCities();
+}
+
+function addBuilderActivity(ci, di) {
+    if (!builderCities[ci].activities[di].activities) builderCities[ci].activities[di].activities = [];
+    builderCities[ci].activities[di].activities.push({ time: '', description: '', location: '' });
+    renderBuilderCities();
+}
+
+function removeBuilderActivity(ci, di, ai) {
+    builderCities[ci].activities[di].activities.splice(ai, 1);
+    renderBuilderCities();
+}
+
+async function saveBuilderCities() {
+    const btn = document.getElementById('btnSaveCities');
+    const msg = document.getElementById('citiesSaveMsg');
+    if (!inquiryData) {
+        msg.innerHTML = '<span class="text-warning">No inquiry linked — cities saved locally only.</span>';
+        return;
+    }
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Saving...';
+    try {
+        const res = await fetch(`/admin/bookings/inquiries/${inquiryData.id}/cities`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cities: builderCities })
+        });
+        const data = await res.json();
+        if (data.success) {
+            msg.innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Itinerary saved!</span>';
+        } else {
+            msg.innerHTML = '<span class="text-danger">Failed to save. Please try again.</span>';
+        }
+    } catch(e) {
+        msg.innerHTML = '<span class="text-danger">Network error. Please try again.</span>';
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-floppy me-1"></i>Save Itinerary';
+        setTimeout(() => { msg.innerHTML = ''; }, 3000);
+    }
+}
+
+// Render cities panel on page load
+document.addEventListener('DOMContentLoaded', () => { renderBuilderCities(); });
+// ============================================================
+
+function getBookingSelections() {
+    const paymentModeInput = document.querySelector('input[name="paymentMode"]:checked');
+    return {
+        customerId: document.getElementById('customerId') ? document.getElementById('customerId').value : '',
+        packageId: document.getElementById('packageId') ? document.getElementById('packageId').value : '',
+        adults: Math.max(parseInt(document.getElementById('adultCount') ? document.getElementById('adultCount').value : '1', 10) || 1, 1),
+        paymentMode: paymentModeInput ? paymentModeInput.value : 'partial',
+        inquiryId: document.getElementById('inquiryId') ? document.getElementById('inquiryId').value : null
+    };
+}
+
+function updateCustomerSummary() {
+    const select = document.getElementById('customerId');
+    const summary = document.getElementById('summaryCustomer');
+    if (!select || !summary) return;
+
+    const opt = select.options[select.selectedIndex];
+    summary.textContent = opt && opt.value ? (opt.getAttribute('data-name') || opt.textContent.trim()) : 'Not selected';
+    setConfirmButtonState();
+}
+
+function setConfirmButtonState() {
+    const btn = document.getElementById('btnConfirmBooking');
+    if (!btn) return;
+    const selections = getBookingSelections();
+    const canConfirm = Boolean(selections.customerId && selections.packageId && currentPackageQuote && Number(currentPackageQuote.amounts?.package_total || 0) > 0);
+    btn.disabled = !canConfirm;
+}
+
+function resetPackageQuote(message) {
+    currentPackageQuote = null;
+    const preview = document.getElementById('packagePreview');
+    if (preview) {
+        preview.className = 'package-preview empty';
+        preview.innerHTML = message || 'Select a package to view route, duration, GST and partial booking amounts.';
+    }
+    document.getElementById('summaryPackage').textContent = 'Not selected';
+    document.getElementById('summaryDurationBadge').textContent = '0 Days';
+    document.getElementById('summaryAdults').textContent = getBookingSelections().adults;
+    document.getElementById('livePrice').textContent = formatMoney(0);
+    document.getElementById('destBreakdownContainer').innerHTML = 'Select a package to calculate booking amounts.';
+    document.getElementById('tripStatus').textContent = 'Select Package';
+    setConfirmButtonState();
+}
+
+function renderPackageQuote(quote) {
+    currentPackageQuote = quote;
+    const pkg = quote.package || {};
+    const amounts = quote.amounts || {};
+    const hotels = Array.isArray(quote.hotels) ? quote.hotels : [];
+    const route = Array.isArray(quote.route) && quote.route.length ? quote.route.join(' to ') : 'No route added';
+    const inclusions = Array.isArray(quote.inclusions) ? quote.inclusions.slice(0, 4) : [];
+    const exclusions = Array.isArray(quote.exclusions) ? quote.exclusions.slice(0, 3) : [];
+    const preview = document.getElementById('packagePreview');
+    const hotelsHtml = hotels.length ? `
+        <div class="hotel-preview-list">
+            ${hotels.map(hotel => `
+                <div class="hotel-preview-row">
+                    <div>
+                        <strong>${escapeHtml(hotel.name || 'Hotel')}</strong>
+                        <small>${escapeHtml(hotel.destination_name || 'Stay')} - ${Number(hotel.rooms || 1)} room(s), ${Number(hotel.nights || 1)} night(s)</small>
+                    </div>
+                    <strong>${formatMoney(hotel.estimated_amount)}</strong>
+                </div>
+            `).join('')}
+        </div>
+    ` : '';
+
+    if (preview) {
+        preview.className = 'package-preview';
+        preview.innerHTML = `
+            <div class="package-preview-grid">
+                <div class="package-preview-item">
+                    <span>Package</span>
+                    <strong>${escapeHtml(pkg.name || 'Package')}</strong>
+                </div>
+                <div class="package-preview-item">
+                    <span>Route</span>
+                    <strong>${escapeHtml(route)}</strong>
+                </div>
+                <div class="package-preview-item">
+                    <span>Duration</span>
+                    <strong>${Number(pkg.duration_days || 0)} Days</strong>
+                </div>
+                <div class="package-preview-item">
+                    <span>Base / Adult</span>
+                    <strong>${formatMoney(amounts.base_per_adult)}</strong>
+                </div>
+                <div class="package-preview-item">
+                    <span>GST</span>
+                    <strong>${Number(amounts.tax_percent || 0)}% - ${formatMoney(amounts.tax_amount)}</strong>
+                </div>
+                <div class="package-preview-item">
+                    <span>Hotels Included</span>
+                    <strong>${Number(amounts.hotel_count || 0)} - ${formatMoney(amounts.hotel_estimated_amount)}</strong>
+                </div>
+                <div class="package-preview-item">
+                    <span>Payment Mode</span>
+                    <strong>${quote.partial_booking?.enabled ? `Partial ${Number(quote.partial_booking.percentage || 0)}% now` : 'Full Payment'}</strong>
+                </div>
+            </div>
+            ${hotelsHtml}
+            ${pkg.description ? `<div class="mt-3 text-muted">${escapeHtml(String(pkg.description).slice(0, 260))}</div>` : ''}
+            ${inclusions.length ? `<div class="mt-3"><strong>Inclusions:</strong> ${inclusions.map(escapeHtml).join(', ')}</div>` : ''}
+            ${exclusions.length ? `<div class="mt-2 text-muted"><strong>Exclusions:</strong> ${exclusions.map(escapeHtml).join(', ')}</div>` : ''}
+        `;
+    }
+
+    document.getElementById('summaryPackage').textContent = pkg.name || 'Package';
+    document.getElementById('summaryDurationBadge').textContent = `${Number(pkg.duration_days || 0)} Days`;
+    document.getElementById('summaryAdults').textContent = amounts.adults || getBookingSelections().adults;
+    document.getElementById('livePrice').textContent = formatMoney(amounts.package_total);
+    document.getElementById('tripStatus').textContent = 'Ready';
+    document.getElementById('destBreakdownContainer').innerHTML = `
+        <div class="summary-line"><span>Base</span><strong>${formatMoney(amounts.package_base_amount)}</strong></div>
+        <div class="summary-line"><span>Hotel Cost Included</span><strong>${formatMoney(amounts.hotel_estimated_amount)}</strong></div>
+        ${Number(amounts.discount_amount || 0) > 0 ? `<div class="summary-line"><span>Discount</span><strong>- ${formatMoney(amounts.discount_amount)}</strong></div>` : ''}
+        <div class="summary-line"><span>${escapeHtml(amounts.tax_type || 'GST')} ${Number(amounts.tax_percent || 0)}%</span><strong>${formatMoney(amounts.tax_amount)}</strong></div>
+        <div class="summary-line"><span>Pay Now</span><strong>${formatMoney(amounts.payable_now)}</strong></div>
+        <div class="summary-line"><span>Left Amount</span><strong>${formatMoney(amounts.remaining_amount)}</strong></div>
+    `;
+    setConfirmButtonState();
+}
+
+async function fetchPackageQuote(silent = false) {
+    const selections = getBookingSelections();
+    if (!selections.packageId) {
+        resetPackageQuote();
+        return;
+    }
+
+    const btn = document.getElementById('btnInitTrip');
+    if (btn && !silent) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Fetching...';
+    }
+
+    try {
+        const params = new URLSearchParams({
+            adults: String(selections.adults),
+            payment_mode: selections.paymentMode
+        });
+        const res = await fetch(`/admin/bookings/api/packages/${encodeURIComponent(selections.packageId)}/quote?${params.toString()}`);
+        const data = await res.json();
+        if (!data.success) {
+            resetPackageQuote(data.message || 'Unable to fetch package details.');
+            if (!silent) alert(data.message || 'Unable to fetch package details.');
+            return;
+        }
+        renderPackageQuote(data.data);
+    } catch (err) {
+        resetPackageQuote('Error fetching package details.');
+        if (!silent) alert('Error fetching package details.');
+    } finally {
+        if (btn && !silent) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-rotate mr-2"></i> Fetch Package Details';
+        }
+    }
+}
+
+function initPackageBookingForm() {
+    const form = document.getElementById('initTripForm');
+    if (!form) return;
+
+    updateCustomerSummary();
+    document.getElementById('summaryAdults').textContent = getBookingSelections().adults;
+
+    const customerSelect = document.getElementById('customerId');
+    const packageSelect = document.getElementById('packageId');
+    const adultInput = document.getElementById('adultCount');
+    const paymentModeInputs = document.querySelectorAll('input[name="paymentMode"]');
+
+    if (customerSelect) customerSelect.addEventListener('change', updateCustomerSummary);
+    if (packageSelect) packageSelect.addEventListener('change', () => fetchPackageQuote(true));
+    paymentModeInputs.forEach(input => input.addEventListener('change', () => {
+        if (getBookingSelections().packageId) fetchPackageQuote(true);
+    }));
+    if (adultInput) {
+        adultInput.addEventListener('input', () => {
+            if (Number(adultInput.value || 0) < 1) adultInput.value = 1;
+            document.getElementById('summaryAdults').textContent = getBookingSelections().adults;
+            if (getBookingSelections().packageId) fetchPackageQuote(true);
+        });
+    }
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await fetchPackageQuote(false);
+    });
+
+    if (getBookingSelections().packageId) {
+        fetchPackageQuote(true);
+    } else {
+        resetPackageQuote();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initPackageBookingForm();
+
+    if (bookingData && bookingData.custom_trip && document.getElementById('destinationIds')) {
+        const selectedDestOptions = Array.from(document.getElementById('destinationIds').selectedOptions);
+        window.selectedDestinations = selectedDestOptions.map(opt => ({
+            id: opt.value,
+            name: opt.getAttribute('data-name'),
+            tax_rule: opt.getAttribute('data-tax-rule'),
+            gst_rate: parseFloat(opt.getAttribute('data-gst')) || 0,
+            gst_amount: parseFloat(opt.getAttribute('data-gst-amount')) || 0,
+            tcs_rate: 0,
+            state: opt.getAttribute('data-state')
+        }));
+
+        document.getElementById('step-1').classList.remove('active');
+        document.getElementById('step-2').classList.add('active');
+        document.getElementById('tripStatus').innerHTML = '<span class="text-warning">Editing Itinerary</span>';
+        renderItinerary();
+    }
+});
+
+function renderItinerary() {
+    if (!currentTrip) return;
+    syncSelectedDestinationsFromTrip();
+    document.getElementById('livePrice').innerText = '₹' + parseFloat(currentTrip.total_price).toFixed(2);
+    document.getElementById('tripDurationBadge').innerText = currentTrip.days.length + ' Days';
+    if(document.getElementById('summaryDurationBadge')) {
+        document.getElementById('summaryDurationBadge').innerText = currentTrip.days.length + ' Days';
+    }
+    
+    // Calculate destination-wise breakdown
+    const destBreakdown = {};
+    if (currentTrip.days) {
+        currentTrip.days.forEach(day => {
+            const destId = day.destination_id;
+            if (destId) {
+                if (!destBreakdown[destId]) destBreakdown[destId] = 0;
+                
+                // Add hotel price
+                if (day.hotel && day.hotel.price_per_night) {
+                    destBreakdown[destId] += parseFloat(day.hotel.price_per_night);
+                }
+                
+                // Add activity prices
+                if (day.activities && day.activities.length > 0) {
+                    day.activities.forEach(ta => {
+                        if (ta.activity && ta.activity.price) {
+                            destBreakdown[destId] += parseFloat(ta.activity.price);
+                        }
+                        if (ta.price) {
+                            destBreakdown[destId] += parseFloat(ta.price); // for custom activities
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    let breakdownHtml = '';
+    if (window.selectedDestinations && window.selectedDestinations.length > 0) {
+        breakdownHtml = '<hr><h6 class="text-muted mb-2" style="font-size: 0.85rem;">Manual / Custom Price (Base):</h6><ul class="list-unstyled mb-0" style="font-size: 0.9rem;">';
+        const hasCalculatedAmounts = Object.values(destBreakdown).some(amount => Number(amount || 0) > 0);
+        const fallbackBase = parseFloat(currentTrip.base_price || 0);
+        const fallbackCount = window.selectedDestinations.length || 1;
+        let fallbackRemaining = fallbackBase;
+
+        window.selectedDestinations.forEach((destObj, destIndex) => {
+            let amount = destBreakdown[destObj.id] || 0;
+            let autoPriced = false;
+            if (!hasCalculatedAmounts && fallbackBase > 0) {
+                amount = destIndex === fallbackCount - 1
+                    ? fallbackRemaining
+                    : Math.round((fallbackBase / fallbackCount) * 100) / 100;
+                fallbackRemaining = Math.max(Math.round((fallbackRemaining - amount) * 100) / 100, 0);
+                autoPriced = true;
+            }
+            breakdownHtml += `
+                <li class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-truncate" style="max-width: 120px;" title="${destObj.name}">${destObj.name}</span> 
+                    <div class="input-group input-group-sm" style="width: 100px;">
+                        <div class="input-group-prepend"><span class="input-group-text">₹</span></div>
+                        <input type="number" class="form-control text-right manual-dest-price" data-dest-id="${destObj.id}" data-auto-priced="${autoPriced ? '1' : '0'}" value="${amount}" oninput="this.dataset.autoPriced='0'; recalculateManualTotal()">
+                    </div>
+                </li>`;
+        });
+        breakdownHtml += '</ul>';
+        // Container for live tax breakdown
+        breakdownHtml += '<div id="liveTaxBreakdownContainer" class="mt-3"></div>';
+    }
+    
+    // Inject breakdown html into the summary box
+    const summaryBox = document.getElementById('livePrice').parentElement;
+    let breakdownContainer = document.getElementById('destBreakdownContainer');
+    if (!breakdownContainer) {
+        breakdownContainer = document.createElement('div');
+        breakdownContainer.id = 'destBreakdownContainer';
+        summaryBox.appendChild(breakdownContainer);
+    }
+    breakdownContainer.innerHTML = breakdownHtml;
+
+    // Call once to set initial state of confirm button based on the inputs
+    recalculateManualTotal();
+
+    let html = '';
+    currentTrip.days.forEach(day => {
+        html += `
+        <div class="card day-card">
+            <div class="card-body">
+                <h5 class="font-weight-bold text-indigo mb-3">Day ${day.day_number}</h5>
+                
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="text-muted"><i class="fas fa-map-marker-alt"></i> Destination</label>
+                        <select class="form-control form-control-sm custom-day-dest" onchange="updateDayDestination(${day.id}, this.value)">
+                            <option value="">Select Destination...</option>
+                            ${(window.selectedDestinations || []).map(d => 
+                                `<option value="${d.id}" ${day.destination_id == d.id ? 'selected' : ''}>${d.name}</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                    <div class="col-md-8 mb-3">
+                        <label class="text-muted"><i class="fas fa-file-alt"></i> Itinerary Description</label>
+                        <textarea class="form-control form-control-sm" rows="1" placeholder="Enter what happens on Day ${day.day_number}..." onblur="updateDayDesc(${day.id}, this.value)">${day.description || ''}</textarea>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted"><i class="fas fa-bed"></i> Hotel</h6>
+                        ${ day.hotel ? `
+                            <div class="p-3 border rounded bg-light mb-2">
+                                <strong>${day.hotel.name}</strong><br>
+                                <span class="text-success small">₹${day.hotel.price_per_night}/night</span>
+                                <button class="btn btn-xs btn-outline-primary float-right mt-1" onclick="openHotelModal(${day.day_number})">Change</button>
+                            </div>
+                        ` : `
+                            <div class="hotel-selection" onclick="openHotelModal(${day.day_number})">
+                                <i class="fas fa-plus-circle text-primary"></i><br>
+                                <small>Select Hotel</small>
+                            </div>
+                        `}
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted"><i class="fas fa-hiking"></i> Activities</h6>
+                        ${ day.activities && day.activities.length > 0 ? 
+                            day.activities.map(a => `
+                                <div class="p-2 border rounded bg-light mb-2 d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>${a.activity ? a.activity.name : (a.title || 'Custom Activity')}</strong><br>
+                                        <span class="text-success small">${a.activity ? '₹' + a.activity.price : (a.description || '')}</span>
+                                    </div>
+                                    <button class="btn btn-xs btn-danger" onclick="removeActivity(${day.day_number}, ${a.activity_id || a.id})"><i class="fas fa-trash"></i></button>
+                                </div>
+                            `).join('')
+                            : ''
+                        }
+                        <div class="activity-selection mt-2" onclick="openActivityModal(${day.day_number})">
+                            <i class="fas fa-plus-circle text-primary"></i><br>
+                            <small>Add Activity</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    });
+    document.getElementById('itineraryContainer').innerHTML = html;
+}
+
+function syncSelectedDestinationsFromTrip() {
+    const select = document.getElementById('destinationIds');
+    if (!select || !currentTrip || !Array.isArray(currentTrip.days)) return;
+
+    const selectedIds = new Set((window.selectedDestinations || []).map(item => String(item.id)));
+    const tripDestinationIds = [...new Set(currentTrip.days
+        .map(day => day.destination_id || currentTrip.destination_id)
+        .filter(Boolean)
+        .map(String))];
+
+    if (selectedIds.size > 0 || tripDestinationIds.length === 0) return;
+
+    window.selectedDestinations = tripDestinationIds.map(id => {
+        const opt = select.querySelector(`option[value="${id}"]`);
+        if (!opt) return null;
+        opt.selected = true;
+        return {
+            id,
+            name: opt.getAttribute('data-name') || opt.textContent.trim(),
+            tax_rule: opt.getAttribute('data-tax-rule'),
+            gst_rate: parseFloat(opt.getAttribute('data-gst')) || 0,
+            gst_amount: parseFloat(opt.getAttribute('data-gst-amount')) || 0,
+            tcs_rate: 0,
+            state: opt.getAttribute('data-state')
+        };
+    }).filter(Boolean);
+}
+
+async function openHotelModal(dayNumber) {
+    currentDayContext = dayNumber;
+    const dayObj = currentTrip.days.find(d => d.day_number === dayNumber);
+    if (!dayObj || !dayObj.destination_id) {
+        alert("Please select a Destination for this day first!");
+        return;
+    }
+    $('#hotelModal').modal('show');
+    const destId = dayObj.destination_id;
+    const res = await fetch(`/admin/bookings/api/destinations/${destId}/hotels`);
+    const data = await res.json();
+    let html = '<div class="list-group">';
+    data.data.forEach(h => {
+        html += `<div class="list-group-item d-flex justify-content-between align-items-center">
+            <div><strong>${h.name}</strong><br><span class="text-success">₹${h.price_per_night}/night</span></div>
+            <button class="btn btn-sm btn-primary" onclick="selectHotel(${h.id})">Select</button>
+        </div>`;
+    });
+    html += '</div>';
+    document.getElementById('hotelListContainer').innerHTML = html;
+}
+
+async function selectHotel(hotelId) {
+    $('#hotelModal').modal('hide');
+    const res = await fetch(`/admin/bookings/api/build/${currentTrip.id}/days/${currentDayContext}/hotel`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hotel_id: hotelId })
+    });
+    const data = await res.json();
+    if(data.success) { currentTrip = data.data; renderItinerary(); }
+}
+
+async function openActivityModal(dayNumber) {
+    currentDayContext = dayNumber;
+    const dayObj = currentTrip.days.find(d => d.day_number === dayNumber);
+    if (!dayObj || !dayObj.destination_id) {
+        alert("Please select a Destination for this day first!");
+        return;
+    }
+    $('#activityModal').modal('show');
+    const destId = dayObj.destination_id;
+    const res = await fetch(`/admin/bookings/api/destinations/${destId}/activities`);
+    const data = await res.json();
+    let html = '<div class="list-group">';
+    data.data.forEach(a => {
+        html += `<div class="list-group-item d-flex justify-content-between align-items-center">
+            <div><strong>${a.name}</strong><br><span class="text-success">₹${a.price}</span></div>
+            <button class="btn btn-sm btn-success" onclick="selectActivity(${a.id})">Add</button>
+        </div>`;
+    });
+    html += '</div>';
+    document.getElementById('activityListContainer').innerHTML = html;
+}
+
+async function selectActivity(activityId) {
+    $('#activityModal').modal('hide');
+    const res = await fetch(`/admin/bookings/api/build/${currentTrip.id}/days/${currentDayContext}/activities`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activity_id: activityId })
+    });
+    const data = await res.json();
+    if(data.success) { currentTrip = data.data; renderItinerary(); }
+}
+
+async function updateDayDestination(dayId, destId) {
+    try {
+        const res = await fetch(`/admin/bookings/api/build/${currentTrip.id}/days/id/${dayId}/destination`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ destination_id: destId })
+        });
+        const data = await res.json();
+        if(data.success) {
+            // Update local state
+            const dayIdx = currentTrip.days.findIndex(d => d.id === dayId);
+            if (dayIdx !== -1) currentTrip.days[dayIdx].destination_id = destId;
+        } else {
+            console.error("Failed to update destination");
+        }
+    } catch (e) {
+        console.error("Error updating destination", e);
+    }
+}
+
+async function updateDayDesc(dayId, text) {
+    try {
+        const res = await fetch(`/admin/bookings/api/build/${currentTrip.id}/days/id/${dayId}/description`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ description: text })
+        });
+        const data = await res.json();
+        if(!data.success) {
+            console.error("Failed to update description");
+        }
+    } catch (e) {
+        console.error("Error updating description", e);
+    }
+}
+
+async function removeActivity(dayNumber, activityId) {
+    const res = await fetch(`/admin/bookings/api/build/${currentTrip.id}/days/${dayNumber}/activities/${activityId}`, {
+        method: 'DELETE'
+    });
+    const data = await res.json();
+    if(data.success) { currentTrip = data.data; renderItinerary(); }
+}
+
+function recalculateManualTotal() {
+    const inputs = document.querySelectorAll('.manual-dest-price');
+    let base_price = 0;
+    let taxBreakdownObj = {};
+    let total_tax = 0;
+    const companyState = 'Delhi'; // Fallback state
+    const autoPricedInputs = inputs.length > 0 && Array.from(inputs).every(input => input.dataset.autoPriced === '1');
+    const tripTotal = parseFloat(currentTrip?.total_price || 0);
+    const tripBase = parseFloat(currentTrip?.base_price || 0);
+    const tripTax = parseFloat(currentTrip?.total_tax || 0);
+
+    inputs.forEach(input => {
+        const amount = parseFloat(input.value) || 0;
+        base_price += amount;
+        
+        const destId = input.getAttribute('data-dest-id');
+        const destObj = window.selectedDestinations.find(d => d.id == destId);
+        
+        if (destObj && amount > 0) {
+            const rule = destObj.tax_rule || 'domestic';
+            let taxAmt = 0;
+            if (destObj.gst_amount > 0) {
+                taxAmt = destObj.gst_amount;
+            } else if (destObj.gst_rate > 0) {
+                taxAmt = (amount * destObj.gst_rate) / 100;
+            }
+
+            if (rule === 'domestic') {
+                if (taxAmt > 0) {
+                    // Mock intra vs inter state
+                    if (destObj.state && destObj.state.toLowerCase() === companyState.toLowerCase()) {
+                        const half = taxAmt / 2;
+                        const sgstKey = `SGST (${destObj.name})`;
+                        const cgstKey = `CGST (${destObj.name})`;
+                        taxBreakdownObj[sgstKey] = (taxBreakdownObj[sgstKey] || 0) + half;
+                        taxBreakdownObj[cgstKey] = (taxBreakdownObj[cgstKey] || 0) + half;
+                    } else {
+                        const igstKey = `IGST (${destObj.name})`;
+                        taxBreakdownObj[igstKey] = (taxBreakdownObj[igstKey] || 0) + taxAmt;
+                    }
+                    total_tax += taxAmt;
+                }
+            } else if (rule === 'international_outbound') {
+                // Apply GST if configured (TCS removed)
+                if (taxAmt > 0) {
+                    const gstKey = `IGST (${destObj.name})`;
+                    taxBreakdownObj[gstKey] = (taxBreakdownObj[gstKey] || 0) + taxAmt;
+                    total_tax += taxAmt;
+                }
+            }
+        }
+    });
+    
+    // Update display (if no inputs exist, fallback to currentTrip.total_price)
+    if (inputs.length === 0) {
+        base_price = parseFloat(currentTrip.total_price || 0);
+        // Note: Without inputs, we can't easily calculate accurate tax live on UI, we rely on backend
+    }
+    
+    let grand_total = base_price + total_tax;
+    window.useTripAmountFallback = false;
+
+    if (autoPricedInputs && tripTotal > 0) {
+        base_price = tripBase || Math.max(tripTotal - tripTax, 0);
+        total_tax = tripTax || Math.max(tripTotal - base_price, 0);
+        grand_total = tripTotal;
+        taxBreakdownObj = currentTrip?.tax_breakdown || {};
+        window.useTripAmountFallback = true;
+    }
+    
+    // Render tax breakdown HTML
+    const taxContainer = document.getElementById('liveTaxBreakdownContainer');
+    if (taxContainer && Object.keys(taxBreakdownObj).length > 0) {
+        let taxHtml = '<hr><h6 class="text-muted mb-2" style="font-size: 0.85rem;">Taxes & Levies:</h6><ul class="list-unstyled mb-0" style="font-size: 0.85rem; color:#d97706;">';
+        for (const [key, amt] of Object.entries(taxBreakdownObj)) {
+            const displayAmount = Number(amt || 0);
+            taxHtml += `<li class="d-flex justify-content-between mb-1"><span>${key}</span> <span>₹${displayAmount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span></li>`;
+        }
+        taxHtml += '</ul><hr>';
+        taxContainer.innerHTML = taxHtml;
+    } else if (taxContainer) {
+        taxContainer.innerHTML = '';
+    }
+    
+    document.getElementById('livePrice').innerText = '₹' + grand_total.toLocaleString('en-IN', {minimumFractionDigits: 2});
+    document.getElementById('btnConfirmBooking').disabled = grand_total <= 0;
+    
+    // Store in global var for checkout
+    window.finalManualPrice = grand_total;
+    window.manualDestBreakdown = Array.from(inputs).map(inp => ({
+        destId: inp.getAttribute('data-dest-id'),
+        amount: parseFloat(inp.value) || 0
+    }));
+}
+
+document.getElementById('btnConfirmBooking').addEventListener('click', confirmBooking);
+
+async function confirmBooking() {
+    try {
+        const btn = document.getElementById('btnConfirmBooking');
+        const selections = getBookingSelections();
+        if (!selections.customerId) {
+            alert('Please select a customer.');
+            return;
+        }
+        if (!selections.packageId) {
+            alert('Please select a package.');
+            return;
+        }
+        if (!currentPackageQuote) {
+            await fetchPackageQuote(false);
+        }
+        if (!currentPackageQuote) {
+            alert('Please fetch package details before confirming.');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Confirming...';
+
+        const payload = {
+            customer_id: selections.customerId,
+            package_id: selections.packageId,
+            adults: selections.adults,
+            payment_mode: selections.paymentMode,
+            inquiry_id: selections.inquiryId
+        };
+        const res = await fetch('/admin/bookings/api/package-bookings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if(data.success) {
+            document.getElementById('tripStatus').innerHTML = '<span class="text-success font-weight-bold">Confirmed</span>';
+            const msg = data.packageBookingReference
+                ? `Package Booking ${data.packageBookingReference} Created! Redirecting...`
+                : 'Booking Created! Redirecting...';
+            document.getElementById('checkoutMessage').innerHTML = `<span class="text-success"><i class="fas fa-check"></i> ${msg}</span>`;
+            setTimeout(() => { window.location.href = data.redirectUrl || '/admin/bookings/package-bookings'; }, 1500);
+        } else {
+            alert(data.message);
+            setConfirmButtonState();
+            btn.innerHTML = '<i class="fas fa-check-circle mr-2"></i> Confirm Booking';
+        }
+    } catch(err) {
+        alert("Error during checkout");
+        setConfirmButtonState();
+        document.getElementById('btnConfirmBooking').innerHTML = '<i class="fas fa-check-circle mr-2"></i> Confirm Booking';
+    }
+}
+</script>

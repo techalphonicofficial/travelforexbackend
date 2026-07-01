@@ -1,144 +1,206 @@
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h3 class="fw-bold mb-0">User Management</h3>
-        <p class="text-secondary small">Manage your team members and their account status.</p>
-    </div>
-    <a href="/users/create" class="btn btn-primary d-flex align-items-center shadow-sm">
-        <i class="bi bi-plus-lg me-2"></i> Add New User
-    </a>
-</div>
+<%
+    const activeFilters = filters || {};
+    const activeType = activeFilters.type || 'employee';
+    const searchValue = activeFilters.search || '';
+    const roleValue = activeFilters.role_id || '';
+    const statusValue = activeFilters.status || '';
+    const counts = typeCounts || {};
+    const tabs = [
+        { key: 'employee', label: 'Employees', count: counts.employee || 0, icon: 'bi-person-badge' },
+        { key: 'customer', label: 'Customers', count: counts.customer || 0, icon: 'bi-person-heart' },
+        { key: 'vendor', label: 'Vendors', count: counts.vendor || 0, icon: 'bi-shop' },
+        { key: 'all', label: 'All', count: counts.all || 0, icon: 'bi-people' }
+    ];
+    const tabUrl = (type) => `/users?type=${encodeURIComponent(type)}&search=${encodeURIComponent(searchValue)}&role_id=${encodeURIComponent(roleValue)}&status=${encodeURIComponent(statusValue)}`;
+    const typeLabel = (user) => {
+        const type = String(user.type || 'employee').toLowerCase();
+        if (type === 'customer') return 'Customer';
+        if (type === 'vendor') return 'Vendor';
+        return 'Employee';
+    };
+    const typeIcon = (user) => {
+        const type = String(user.type || 'employee').toLowerCase();
+        if (type === 'customer') return 'bi-person-heart';
+        if (type === 'vendor') return 'bi-shop';
+        return 'bi-person-badge';
+    };
+    const profileLine = (user) => {
+        if (user.type === 'vendor' && user.vendorProfile) {
+            return user.vendorProfile.business_name || user.vendorProfile.legal_name || 'Vendor profile';
+        }
+        if (user.type === 'customer' && user.customerProfile) {
+            return [user.customerProfile.city, user.customerProfile.state].filter(Boolean).join(', ') || user.customerProfile.phone || 'Customer profile';
+        }
+        return user.role ? user.role.name : 'Team account';
+    };
+%>
 
-<div class="card border-0 shadow-sm rounded-4">
-    <div class="card-header bg-white border-bottom p-4">
-        <div class="row g-3">
-            <div class="col-12 col-md-4">
-                <div class="input-group">
-                    <span class="input-group-text bg-light border-0"><i class="bi bi-search text-secondary"></i></span>
-                    <input type="text" id="userSearchInput" class="form-control bg-light border-0"
-                        placeholder="Search users...">
-                </div>
-            </div>
-            <div class="col-12 col-md-3">
-                <select id="roleFilter" class="form-select bg-light border-0">
-                    <option value="">All Roles</option>
-                    <% if (typeof roles !=='undefined' ) { %>
-                        <% roles.forEach(role=> { %>
-                            <option value="<%= role.id %>">
-                                <%= role.name %>
-                            </option>
-                            <% }) %>
-                                <% } %>
-                </select>
-            </div>
-            <div class="col-12 col-md-3">
-                <select id="statusFilter" class="form-select bg-light border-0">
-                    <option value="">All Status</option>
-                    <option value="true">Active</option>
-                    <option value="false">Inactive</option>
-                </select>
-            </div>
+<style>
+    .users-shell{display:flex;flex-direction:column;gap:1rem;}
+    .users-header{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;}
+    .users-title{font-size:1.65rem;font-weight:800;color:#111827;margin:0;}
+    .users-muted{color:#64748b;font-size:.88rem;margin:.2rem 0 0;}
+    .users-tabs{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;}
+    .users-tab{display:inline-flex;align-items:center;gap:.42rem;border:1px solid #dbe3ef;background:#fff;color:#475569;text-decoration:none;border-radius:8px;padding:.52rem .78rem;font-size:.84rem;font-weight:800;}
+    .users-tab.active{border-color:#4f46e5;background:#eef2ff;color:#4338ca;}
+    .users-panel{background:#fff;border:1px solid #e0e7ff;border-radius:8px;box-shadow:0 4px 16px rgba(79,70,229,.06);}
+    .users-toolbar{padding:1rem;border-bottom:1px solid #eef2ff;}
+    .users-filter-form{display:flex;align-items:center;gap:.65rem;flex-wrap:wrap;margin:0;}
+    .users-search{position:relative;min-width:min(380px,100%);flex:1;}
+    .users-search i{position:absolute;left:.75rem;top:50%;transform:translateY(-50%);color:#94a3b8;}
+    .users-search input{width:100%;height:42px;border:1px solid #dbe3ef;border-radius:8px;padding:0 .85rem 0 2.25rem;outline:none;color:#1f2937;}
+    .users-select{height:42px;border:1px solid #dbe3ef;border-radius:8px;background:#fff;color:#334155;padding:0 .75rem;}
+    .users-btn{height:42px;border:0;border-radius:8px;background:#4f46e5;color:#fff;padding:0 1rem;font-weight:800;}
+    .users-clear{height:42px;display:inline-flex;align-items:center;border:1px solid #dbe3ef;border-radius:8px;background:#f8fafc;color:#475569;padding:0 .9rem;text-decoration:none;font-weight:800;}
+    .users-table{width:100%;min-width:920px;border-collapse:collapse;}
+    .users-table th{background:#f8fafc;color:#475569;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;padding:.85rem 1rem;border-bottom:1px solid #e0e7ff;}
+    .users-table td{padding:.9rem 1rem;border-bottom:1px solid #f1f5f9;vertical-align:middle;color:#334155;font-size:.86rem;}
+    .users-table tr:last-child td{border-bottom:0;}
+    .users-avatar{width:44px;height:44px;border-radius:8px;object-fit:cover;margin-right:.8rem;box-shadow:0 6px 14px rgba(15,23,42,.08);}
+    .users-main{font-weight:800;color:#111827;}
+    .users-sub{font-size:.78rem;color:#64748b;margin-top:.22rem;line-height:1.35;}
+    .users-pill{display:inline-flex;align-items:center;gap:.35rem;border-radius:999px;padding:.28rem .65rem;font-size:.74rem;font-weight:800;white-space:nowrap;}
+    .users-pill-role{background:#eef2ff;color:#4338ca;}
+    .users-pill-type{background:#f0fdfa;color:#0f766e;}
+    .users-pill-active{background:#dcfce7;color:#166534;}
+    .users-pill-inactive{background:#fee2e2;color:#991b1b;}
+    .users-actions{display:flex;justify-content:flex-end;gap:.35rem;flex-wrap:wrap;}
+    .users-action{width:34px;height:34px;border:1px solid #dbe3ef;border-radius:8px;background:#fff;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;}
+    .users-action-key{color:#d97706;}
+    .users-action-edit{color:#2563eb;}
+    .users-action-delete{color:#dc2626;}
+    .users-empty{padding:3rem 1rem;text-align:center;color:#64748b;}
+</style>
+
+<section class="users-shell">
+    <div class="users-header">
+        <div>
+            <h1 class="users-title">User Management</h1>
+            <p class="users-muted">Employees are shown by default. Customers and vendors stay separated in their own tabs.</p>
         </div>
+        <a href="/users/create" class="btn btn-primary d-flex align-items-center shadow-sm" style="border-radius:8px;">
+            <i class="bi bi-plus-lg me-2"></i> Add Employee
+        </a>
     </div>
 
-    <div class="card-body p-0">
+    <div class="users-tabs">
+        <% tabs.forEach(tab => { %>
+            <a href="<%= tabUrl(tab.key) %>" class="users-tab <%= activeType === tab.key ? 'active' : '' %>">
+                <i class="bi <%= tab.icon %>"></i>
+                <%= tab.label %>
+                <span><%= tab.count %></span>
+            </a>
+        <% }) %>
+    </div>
+
+    <div class="users-panel">
+        <div class="users-toolbar">
+            <form class="users-filter-form" method="GET" action="/users">
+                <input type="hidden" name="type" value="<%= activeType %>">
+                <div class="users-search">
+                    <i class="bi bi-search"></i>
+                    <input type="text" name="search" value="<%= searchValue %>" placeholder="Search name, email, phone, city, customer or vendor">
+                </div>
+                <% if (activeType === 'employee' || activeType === 'all') { %>
+                    <select class="users-select" name="role_id">
+                        <option value="">All Roles</option>
+                        <% if (roles && roles.length) { %>
+                            <% roles.forEach(role => { %>
+                                <option value="<%= role.id %>" <%= String(roleValue) === String(role.id) ? 'selected' : '' %>><%= role.name %></option>
+                            <% }) %>
+                        <% } %>
+                    </select>
+                <% } %>
+                <select class="users-select" name="status">
+                    <option value="">All Status</option>
+                    <option value="true" <%= statusValue === 'true' ? 'selected' : '' %>>Active</option>
+                    <option value="false" <%= statusValue === 'false' ? 'selected' : '' %>>Inactive</option>
+                </select>
+                <button class="users-btn" type="submit">Search</button>
+                <% if (searchValue || roleValue || statusValue) { %>
+                    <a class="users-clear" href="/users?type=<%= activeType %>">Clear</a>
+                <% } %>
+            </form>
+        </div>
+
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="bg-light text-secondary small">
+            <table class="users-table">
+                <thead>
                     <tr>
-                        <th class="ps-4 py-3 border-0">USER INFO</th>
-                        <th class="py-3 border-0">ROLE</th>
-                        <th class="py-3 border-0">STATUS</th>
-                        <th class="py-3 border-0">JOINED DATE</th>
-                        <th class="pe-4 py-3 border-0 text-end">ACTIONS</th>
+                        <th>User Info</th>
+                        <th>Type</th>
+                        <th>Role / Profile</th>
+                        <th>Status</th>
+                        <th>Joined Date</th>
+                        <th class="text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <% if (users && users.length> 0) { %>
-                        <% users.forEach(user=> { %>
+                    <% if (users && users.length > 0) { %>
+                        <% users.forEach(user => { %>
                             <tr id="user-<%= user.id %>">
-                                <td class="ps-4 py-3">
+                                <td>
                                     <div class="d-flex align-items-center">
-                                        <img src="https://ui-avatars.com/api/?name=<%= encodeURIComponent(user.name) %>&background=random"
-                                            class="rounded-circle me-3 shadow-sm" width="45" height="45">
+                                        <img src="https://ui-avatars.com/api/?name=<%= encodeURIComponent(user.name || 'User') %>&background=random" class="users-avatar" width="44" height="44">
                                         <div>
-                                            <div class="fw-bold text-dark mb-1">
-                                                <%= user.name %>
-                                            </div>
-                                            <div class="text-muted" style="font-size: 0.8rem;"><i
-                                                    class="bi bi-envelope me-1"></i>
-                                                <%= user.email %>
-                                            </div>
-                                            <% if (user.phone) { %>
-                                                <div class="text-muted mt-1" style="font-size: 0.75rem;"><i
-                                                        class="bi bi-telephone me-1"></i>
-                                                    <%= user.phone %>
-                                                </div>
-                                                <% } %>
+                                            <div class="users-main"><%= user.name %></div>
+                                            <div class="users-sub"><i class="bi bi-envelope me-1"></i><%= user.email %></div>
+                                            <% if (user.phone_number) { %>
+                                                <div class="users-sub"><i class="bi bi-telephone me-1"></i><%= user.phone_number %></div>
+                                            <% } %>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="py-3">
-                                    <span class="badge bg-primary bg-opacity-10 text-primary py-2 px-3 rounded-pill"
-                                        style="font-weight: 600;"><i class="bi bi-shield-check me-1"></i>
-                                        <%= user.role ? user.role.name : 'No Role' %>
-                                    </span>
+                                <td>
+                                    <span class="users-pill users-pill-type"><i class="bi <%= typeIcon(user) %>"></i><%= typeLabel(user) %></span>
                                 </td>
-                                <td class="py-3">
+                                <td>
+                                    <span class="users-pill users-pill-role"><i class="bi bi-shield-check"></i><%= user.role ? user.role.name : 'No Role' %></span>
+                                    <div class="users-sub"><%= profileLine(user) %></div>
+                                    <% if (user.type === 'vendor' && user.vendorProfile) { %>
+                                        <div class="users-sub">Vendor status: <%= user.vendorProfile.status || 'pending' %></div>
+                                    <% } %>
+                                </td>
+                                <td>
                                     <% if (user.status) { %>
-                                        <span
-                                            class="badge bg-success bg-opacity-10 text-success py-2 px-3 rounded-pill d-inline-flex align-items-center"><i
-                                                class="bi bi-circle-fill me-2" style="font-size: 6px;"></i>
-                                            Active</span>
-                                        <% } else { %>
-                                            <span
-                                                class="badge bg-danger bg-opacity-10 text-danger py-2 px-3 rounded-pill d-inline-flex align-items-center"><i
-                                                    class="bi bi-circle-fill me-2" style="font-size: 6px;"></i>
-                                                Inactive</span>
-                                            <% } %>
+                                        <span class="users-pill users-pill-active"><i class="bi bi-circle-fill" style="font-size:6px;"></i>Active</span>
+                                    <% } else { %>
+                                        <span class="users-pill users-pill-inactive"><i class="bi bi-circle-fill" style="font-size:6px;"></i>Inactive</span>
+                                    <% } %>
                                 </td>
-                                <td class="py-3 text-secondary" style="font-size: 0.9rem;">
-                                    <%= user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', {
-                                        month: 'short' , day: 'numeric' , year: 'numeric' }) : 'N/A' %>
+                                <td>
+                                    <div class="users-sub"><%= user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A' %></div>
                                 </td>
-                                <td class="pe-4 py-3 text-end">
-                                    <a href="/users/change-password/<%= user.id %>"
-                                        class="btn btn-sm btn-light text-warning rounded-circle shadow-sm"
-                                        title="Change Password"><i class="bi bi-key"></i></a>
-                                    <a href="/users/edit/<%= user.id %>"
-                                        class="btn btn-sm btn-light text-primary rounded-circle ms-1 shadow-sm"
-                                        title="Edit User"><i class="bi bi-pencil"></i></a>
-                                    <button class="btn btn-sm btn-light text-danger rounded-circle ms-1 shadow-sm"
-                                        onclick="deleteUser('<%= user.id %>')" title="Delete User"><i
-                                            class="bi bi-trash"></i></button>
+                                <td>
+                                    <div class="users-actions">
+                                        <a href="/users/change-password/<%= user.id %>" class="users-action users-action-key" title="Change Password"><i class="bi bi-key"></i></a>
+                                        <a href="/users/edit/<%= user.id %>" class="users-action users-action-edit" title="Edit User"><i class="bi bi-pencil"></i></a>
+                                        <button class="users-action users-action-delete" onclick="deleteUser('<%= user.id %>')" title="Delete User"><i class="bi bi-trash"></i></button>
+                                    </div>
                                 </td>
                             </tr>
-                            <% }) %>
-                                <% } else { %>
-                                    <tr>
-                                        <td colspan="5" class="text-center py-5 text-secondary">
-                                            <i class="bi bi-people fs-1 text-light mb-2"></i>
-                                            <p>No users found matching the criteria.</p>
-                                        </td>
-                                    </tr>
-                                    <% } %>
+                        <% }) %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="6">
+                                <div class="users-empty">
+                                    <i class="bi bi-people fs-1 d-block mb-2 text-light"></i>
+                                    <div class="fw-bold">No users found matching the criteria.</div>
+                                    <div class="mt-1">Try another tab or adjust the search filters.</div>
+                                </div>
+                            </td>
+                        </tr>
+                    <% } %>
                 </tbody>
             </table>
         </div>
-    </div>
 
-    <div class="card-footer bg-white border-top p-4 d-flex justify-content-between align-items-center">
-        <span class="text-secondary small">Showing <%= users ? users.length : 0 %> entries</span>
-        <nav>
-            <ul class="pagination pagination-sm mb-0">
-                <li class="page-item disabled"><a class="page-link border-0 text-secondary bg-light rounded-start"
-                        href="#">Previous</a></li>
-                <li class="page-item active"><a class="page-link border-0 shadow-sm" href="#">1</a></li>
-                <li class="page-item disabled"><a class="page-link border-0 text-secondary bg-light rounded-end"
-                        href="#">Next</a></li>
-            </ul>
-        </nav>
+        <div class="p-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="text-secondary small">Showing <%= users ? users.length : 0 %> entries</span>
+            <span class="text-secondary small">Active tab: <%= tabs.find(tab => tab.key === activeType)?.label || 'Employees' %></span>
+        </div>
     </div>
-</div>
+</section>
 
 <script>
     async function deleteUser(id) {
@@ -149,7 +211,8 @@
             if (response.ok) {
                 const data = await response.json();
                 if (data.status === 'success') {
-                    document.getElementById(`user-${id}`).remove();
+                    const row = document.getElementById(`user-${id}`);
+                    if (row) row.remove();
                 } else {
                     alert('Error: ' + data.message);
                 }

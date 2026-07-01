@@ -8,10 +8,15 @@ class PermissionService {
     const permissions = await this.permissionRepo.findAll();
     const modules = await this.moduleRepo.findAll();
     
-    return permissions.map(permission => ({
-      ...permission,
-      module_name: modules.find(m => m.id === permission.module_id)?.name || 'No Module'
-    }));
+    return permissions.map(permission => {
+      const plainPermission = permission.get ? permission.get({ plain: true }) : permission;
+      const module = modules.find(m => String(m.id) === String(plainPermission.module_id));
+
+      return {
+        ...plainPermission,
+        module_name: module?.name || 'No Module'
+      };
+    });
   }
 
   async getPermissionById(id) {

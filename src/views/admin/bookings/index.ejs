@@ -1,0 +1,313 @@
+<%- contentFor('body') %>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+body {
+    background-color: #f8fafc;
+    font-family: 'Inter', sans-serif;
+}
+
+.glass-card {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    margin-bottom: 2rem;
+}
+
+.table-custom { border-collapse: separate; border-spacing: 0 12px; margin-top: -12px; }
+.table-custom thead th { 
+    border: none; 
+    background: transparent; 
+    color: #64748b; 
+    font-size: 0.75rem; 
+    font-weight: 700;
+    text-transform: uppercase; 
+    letter-spacing: 1px; 
+    padding: 12px 20px; 
+}
+.table-custom tbody tr { 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.02); 
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); 
+    background: #ffffff; 
+}
+.table-custom tbody tr:hover { 
+    transform: translateY(-3px); 
+    box-shadow: 0 10px 25px rgba(0,0,0,0.06); 
+}
+.table-custom tbody td { 
+    vertical-align: middle; 
+    padding: 20px; 
+    border-top: 1px solid #f1f5f9; 
+    border-bottom: 1px solid #f1f5f9; 
+    color: #334155; 
+}
+.table-custom tbody td:first-child { border-left: 1px solid #f1f5f9; border-radius: 12px 0 0 12px; }
+.table-custom tbody td:last-child { border-right: 1px solid #f1f5f9; border-radius: 0 12px 12px 0; }
+
+.badge-custom { padding: 6px 14px; font-weight: 600; font-size: 0.75rem; border-radius: 8px; letter-spacing: 0.3px; }
+.badge-purple { background: #e0e7ff; color: #4338ca; }
+.badge-info-custom { background: #e0f2fe; color: #0284c7; }
+.badge-success-custom { background: #dcfce3; color: #166534; }
+.badge-warning-custom { background: #fef08a; color: #854d0e; }
+.badge-danger-custom { background: #fee2e2; color: #991b1b; }
+
+.btn-action { padding: 8px; width: 34px; height: 34px; display: inline-flex; justify-content: center; align-items: center; font-size: 0.85rem; border-radius: 8px; transition: all 0.2s; }
+.btn-action:hover { opacity: 0.9; transform: scale(1.1); }
+
+.btn-primary-custom {
+    background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-primary-custom:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+    color: white;
+}
+
+.search-input {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.75rem 1rem 0.75rem 3rem;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+    width: 320px;
+}
+
+.search-input:focus {
+    background-color: #ffffff;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    outline: none;
+}
+
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    pointer-events: none;
+}
+
+.btn-load-more {
+    background: #ffffff;
+    color: #4f46e5;
+    border: 2px solid #e0e7ff;
+    padding: 0.75rem 2.5rem;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+.btn-load-more:hover {
+    background: #eff6ff;
+    border-color: #c7d2fe;
+    transform: translateY(-2px);
+}
+.btn-load-more:active {
+    transform: translateY(0);
+}
+
+.booking-tabs {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #eef2ff;
+    padding: 0.28rem;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+}
+
+.booking-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.48rem 0.85rem;
+    color: #4f46e5;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+.booking-tab:hover {
+    color: #1e1b4b;
+}
+
+.booking-tab.active {
+    background: #fff;
+    color: #1e1b4b;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.12);
+}
+</style>
+
+<div class="content-header pb-0">
+    <div class="container-fluid">
+        <div class="row align-items-center mb-4 mt-3">
+            <div class="col-sm-6">
+                <h1 class="m-0 text-dark" style="font-weight: 800; letter-spacing: -1px; font-size: 2.2rem;">Manage Bookings</h1>
+            </div>
+            <div class="col-sm-6 text-right">
+                <a href="/admin/bookings/create" class="btn-primary-custom d-inline-flex align-items-center">
+                    <i class="fas fa-magic mr-2"></i> Customize Booking
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="booking-tabs">
+            <a href="/admin/bookings" class="booking-tab active"><i class="bi bi-book"></i> All Bookings</a>
+            <a href="/admin/bookings/inquiries" class="booking-tab"><i class="bi bi-ui-checks-grid"></i> Custom Requests</a>
+        </div>
+
+        <div class="glass-card mb-4" style="padding: 1rem 1.5rem;">
+            <form method="GET" action="/admin/bookings" id="searchForm" class="m-0">
+                <div class="position-relative">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" name="search" class="search-input" placeholder="Search by Ref # or Customer..." value="<%= typeof searchQuery !== 'undefined' ? searchQuery : '' %>">
+                </div>
+            </form>
+        </div>
+        
+        <div class="table-responsive" style="overflow-x: visible;">
+                <table id="bookingsTable" class="table table-custom">
+                    <thead>
+                        <tr>
+                            <th>Ref #</th>
+                            <th>Customer</th>
+                            <th>Type</th>
+                            <th>Destination</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (bookings && bookings.length > 0) { %>
+                            <% bookings.forEach(booking => { %>
+                                <tr>
+                                    <td><strong style="color: #0f172a; font-family: monospace; font-size: 1rem;"><%= booking.booking_reference %></strong></td>
+                                    <td class="font-weight-bold"><%= booking.customer && booking.customer.user ? booking.customer.user.name : 'Unknown' %></td>
+                                    <td>
+                                        <% if (booking.type === 'custom_trip') { %>
+                                            <span class="badge badge-custom badge-purple"><i class="fas fa-route mr-1"></i> Custom Trip</span>
+                                        <% } else { %>
+                                            <span class="badge badge-custom badge-info-custom"><i class="fas fa-box mr-1"></i> Package</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (booking.custom_trip && booking.custom_trip.destination) { %>
+                                            <i class="fas fa-map-marker-alt text-muted mr-1"></i> <%= booking.custom_trip.destination.name %>
+                                        <% } else if (booking.package) { %>
+                                            <i class="fas fa-map-marker-alt text-muted mr-1"></i> <%= booking.package.name %>
+                                        <% } else { %>
+                                            <span class="text-muted">N/A</span>
+                                        <% } %>
+                                    </td>
+                                    <td style="font-weight: 700; color: #0f172a;">₹<%= parseFloat(booking.total_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></td>
+                                    <td>
+                                        <% if (booking.payment_status === 'paid') { %>
+                                            <span class="badge badge-custom badge-success-custom"><i class="fas fa-check-circle mr-1"></i> Paid</span>
+                                        <% } else if (booking.payment_status === 'pending') { %>
+                                            <span class="badge badge-custom badge-warning-custom"><i class="fas fa-clock mr-1"></i> Pending</span>
+                                        <% } else { %>
+                                            <span class="badge badge-custom badge-danger-custom text-capitalize"><i class="fas fa-times-circle mr-1"></i> <%= booking.payment_status %></span>
+                                        <% } %>
+                                    </td>
+                                    <td class="text-muted" style="font-size: 0.9rem;"><%= new Date(booking.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) %></td>
+                                    <td class="text-center">
+                                        <a href="/admin/bookings/<%= booking.id %>" class="btn btn-info btn-action" style="background: #0ea5e9; border: none;" title="View Booking"><i class="fas fa-eye"></i></a>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        <% } else { %>
+                            <tr>
+                                <td colspan="8" class="text-center py-4 text-muted">
+                                    <i class="fas fa-folder-open fa-2x mb-2" style="opacity: 0.3;"></i><br>
+                                    No bookings found.
+                                </td>
+                            </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+            
+            <% if (totalPages > 1) { %>
+            <div class="text-center mt-4 mb-5" id="loadMoreContainer">
+                <button id="loadMoreBtn" class="btn-load-more" data-page="1" data-total="<%= totalPages %>" data-search="<%= typeof searchQuery !== 'undefined' ? searchQuery : '' %>">
+                    Load More Bookings
+                </button>
+            </div>
+            <% } %>
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    if(loadMoreBtn) {
+        loadMoreBtn.addEventListener('click', async function() {
+            const btn = this;
+            const currentPage = parseInt(btn.getAttribute('data-page'));
+            const totalPages = parseInt(btn.getAttribute('data-total'));
+            const search = btn.getAttribute('data-search');
+            
+            const nextPage = currentPage + 1;
+            
+            if (nextPage <= totalPages) {
+                // Show loading state
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i>Loading...';
+                btn.disabled = true;
+                
+                try {
+                    const url = `/admin/bookings?page=${nextPage}&search=${encodeURIComponent(search)}`;
+                    const response = await fetch(url);
+                    const htmlText = await response.text();
+                    
+                    // Parse HTML and extract rows
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(htmlText, 'text/html');
+                    const newRows = doc.querySelectorAll('#bookingsTable tbody tr');
+                    
+                    const tbody = document.querySelector('#bookingsTable tbody');
+                    newRows.forEach(row => {
+                        tbody.appendChild(row);
+                    });
+                    
+                    // Update current page
+                    btn.setAttribute('data-page', nextPage);
+                    
+                    // Hide button if we reached the end
+                    if (nextPage >= totalPages) {
+                        btn.style.display = 'none';
+                    }
+                } catch(e) {
+                    console.error('Error loading more bookings:', e);
+                    alert('Failed to load more bookings. Please try again.');
+                } finally {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            }
+        });
+    }
+});
+</script>

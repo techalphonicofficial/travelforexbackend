@@ -4,12 +4,21 @@ const {
     db,
     repositories: {
         continentRepo, countryRepo, cityRepo,
-        destinationRepo, categoryRepo, packageRepo, activityRepo, videoReviewRepo
+        destinationRepo, categoryRepo, packageRepo, activityRepo, videoReviewRepo,
+        appSettingRepo, reviewRepo, forexServiceRepo, forexConversionRateRepo,
+        couponRepo, leadRepo, pipelineRepo, userRepo
     },
     models: {
         Continent, Country, City, Destination, DestinationMapping,
         DestinationCategory, Category, Package, Activity,
-        PackageDestination, PackageInclusion, PackageExclusion, Media, VideoReview
+        PackageDestination, PackageInclusion, PackageExclusion, Media, VideoReview, Review, DestinationCrowdLevel, DestinationTax, Hotel,
+        ForexConversionRequest, Customer, User, Lead, JournalEntry
+    },
+    services: {
+        accountingService
+    },
+    controllers: {
+        travelHotelController, travelActivityController
     }
 } = require('../container');
 const multer = require('multer');
@@ -22,6 +31,7 @@ const storage = multer.diskStorage({
         let folder = 'packages';
         if (req.originalUrl.includes('destinations')) folder = 'destinations';
         if (req.originalUrl.includes('reviews')) folder = 'reviews';
+        if (req.originalUrl.includes('hotels')) folder = 'hotels';
         const dir = `public/uploads/${folder}`;
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
         cb(null, dir);
@@ -30,6 +40,7 @@ const storage = multer.diskStorage({
         let prefix = 'pack';
         if (req.originalUrl.includes('destinations')) prefix = 'dest';
         if (req.originalUrl.includes('reviews')) prefix = 'rev';
+        if (req.originalUrl.includes('hotels')) prefix = 'hotel';
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         cb(null, `${prefix}-${uniqueSuffix}${path.extname(file.originalname)}`);
     }
@@ -37,7 +48,7 @@ const storage = multer.diskStorage({
 const upload = multer({
     storage: storage,
     fileFilter: (req, file, cb) => {
-        const filetypes = /jpeg|jpg|png|webp|mp4|mov|avi|webm/;
+        const filetypes = /jpeg|jpg|png|webp|mp4|mov|avi|webm|avif/;
         const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
         const mimetype = filetypes.test(file.mimetype);
         if (mimetype && extname) return cb(null, true);
@@ -66,6 +77,97 @@ function handleUpload(multerMiddleware) {
             next();
         });
     };
+}
+
+const DEFAULT_TAX_TYPES = [
+    { name: 'GST', percent: 5 },
+    { name: 'IGST', percent: 18 },
+    { name: 'SGST', percent: 9 },
+    { name: 'CGST', percent: 9 }
+];
+
+function clampPercent(value) {
+    const parsed = parseFloat(value);
+    if (!Number.isFinite(parsed)) return 0;
+    return Math.min(Math.max(parsed, 0), 100);
+}
+
+function parseTaxTypes(value) {
+    if (!value) return [];
+
+    let rows = value;
+    if (typeof value === 'string') {
+        try {
+            rows = JSON.parse(value);
+        } catch (_) {
+            return [];
+        }
+    }
+    if (!Array.isArray(rows)) return [];
+
+    return rows
+        .map(row => {
+            const name = String(row?.name || row?.tax_name || '').trim();
+            if (!name) return null;
+
+            return {
+                name,
+                percent: clampPercent(row?.percent ?? row?.default_percent ?? row?.default_percentage)
+            };
+        })
+        .filter(Boolean);
+}
+
+const PACKAGE_HOTELS_KEY = '_hotels';
+
+function normalizePackageHotels(hotels) {
+    if (!Array.isArray(hotels)) return [];
+
+    return hotels
+        .map((hotel, index) => {
+            const hotelId = parseInt(hotel.hotelId || hotel.hotel_id || hotel.hotel || hotel.id, 10);
+            const uiId = String(hotel.id || `hotel-${Date.now()}-${index}`).slice(0, 120);
+
+            return {
+                id: uiId,
+                hotelId: Number.isInteger(hotelId) ? hotelId : null,
+                name: String(hotel.name || '').trim().slice(0, 180),
+                image: String(hotel.image || hotel.image_url || '').trim().slice(0, 255),
+                starRating: parseInt(hotel.starRating || hotel.star_rating, 10) || 0,
+                guestRating: parseFloat(hotel.guestRating || hotel.guest_rating) || 0,
+                pricePerNight: parseFloat(hotel.pricePerNight || hotel.price_per_night) || 0,
+                nights: parseInt(hotel.nights, 10) || 1,
+                rooms: parseInt(hotel.rooms, 10) || 1,
+                notes: String(hotel.notes || '').trim().slice(0, 500)
+            };
+        })
+        .filter(hotel => hotel.hotelId || hotel.name);
+}
+
+function getPackageHotelsFromActivities(activities) {
+    if (!activities || typeof activities !== 'object' || Array.isArray(activities)) return [];
+    return normalizePackageHotels(activities[PACKAGE_HOTELS_KEY] || activities.hotels || []);
+}
+
+function withoutPackageHotels(activities) {
+    if (!activities || typeof activities !== 'object' || Array.isArray(activities)) return {};
+    const cleaned = { ...activities };
+    delete cleaned[PACKAGE_HOTELS_KEY];
+    delete cleaned.hotels;
+    return cleaned;
+}
+
+function withPackageHotels(activities, hotels) {
+    const payload = withoutPackageHotels(activities);
+    const normalizedHotels = normalizePackageHotels(hotels);
+    if (normalizedHotels.length) payload[PACKAGE_HOTELS_KEY] = normalizedHotels;
+    return payload;
+}
+
+async function getTaxTypes() {
+    const rawTaxTypes = await appSettingRepo.get('tax_types');
+    const taxTypes = parseTaxTypes(rawTaxTypes);
+    return taxTypes.length ? taxTypes : parseTaxTypes(DEFAULT_TAX_TYPES);
 }
 
 // ─────────────────────────────────────────────
@@ -169,6 +271,348 @@ router.post('/api/v1/countries/bulk-delete', async (req, res) => {
 
 
 // ─────────────────────────────────────────────
+// FOREX SERVICES
+// ─────────────────────────────────────────────
+router.get('/forex-services', async (req, res) => {
+    try {
+        const [forexServices, countries] = await Promise.all([
+            forexServiceRepo.findAll(),
+            countryRepo.findAll()
+        ]);
+        const toPlain = record => record && record.get ? record.get({ plain: true }) : record;
+        res.render('travel/forex-services/index', {
+            title: 'Forex Services',
+            forexServices: forexServices.map(toPlain),
+            countries: countries.map(toPlain)
+        });
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+
+// ─────────────────────────────────────────────
+// FOREX CONVERSION RATES
+// ─────────────────────────────────────────────
+router.get('/forex-rates', async (req, res) => {
+    try {
+        const [forexRates, countries] = await Promise.all([
+            forexConversionRateRepo.findAll(),
+            countryRepo.findAll()
+        ]);
+        const toPlain = record => record && record.get ? record.get({ plain: true }) : record;
+        res.render('travel/forex-rates/index', {
+            title: 'Forex Conversion Rates',
+            forexRates: forexRates.map(toPlain),
+            countries: countries.map(toPlain)
+        });
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+
+router.get('/forex-converter', async (req, res) => {
+    try {
+        const [rows, serviceChargeType, serviceChargeValue] = await Promise.all([
+            forexConversionRateRepo.findPublic({ base_code: 'INR' }),
+            appSettingRepo.get('forex_service_charge_type'),
+            appSettingRepo.get('forex_service_charge_value')
+        ]);
+        res.render('travel/forex-converter/index', {
+            title: 'Forex Converter',
+            forexRates: rows.map(row => forexConversionRateRepo.serialize(row)).filter(Boolean),
+            serviceChargeType: serviceChargeType === 'fixed' ? 'fixed' : 'percent',
+            serviceChargeValue: Math.max(parseFloat(serviceChargeValue) || 0, 0)
+        });
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+
+router.get('/forex-service-requests', async (req, res) => {
+    try {
+        const rows = await ForexConversionRequest.findAll({
+            include: Customer ? [{
+                model: Customer,
+                as: 'customer',
+                attributes: ['id', 'phone', 'city', 'state'],
+                include: User ? [{
+                    model: User,
+                    as: 'user',
+                    attributes: ['id', 'name', 'email']
+                }] : []
+            }] : [],
+            order: [['created_at', 'DESC']],
+            limit: 200
+        });
+        const toPlain = record => record && record.get ? record.get({ plain: true }) : record;
+        res.render('travel/forex-service-requests/index', {
+            title: 'Forex Service Requests',
+            forexRequests: rows.map(toPlain)
+        });
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+
+const toMoney = value => Math.round(Number(value || 0) * 100) / 100;
+
+async function forexRequestAccountingAmount(request) {
+    const serviceCharge = toMoney(request.service_charge_amount);
+    if (!serviceCharge || serviceCharge <= 0) return 0;
+
+    const toCurrency = String(request.to_currency || 'INR').toUpperCase();
+    if (toCurrency === 'INR') return serviceCharge;
+
+    const rates = await forexConversionRateRepo.findPublic({ code: toCurrency, base_code: 'INR' });
+    const rate = rates.find(row => Number(row.conversion_rate || 0) > 0);
+    return rate ? toMoney(serviceCharge * Number(rate.conversion_rate || 0)) : 0;
+}
+
+async function resolveForexLeadDefaults() {
+    const defaultPipelineId = await appSettingRepo.get('crm_default_pipeline_id');
+    let pipeline = defaultPipelineId ? await pipelineRepo.findById(defaultPipelineId) : null;
+    if (!pipeline) {
+        const pipelines = await pipelineRepo.findActive();
+        pipeline = pipelines[0] || null;
+    }
+
+    const stages = pipeline && Array.isArray(pipeline.stages)
+        ? [...pipeline.stages].sort((a, b) => Number(a.order || 0) - Number(b.order || 0))
+        : [];
+
+    let assigneeId = null;
+    const assignmentType = await appSettingRepo.get('crm_assignment_type') || 'manual';
+    if (assignmentType === 'round_robin') {
+        const employee = await userRepo.getNextRoundRobinAssignee(Lead);
+        if (employee) assigneeId = employee.id;
+    } else {
+        assigneeId = await appSettingRepo.get('crm_default_assignee_id') || null;
+    }
+
+    return {
+        pipelineId: pipeline ? pipeline.id : null,
+        stageId: stages[0] ? stages[0].id : null,
+        assigneeId
+    };
+}
+
+router.post('/forex-service-requests/:id/convert', async (req, res) => {
+    const transaction = await db.transaction();
+    try {
+        const request = await ForexConversionRequest.findByPk(req.params.id, {
+            include: [{
+                model: Customer,
+                as: 'customer',
+                include: [{ model: User, as: 'user', attributes: ['id', 'name', 'email', 'phone_number'] }]
+            }],
+            transaction
+        });
+        if (!request) throw new Error('Forex service request not found');
+
+        const customer = request.customer || null;
+        const user = customer && customer.user ? customer.user : null;
+        const accountingAmount = await forexRequestAccountingAmount(request);
+        const defaults = await resolveForexLeadDefaults();
+
+        let lead = request.lead_id ? await Lead.findByPk(request.lead_id, { transaction }) : null;
+        const leadCustomerId = customer?.user_id || user?.id || null;
+        if (!lead) {
+            lead = await Lead.create({
+                name: user?.name || user?.email || `Forex Request #${request.id}`,
+                email: user?.email || null,
+                phone: customer?.phone || user?.phone_number || null,
+                source: 'Forex Service Request',
+                pipeline_id: defaults.pipelineId,
+                stage_id: defaults.stageId,
+                assigned_to: defaults.assigneeId,
+                customer_id: leadCustomerId,
+                status: 'won',
+                notes: `Forex request #${request.id}: ${request.from_currency} to ${request.to_currency}`,
+                custom_fields: {
+                    forex_request_id: request.id,
+                    customer_profile_id: request.customer_id,
+                    from_currency: request.from_currency,
+                    to_currency: request.to_currency,
+                    amount: Number(request.amount || 0),
+                    conversion_rate: Number(request.conversion_rate || 0),
+                    converted_amount: Number(request.converted_amount || 0),
+                    service_charge_amount: Number(request.service_charge_amount || 0),
+                    total_amount: Number(request.total_amount || 0),
+                    accounting_service_charge_inr: accountingAmount
+                }
+            }, { transaction });
+        } else if (lead.status !== 'won') {
+            await lead.update({ status: 'won' }, { transaction });
+        }
+
+        let journalEntry = request.journal_entry_id
+            ? await JournalEntry.findByPk(request.journal_entry_id, { transaction })
+            : null;
+        if (!journalEntry && accountingAmount > 0) {
+            journalEntry = await accountingService.recordForexConversionRequest({
+                requestId: request.id,
+                leadId: lead.id,
+                amount: accountingAmount,
+                customerName: user?.name || user?.email || null,
+                userId: req.session?.user?.id || null,
+                transaction
+            });
+        }
+
+        await request.update({
+            status: 'converted',
+            lead_id: lead.id,
+            journal_entry_id: journalEntry ? journalEntry.id : null,
+            converted_at: request.converted_at || new Date()
+        }, { transaction });
+
+        await transaction.commit();
+        res.redirect('/travel/forex-service-requests');
+    } catch (err) {
+        await transaction.rollback();
+        res.status(500).send(err.message);
+    }
+});
+
+router.post('/forex-rates/save', async (req, res) => {
+    try {
+        const { id } = req.body;
+        const payload = forexConversionRateRepo.normalizePayload(req.body);
+        const validationError = forexConversionRateRepo.validatePayload(payload);
+        if (validationError) return res.status(400).send(validationError);
+
+        if (id) {
+            const forexRate = await forexConversionRateRepo.findById(id);
+            if (!forexRate) return res.status(404).send('Forex conversion rate not found');
+            await forexRate.update(payload);
+        } else {
+            await forexConversionRateRepo.model.create(payload);
+        }
+
+        res.redirect('/travel/forex-rates');
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+
+router.post('/forex-rates/:id/delete', async (req, res) => {
+    try {
+        const forexRate = await forexConversionRateRepo.findById(req.params.id);
+        if (forexRate) await forexRate.destroy();
+        res.redirect('/travel/forex-rates');
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+
+
+// ─────────────────────────────────────────────
+// COUPONS
+// ─────────────────────────────────────────────
+const loadCouponPackages = async () => Package.findAll({
+    attributes: ['id', 'name', 'slug', 'price'],
+    order: [['name', 'ASC']]
+});
+
+router.get('/coupons', async (req, res) => {
+    try {
+        const [couponRows, packageRows] = await Promise.all([
+            couponRepo.findAll(),
+            loadCouponPackages()
+        ]);
+        const toPlain = record => record && record.get ? record.get({ plain: true }) : record;
+
+        res.render('travel/coupons/index', {
+            title: 'Coupons',
+            coupons: couponRows.map(row => couponRepo.serialize(row)).filter(Boolean),
+            packages: packageRows.map(toPlain)
+        });
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+
+router.get('/coupons/create', async (req, res) => {
+    try {
+        const packageRows = await loadCouponPackages();
+        const toPlain = record => record && record.get ? record.get({ plain: true }) : record;
+
+        res.render('travel/coupons/form', {
+            title: 'Add Coupon',
+            coupon: null,
+            packages: packageRows.map(toPlain)
+        });
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+
+router.get('/coupons/:id/edit', async (req, res) => {
+    try {
+        const [coupon, packageRows] = await Promise.all([
+            couponRepo.findById(req.params.id),
+            loadCouponPackages()
+        ]);
+        if (!coupon) return res.status(404).send('Coupon not found');
+
+        const toPlain = record => record && record.get ? record.get({ plain: true }) : record;
+        res.render('travel/coupons/form', {
+            title: 'Edit Coupon',
+            coupon: couponRepo.serialize(coupon),
+            packages: packageRows.map(toPlain)
+        });
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+
+router.post('/coupons/save', async (req, res) => {
+    try {
+        const { id } = req.body;
+        const payload = couponRepo.normalizePayload(req.body);
+        const validationError = couponRepo.validatePayload(payload);
+        if (validationError) return res.status(400).send(validationError);
+
+        if (id) {
+            const coupon = await couponRepo.findById(id);
+            if (!coupon) return res.status(404).send('Coupon not found');
+            await coupon.update(payload);
+        } else {
+            await couponRepo.create(payload);
+        }
+
+        res.redirect('/travel/coupons');
+    } catch (err) {
+        if (err && err.name === 'SequelizeUniqueConstraintError') {
+            return res.status(400).send('Coupon code already exists');
+        }
+        res.status(500).send(err.message);
+    }
+});
+
+router.post('/coupons/:id/toggle', async (req, res) => {
+    try {
+        const coupon = await couponRepo.findById(req.params.id);
+        if (!coupon) return res.status(404).send('Coupon not found');
+        await coupon.update({ is_active: coupon.is_active === false });
+        res.redirect('/travel/coupons');
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+
+router.post('/coupons/:id/delete', async (req, res) => {
+    try {
+        const coupon = await couponRepo.findById(req.params.id);
+        if (coupon) await coupon.destroy();
+        res.redirect('/travel/coupons');
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+
+
+// ─────────────────────────────────────────────
 // CITIES
 // ─────────────────────────────────────────────
 router.get('/cities', async (req, res) => {
@@ -235,6 +679,17 @@ router.post('/api/v1/cities/bulk-delete', async (req, res) => {
 
 
 // ─────────────────────────────────────────────
+// AIRPORTS
+// ─────────────────────────────────────────────
+router.get('/airports', async (req, res) => {
+    try {
+        res.render('travel/airports/index', { title: 'Airports' });
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+
+// ─────────────────────────────────────────────
 // DESTINATIONS
 // ─────────────────────────────────────────────
 router.get('/destinations', async (req, res) => {
@@ -265,7 +720,10 @@ router.get('/destinations/create', async (req, res) => {
     try {
         const continents = await continentRepo.findAll();
         const categories = await categoryRepo.findAll();
-        res.render('travel/destinations/form', { title: 'Create Destination', destination: null, continents, categories });
+        const rawTaxTypes = await appSettingRepo.get('tax_types');
+        let taxTypes = [];
+        try { if (rawTaxTypes) taxTypes = JSON.parse(rawTaxTypes); } catch(e){}
+        res.render('travel/destinations/form', { title: 'Create Destination', destination: null, continents, categories, taxTypes });
     } catch (err) {
         res.status(500).send(err.message);
     }
@@ -274,25 +732,70 @@ router.get('/destinations/create', async (req, res) => {
 router.get('/destinations/:id/edit', async (req, res) => {
     try {
         const destination = await Destination.findByPk(req.params.id, {
-            include: [{ model: Category, as: 'categories' }]
+            include: [
+                { model: Category, as: 'categories' },
+                { model: DestinationCrowdLevel, as: 'crowdLevels' }
+            ]
         });
         const continents = await continentRepo.findAll();
         const categories = await categoryRepo.findAll();
-        res.render('travel/destinations/form', { title: 'Edit Destination', destination, continents, categories });
+        const rawTaxTypes = await appSettingRepo.get('tax_types');
+        let taxTypes = [];
+        try { if (rawTaxTypes) taxTypes = JSON.parse(rawTaxTypes); } catch(e){}
+        res.render('travel/destinations/form', { title: 'Edit Destination', destination, continents, categories, taxTypes });
     } catch (err) {
         res.status(500).send(err.message);
     }
 });
 
-router.post('/destinations/save', async (req, res) => {
-    const { id, name, type, categories, meta_title, meta_description, meta_keyword, schema, is_trending, is_visa_free } = req.body;
+router.post('/destinations/save', handleUpload(upload.single('feature_image_file')), async (req, res) => {
+    // If FormData is used, categories might come as 'categories[]' or 'categories'
+    let categories = req.body['categories[]'] || req.body.categories;
+    if (categories && !Array.isArray(categories)) categories = [categories];
+
+    const { id, name, title, type, meta_title, meta_description, meta_keyword, schema, feature_image_alt, country } = req.body;
+    const state = req.body.state || null;
+    const taxRuleType = req.body.tax_rule_type || 'exempt';
+    const gstRate = req.body.gst_rate || 0.00;
+    const destinationAmount = req.body.destination_amount !== undefined && req.body.destination_amount !== ''
+        ? req.body.destination_amount
+        : (req.body.gst_amount || 0.00);
+    const is_trending = req.body.is_trending === 'true' || req.body.is_trending === true || req.body.is_trending === 'on';
+    const is_visa_free = req.body.is_visa_free === 'true' || req.body.is_visa_free === true || req.body.is_visa_free === 'on';
+    const is_customizable = req.body.is_customizable === 'true' || req.body.is_customizable === true || req.body.is_customizable === 'on' || req.body.customize === 'true' || req.body.customize === true || req.body.customize === 'on';
+    const customize = is_customizable;
+
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     
+    let feature_image = req.body.existing_feature_image || null;
+    if (req.file) {
+        feature_image = `/uploads/destinations/${req.file.filename}`;
+    }
+
+    let tags = req.body['tags[]'] || req.body.tags || [];
+    if (typeof tags === 'string') {
+        tags = tags.split(',').map(t => t.trim()).filter(Boolean);
+    } else if (Array.isArray(tags)) {
+        // already array
+    } else {
+        tags = [];
+    }
+
     try {
         const transaction = await db.transaction();
         try {
             let dest;
-            const updateData = { name, type, slug, meta_title, meta_description, meta_keyword, schema, is_trending, is_visa_free };
+
+            let activities = [];
+            if (req.body.activities_data) {
+                try {
+                    activities = JSON.parse(req.body.activities_data);
+                } catch (e) {
+                    console.error("Error parsing activities_data:", e);
+                }
+            }
+
+            const updateData = { name, title, type, slug, meta_title, meta_description, meta_keyword, schema, is_trending, is_visa_free, customize, is_customizable, feature_image, feature_image_alt, country, state, tax_rule_type: taxRuleType, gst_rate: gstRate, tcs_rate: 0.00, gst_amount: destinationAmount || 0.00, tags, activities_data: activities };
             if (id) {
                 dest = await Destination.findByPk(id);
                 await dest.update(updateData, { transaction });
@@ -303,6 +806,24 @@ router.post('/destinations/save', async (req, res) => {
             if (categories && categories.length) {
                 await DestinationCategory.bulkCreate(categories.map(cId => ({ destination_id: dest.id, category_id: cId })), { transaction });
             }
+
+            if (req.body.crowd_levels) {
+                let crowdData = {};
+                try { crowdData = JSON.parse(req.body.crowd_levels); } catch(e){}
+
+                await DestinationCrowdLevel.destroy({ where: { destination_id: dest.id }, transaction });
+
+                const newLevels = [];
+                for (const date in crowdData) {
+                    newLevels.push({ destination_id: dest.id, date, level: crowdData[date] });
+                }
+                if (newLevels.length) {
+                    await DestinationCrowdLevel.bulkCreate(newLevels, { transaction });
+                }
+            }
+
+
+
             await transaction.commit();
             res.json({ success: true, id: dest.id });
         } catch (err) {
@@ -531,12 +1052,16 @@ router.get('/packages/create', async (req, res) => {
         const destinations = await Destination.findAll({ order: [['name', 'ASC']] });
         const categories = await categoryRepo.findAll();
         const activities = await Activity.findAll({ order: [['name', 'ASC']] });
+        const hotels = await Hotel.findAll({ order: [['name', 'ASC']] });
+        const taxTypes = await getTaxTypes();
         res.render('travel/packages/create', {
             title: 'Create Package',
             pkg: null,
             destinations,
             categories,
-            activities
+            activities,
+            hotels,
+            taxTypes
         });
     } catch (err) {
         res.status(500).send(err.message);
@@ -565,21 +1090,29 @@ router.get('/packages/:id/edit', async (req, res) => {
         const plainPkg = pkg.get({ plain: true });
 
         // Transform for frontend form (simplified for JSON)
-        plainPkg.stays = plainPkg.destinations.map(pd => ({
-            id: pd.destination.id,
-            name: pd.destination.name,
-            nights: pd.nights,
-            activities: pd.activities || {}
-        }));
+        plainPkg.stays = plainPkg.destinations.map(pd => {
+            const activities = pd.activities || {};
+            return {
+                id: pd.destination.id,
+                name: pd.destination.name,
+                nights: pd.nights,
+                activities: withoutPackageHotels(activities),
+                hotels: getPackageHotelsFromActivities(activities)
+            };
+        });
 
         const destinations = await Destination.findAll({ order: [['name', 'ASC']] });
         const activities = await Activity.findAll({ order: [['name', 'ASC']] });
+        const hotels = await Hotel.findAll({ order: [['name', 'ASC']] });
+        const taxTypes = await getTaxTypes();
 
         res.render('travel/packages/edit', {
             title: `Edit: ${plainPkg.name}`,
             pkg: plainPkg,
             destinations: destinations,
-            activities: activities
+            activities: activities,
+            hotels: hotels,
+            taxTypes
         });
 
     } catch (err) {
@@ -587,6 +1120,128 @@ router.get('/packages/:id/edit', async (req, res) => {
         res.status(500).send(err.message);
     }
 });
+
+router.get('/packages/:id/reviews', async (req, res) => {
+    try {
+        const pkg = await Package.findByPk(req.params.id, {
+            attributes: ['id', 'name', 'slug', 'main_image', 'main_image_alt', 'price', 'duration_days']
+        });
+        if (!pkg) return res.status(404).send('Package not found');
+
+        const result = await reviewRepo.findForTarget('package', req.params.id, { status: 'all' });
+        const summary = await reviewRepo.summaryForTarget('package', req.params.id);
+        const reviews = result.rows.map(row => row.get({ plain: true }));
+
+        res.render('travel/packages/reviews', {
+            title: `Package Reviews: ${pkg.name}`,
+            pkg: pkg.get({ plain: true }),
+            reviews,
+            summary
+        });
+    } catch (err) {
+        console.error('Package reviews error:', err);
+        res.status(500).send(err.message);
+    }
+});
+
+router.post('/packages/:id/reviews/save', async (req, res) => {
+    try {
+        const pkg = await Package.findByPk(req.params.id);
+        if (!pkg) return res.status(404).json({ success: false, message: 'Package not found' });
+
+        const rating = parseInt(req.body.rating, 10);
+        if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+            return res.status(400).json({ success: false, message: 'Rating must be between 1 and 5' });
+        }
+
+        const status = ['pending', 'approved', 'rejected'].includes(req.body.status)
+            ? req.body.status
+            : 'approved';
+
+        await Review.create({
+            reviewable_type: 'package',
+            reviewable_id: pkg.id,
+            package_id: pkg.id,
+            custom_trip_id: null,
+            customer_id: null,
+            rating,
+            title: req.body.title || null,
+            comment: req.body.comment || null,
+            reviewer_name: req.body.reviewer_name || null,
+            reviewer_email: req.body.reviewer_email || null,
+            reviewer_phone: req.body.reviewer_phone || null,
+            status,
+            source: 'admin',
+            metadata: {
+                package_slug: pkg.slug,
+                package_name: pkg.name
+            }
+        });
+
+        res.json({ success: true, message: 'Package review added successfully' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.put('/packages/:packageId/reviews/:reviewId', async (req, res) => {
+    try {
+        const review = await Review.findByPk(req.params.reviewId);
+        if (!review) return res.status(404).json({ success: false, message: 'Review not found' });
+
+        const packageId = parseInt(req.params.packageId, 10);
+        if (review.reviewable_type !== 'package' || (review.package_id !== packageId && review.reviewable_id !== packageId)) {
+            return res.status(404).json({ success: false, message: 'Review not found for this package' });
+        }
+
+        const rating = parseInt(req.body.rating, 10);
+        if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+            return res.status(400).json({ success: false, message: 'Rating must be between 1 and 5' });
+        }
+
+        const status = ['pending', 'approved', 'rejected'].includes(req.body.status)
+            ? req.body.status
+            : review.status;
+
+        const textOrNull = value => {
+            if (value === undefined || value === null) return null;
+            const text = String(value).trim();
+            return text || null;
+        };
+
+        await review.update({
+            rating,
+            title: textOrNull(req.body.title),
+            comment: textOrNull(req.body.comment),
+            reviewer_name: textOrNull(req.body.reviewer_name),
+            reviewer_email: textOrNull(req.body.reviewer_email),
+            reviewer_phone: textOrNull(req.body.reviewer_phone),
+            status
+        });
+
+        res.json({ success: true, message: 'Package review updated successfully' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.delete('/packages/:packageId/reviews/:reviewId', async (req, res) => {
+    try {
+        const review = await Review.findByPk(req.params.reviewId);
+        if (!review) return res.status(404).json({ success: false, message: 'Review not found' });
+
+        const packageId = parseInt(req.params.packageId, 10);
+        if (review.reviewable_type !== 'package' || (review.package_id !== packageId && review.reviewable_id !== packageId)) {
+            return res.status(404).json({ success: false, message: 'Review not found for this package' });
+        }
+
+        await review.destroy();
+        res.json({ success: true, message: 'Review deleted successfully' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 router.get('/packages/:id', async (req, res) => {
     try {
         const pkg = await Package.findByPk(req.params.id, {
@@ -599,7 +1254,8 @@ router.get('/packages/:id', async (req, res) => {
                     ]
                 },
                 { model: PackageInclusion, as: 'inclusions' },
-                { model: PackageExclusion, as: 'exclusions' }
+                { model: PackageExclusion, as: 'exclusions' },
+                { model: Media, as: 'gallery' }
             ],
             order: [
                 [{ model: PackageDestination, as: 'destinations' }, 'order', 'ASC']
@@ -608,9 +1264,33 @@ router.get('/packages/:id', async (req, res) => {
 
         if (!pkg) return res.status(404).send('Package not found');
 
+        const plainPkg = pkg.get({ plain: true });
+        let packageDay = 1;
+        plainPkg.destinations = (plainPkg.destinations || []).map(pd => {
+            const nights = parseInt(pd.nights) || 0;
+            const totalDays = Math.max(nights + 1, 1);
+            const activitiesByDay = pd.activities || {};
+            const hotels = getPackageHotelsFromActivities(activitiesByDay);
+            const days = [];
+
+            for (let dayOffset = 1; dayOffset <= totalDays; dayOffset++) {
+                const dayActivities = activitiesByDay[dayOffset] || activitiesByDay[String(dayOffset)] || [];
+                days.push({
+                    day_number: packageDay++,
+                    activities: Array.isArray(dayActivities) ? dayActivities : []
+                });
+            }
+
+            return {
+                ...pd,
+                hotels,
+                days
+            };
+        });
+
         res.render('travel/packages/detail', {
-            title: `Package: ${pkg.name}`,
-            pkg
+            title: `Package: ${plainPkg.name}`,
+            pkg: plainPkg
         });
 
     } catch (err) {
@@ -653,10 +1333,55 @@ router.delete('/packages/:id/gallery/:mediaId', async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 });
+
+router.post('/packages/main-image', handleUpload(upload.single('main_image')), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+        const imageUrl = `/uploads/packages/${req.file.filename}`;
+        res.json({ success: true, imageUrl });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.post('/packages/:id/main-image', upload.single('main_image'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+        const pkg = await Package.findByPk(req.params.id);
+        if (!pkg) return res.status(404).json({ success: false, message: 'Package not found' });
+
+        const imageUrl = `/uploads/packages/${req.file.filename}`;
+        await pkg.update({ main_image: imageUrl });
+
+        res.json({ success: true, imageUrl });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.post('/packages/activity-image', handleUpload(upload.single('activity_image')), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+        const imageUrl = `/uploads/packages/${req.file.filename}`;
+        res.json({ success: true, imageUrl });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 router.post('/packages/save', async (req, res) => {
-    const { id, name, duration, price, description, show_in_home_page, destinations, inclusions, exclusions } = req.body;
+    const { id, name, duration, price, description, show_in_home_page, main_image, main_image_alt, destinations, inclusions, exclusions } = req.body;
+    const is_customizable = req.body.is_customizable === true || req.body.is_customizable === 'true' || req.body.is_customizable === 'on' || req.body.is_customizable === 1 || req.body.is_customizable === '1';
+    const slug = (req.body.slug || name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
     try {
+        const selectedTaxType = String(req.body.tax_type || '').trim().slice(0, 100);
+        const taxTypes = await getTaxTypes();
+        const selectedTaxConfig = taxTypes.find(t => t.name.toLowerCase() === selectedTaxType.toLowerCase());
+        const taxPercent = selectedTaxType
+            ? clampPercent(req.body.tax_percent !== undefined ? req.body.tax_percent : selectedTaxConfig?.percent)
+            : 0;
+        const discountPercentage = clampPercent(req.body.discount_percentage);
         const transaction = await db.transaction();
 
         try {
@@ -667,10 +1392,17 @@ router.post('/packages/save', async (req, res) => {
                 if (!pkg) throw new Error('Package not found');
                 await pkg.update({
                     name,
+                    slug,
                     duration_days: duration,
                     price: price || 0,
+                    discount_percentage: discountPercentage,
+                    tax_type: selectedTaxType || null,
+                    tax_percent: taxPercent,
                     description: description || '',
-                    show_in_home_page: show_in_home_page || false
+                    main_image: main_image || null,
+                    main_image_alt: main_image_alt || null,
+                    show_in_home_page: show_in_home_page || false,
+                    is_customizable
                 }, { transaction });
 
                 // Delete existing related data to recreate
@@ -681,10 +1413,17 @@ router.post('/packages/save', async (req, res) => {
                 // Create new Package
                 pkg = await Package.create({
                     name,
+                    slug,
                     duration_days: duration,
                     price: price || 0,
+                    discount_percentage: discountPercentage,
+                    tax_type: selectedTaxType || null,
+                    tax_percent: taxPercent,
                     description: description || '',
-                    show_in_home_page: show_in_home_page || false
+                    main_image: main_image || null,
+                    main_image_alt: main_image_alt || null,
+                    show_in_home_page: show_in_home_page || false,
+                    is_customizable
                 }, { transaction });
             }
 
@@ -697,7 +1436,7 @@ router.post('/packages/save', async (req, res) => {
                         destination_id: dest.destinationId,
                         nights: dest.nights,
                         order: i + 1,
-                        activities: dest.activities || {}
+                        activities: withPackageHotels(dest.activities || {}, dest.hotels || [])
                     }, { transaction });
                 }
             }
@@ -820,7 +1559,7 @@ router.get('/api/v1/cities/paginated', async (req, res) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 20;
         const search = req.query.search || '';
-        const result = await cityRepo.findPaginated(page, limit, search);
+        const result = await cityRepo.findPaginated(page, limit, search, req.query.continentId || '', req.query.countryId || '');
         res.json({ success: true, data: result });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -872,5 +1611,69 @@ router.post('/api/v1/reviews/:id/like', async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 });
+
+// ─────────────────────────────────────────────
+// HOTELS (Admin Master)
+// ─────────────────────────────────────────────
+
+// Hotel index — pass source mode to view
+router.get('/hotels', async (req, res) => {
+    const hotelSourceMode = await appSettingRepo.get('hotel_source_mode') || 'manual';
+    const hotelApiKey    = await appSettingRepo.get('hotel_api_key') || '';
+    const hotelApiProvider = await appSettingRepo.get('hotel_api_provider') || '';
+    // inject into request so controller can pass to view
+    req._hotelSourceMode = hotelSourceMode;
+    req._hotelApiKey = hotelApiKey;
+    req._hotelApiProvider = hotelApiProvider;
+    return travelHotelController.index(req, res);
+});
+
+// Block manual create when 3rd party mode is on
+router.get('/hotels/create', async (req, res) => {
+    const mode = await appSettingRepo.get('hotel_source_mode') || 'manual';
+    if (mode === 'third_party') {
+        return res.redirect('/travel/hotels?blocked=1');
+    }
+    return travelHotelController.create(req, res);
+});
+
+router.post('/hotels/save', handleUpload(upload.fields([{ name: 'gallery_files', maxCount: 20 }])), async (req, res) => {
+    const mode = await appSettingRepo.get('hotel_source_mode') || 'manual';
+    if (mode === 'third_party') {
+        return res.status(403).json({ success: false, message: '3rd party API mode is active. Manual hotel creation is disabled.' });
+    }
+    return travelHotelController.store(req, res);
+});
+
+// Save hotel source settings
+router.post('/hotels/settings/save', async (req, res) => {
+    try {
+        const { hotel_source_mode, hotel_api_key, hotel_api_provider } = req.body;
+        await appSettingRepo.set('hotel_source_mode', hotel_source_mode || 'manual');
+        await appSettingRepo.set('hotel_api_key', hotel_api_key || '');
+        await appSettingRepo.set('hotel_api_provider', hotel_api_provider || '');
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.get('/hotels/:id/edit', async (req, res) => {
+    const mode = await appSettingRepo.get('hotel_source_mode') || 'manual';
+    if (mode === 'third_party') return res.redirect('/travel/hotels?blocked=1');
+    return travelHotelController.edit(req, res);
+});
+router.post('/hotels/:id', handleUpload(upload.fields([{ name: 'gallery_files', maxCount: 20 }])), (req, res) => travelHotelController.update(req, res));
+router.delete('/hotels/:id', (req, res) => travelHotelController.destroy(req, res));
+
+// ─────────────────────────────────────────────
+// ACTIVITIES (Admin Master)
+// ─────────────────────────────────────────────
+router.get('/activities', (req, res) => travelActivityController.index(req, res));
+router.get('/activities/create', (req, res) => travelActivityController.create(req, res));
+router.post('/activities/save', (req, res) => travelActivityController.store(req, res));
+router.get('/activities/:id/edit', (req, res) => travelActivityController.edit(req, res));
+router.post('/activities/:id', (req, res) => travelActivityController.update(req, res));
+router.delete('/activities/:id', (req, res) => travelActivityController.destroy(req, res));
 
 module.exports = router;

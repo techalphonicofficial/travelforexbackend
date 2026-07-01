@@ -1,0 +1,781 @@
+<%- contentFor('body') %>
+
+<%
+const statuses = ['new', 'contacted', 'quoted', 'converted', 'cancelled'];
+const statusStyle = {
+  new: 'background:#e0f2fe;color:#0369a1;',
+  contacted: 'background:#eef2ff;color:#4f46e5;',
+  quoted: 'background:#fef3c7;color:#92400e;',
+  converted: 'background:#dcfce7;color:#166534;',
+  cancelled: 'background:#fee2e2;color:#991b1b;'
+};
+const rooms = Array.isArray(inquiry.rooms) ? inquiry.rooms : [];
+const cities = Array.isArray(inquiry.cities) ? inquiry.cities : [];
+const isHotelBooking = inquiry.source === 'hotel_booking';
+const rawPayload = { ...(inquiry.raw_payload || {}) };
+if (isHotelBooking) {
+  delete rawPayload.booking_id;
+  delete rawPayload.bookingId;
+}
+const requestTypeLabel = isHotelBooking ? 'Hotel Booking' : 'Custom Trip';
+const hotelRoomCount = rawPayload.room_count
+  ? (parseInt(rawPayload.room_count, 10) || 0)
+  : rooms.reduce((sum, room) => sum + (parseInt(room.room_count, 10) || 1), 0);
+const customReviews = Array.isArray(inquiryReviews) ? inquiryReviews : [];
+const customReviewSummary = inquiryReviewSummary || { count: 0, average_rating: 0 };
+const reviewStatusStyle = {
+  approved: 'background:#dcfce7;color:#166534;',
+  pending: 'background:#fef3c7;color:#92400e;',
+  rejected: 'background:#fee2e2;color:#991b1b;'
+};
+%>
+
+<style>
+  .detail-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .detail-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .detail-title {
+    color: #111827;
+    font-size: 1.75rem;
+    font-weight: 800;
+    margin: 0;
+  }
+
+  .detail-sub {
+    color: #64748b;
+    font-size: 0.86rem;
+    margin: 0.25rem 0 0;
+  }
+
+  .detail-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .detail-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border-radius: 9px;
+    text-decoration: none;
+    padding: 0.55rem 0.85rem;
+    background: #eef2ff;
+    color: #4f46e5;
+    font-weight: 800;
+    font-size: 0.84rem;
+  }
+
+  .detail-link.primary {
+    background: #4f46e5;
+    color: #fff;
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: minmax(280px, 0.8fr) minmax(320px, 1.2fr);
+    gap: 1rem;
+  }
+
+  .detail-card {
+    background: #fff;
+    border: 1px solid #eef2ff;
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(79, 70, 229, 0.06);
+    overflow: hidden;
+  }
+
+  .detail-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    background: #f8fafc;
+    border-bottom: 1px solid #eef2ff;
+    padding: 0.9rem 1rem;
+    color: #111827;
+    font-weight: 800;
+  }
+
+  .detail-card-body {
+    padding: 1rem;
+  }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px dashed #e2e8f0;
+  }
+
+  .info-row:last-child {
+    border-bottom: 0;
+  }
+
+  .info-label {
+    color: #64748b;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .info-value {
+    color: #111827;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-align: right;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.28rem 0.7rem;
+    font-size: 0.76rem;
+    font-weight: 800;
+    text-transform: capitalize;
+  }
+
+  .type-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 999px;
+    padding: 0.28rem 0.7rem;
+    font-size: 0.76rem;
+    font-weight: 800;
+  }
+
+  .type-pill.custom {
+    background: #eef2ff;
+    color: #4f46e5;
+  }
+
+  .type-pill.hotel {
+    background: #ecfeff;
+    color: #0e7490;
+  }
+
+  .tiny-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #475569;
+    padding: 0.24rem 0.6rem;
+    font-size: 0.76rem;
+    font-weight: 800;
+    margin: 0.12rem;
+  }
+
+  .city-list,
+  .room-list {
+    display: grid;
+    gap: 0.65rem;
+  }
+
+  .mini-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.8rem;
+    background: #fff;
+  }
+
+  .mini-title {
+    color: #111827;
+    font-weight: 800;
+    margin-bottom: 0.25rem;
+  }
+
+  .mini-sub {
+    color: #64748b;
+    font-size: 0.82rem;
+  }
+
+  .status-form {
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .status-form select,
+  .status-form textarea {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.65rem 0.75rem;
+    font-size: 0.9rem;
+    width: 100%;
+  }
+
+  .status-form textarea {
+    min-height: 92px;
+    resize: vertical;
+  }
+
+  .status-form button {
+    border: 0;
+    border-radius: 10px;
+    background: #4f46e5;
+    color: #fff;
+    padding: 0.68rem 1rem;
+    font-weight: 800;
+  }
+
+  .payload-box {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 12px;
+    padding: 1rem;
+    overflow: auto;
+    max-height: 520px;
+    font-size: 0.78rem;
+    margin: 0;
+  }
+
+  .review-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .review-form-grid .full {
+    grid-column: 1 / -1;
+  }
+
+  .review-label {
+    color: #475569;
+    font-size: 0.76rem;
+    font-weight: 800;
+    margin-bottom: 0.25rem;
+  }
+
+  .review-input {
+    width: 100%;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    padding: 0.5rem 0.65rem;
+    font-size: 0.85rem;
+  }
+
+  .review-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .review-table th,
+  .review-table td {
+    padding: 0.7rem 0.55rem;
+    border-bottom: 1px solid #eef2ff;
+    vertical-align: middle;
+    font-size: 0.85rem;
+  }
+
+  .review-table th {
+    color: #334155;
+    font-size: 0.76rem;
+    text-transform: uppercase;
+  }
+
+  .review-action {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    color: #4f46e5;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 0.25rem;
+  }
+
+  .review-action.danger {
+    color: #ef4444;
+    border-color: #fecaca;
+  }
+
+  @media (max-width: 980px) {
+    .detail-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .review-form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="detail-shell">
+  <div class="detail-top">
+    <div>
+      <h1 class="detail-title"><%= isHotelBooking ? 'Hotel Booking Enquiry' : 'Custom Inquiry Details' %></h1>
+      <p class="detail-sub"><%= requestTypeLabel %> request submitted on <%= new Date(inquiry.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) %></p>
+    </div>
+    <div class="detail-actions">
+      <a href="/admin/bookings/inquiries" class="detail-link"><i class="bi bi-arrow-left"></i> Back</a>
+      <% if (!isHotelBooking && inquiry.status !== 'converted') { %>
+        <a href="/admin/bookings/inquiries/<%= inquiry.id %>/build" class="detail-link primary"><i class="bi bi-magic"></i> Create Custom Booking</a>
+      <% } %>
+      <% if (inquiry.status !== 'converted') { %>
+        <a href="/admin/bookings/inquiries/<%= inquiry.id %>/edit" class="detail-link" style="background: #ecfdf5; border-color: #a7f3d0; color: #059669;"><i class="bi bi-pencil"></i> Edit Inquiry</a>
+      <% } %>
+
+    </div>
+  </div>
+
+  <div class="detail-grid">
+    <div class="detail-card">
+      <div class="detail-card-header">
+        <span>Customer</span>
+        <span class="status-pill" style="<%= statusStyle[inquiry.status] || statusStyle.new %>"><%= inquiry.status %></span>
+      </div>
+      <div class="detail-card-body">
+        <div class="info-row">
+          <div class="info-label">Name</div>
+          <div class="info-value"><%= inquiry.customer_name || 'Guest Customer' %></div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">Email</div>
+          <div class="info-value"><%= inquiry.customer_email || 'N/A' %></div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">Phone</div>
+          <div class="info-value"><%= inquiry.customer_phone || 'N/A' %></div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">Source</div>
+          <div class="info-value">
+            <span class="type-pill <%= isHotelBooking ? 'hotel' : 'custom' %>">
+              <i class="bi <%= isHotelBooking ? 'bi-building' : 'bi-map' %>"></i>
+              <%= requestTypeLabel %>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-card">
+      <div class="detail-card-header"><%= isHotelBooking ? 'Hotel Booking Summary' : 'Trip Summary' %></div>
+      <div class="detail-card-body">
+        <% if (isHotelBooking) { %>
+          <div class="info-row">
+            <div class="info-label">Hotel</div>
+            <div class="info-value"><%= rawPayload.hotel_name || inquiry.destination || 'N/A' %></div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Hotel ID</div>
+            <div class="info-value"><%= rawPayload.hotel_id || 'N/A' %></div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Rooms Requested</div>
+            <div class="info-value"><%= hotelRoomCount || 0 %></div>
+          </div>
+        <% } %>
+        <div class="info-row">
+          <div class="info-label">Destination</div>
+          <div class="info-value"><%= inquiry.destination %></div>
+        </div>
+        <% if (!isHotelBooking) { %>
+          <div class="info-row">
+            <div class="info-label">Style</div>
+            <div class="info-value"><%= inquiry.travel_with || 'N/A' %></div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Duration</div>
+            <div class="info-value"><%= inquiry.duration || 'N/A' %></div>
+          </div>
+        <% } %>
+        <div class="info-row">
+          <div class="info-label"><%= isHotelBooking ? 'Check-in' : 'Departure' %></div>
+          <div class="info-value"><%= inquiry.departure_city || 'N/A' %> / <%= inquiry.departure_date || 'N/A' %></div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">Travellers</div>
+          <div class="info-value"><%= inquiry.total_travellers || 1 %></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-card">
+      <div class="detail-card-header">Rooms</div>
+      <div class="detail-card-body room-list">
+        <% if (isHotelBooking) { %>
+          <div class="mini-card">
+            <div class="mini-title"><%= hotelRoomCount || 0 %> room<%= hotelRoomCount === 1 ? '' : 's' %> requested</div>
+            <div class="mini-sub">Hotel ID: <%= rawPayload.hotel_id || 'N/A' %></div>
+            <% if (rawPayload.hotel_name) { %>
+              <div class="mini-sub">Hotel: <%= rawPayload.hotel_name %></div>
+            <% } %>
+          </div>
+        <% } else if (rooms.length) { %>
+          <% rooms.forEach((room, index) => { %>
+            <div class="mini-card">
+              <div class="mini-title">Room <%= index + 1 %></div>
+              <div>
+                <span class="tiny-pill"><%= room.adults || 0 %> adults</span>
+                <span class="tiny-pill"><%= room.children || 0 %> children</span>
+              </div>
+              <% if (room.child_ages && room.child_ages.length) { %>
+                <div class="mini-sub">Child ages: <%= room.child_ages.join(', ') %></div>
+              <% } %>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <div class="mini-sub">No room data.</div>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="detail-card">
+      <div class="detail-card-header">Cities & Itinerary</div>
+      <div class="detail-card-body city-list">
+        <% if (isHotelBooking && !cities.length) { %>
+          <div class="mini-sub">No city itinerary is required for this hotel booking enquiry.</div>
+        <% } else if (cities.length) { %>
+          <% cities.forEach(city => { %>
+            <div class="mini-card">
+              <div class="mini-title"><%= city.name || 'Unnamed city' %></div>
+              <div class="mini-sub"><%= city.country || 'N/A' %><% if (city.state) { %> / <%= city.state %><% } %></div>
+              <% if (city.tags && city.tags.length) { %>
+                <div class="mb-2"><% city.tags.forEach(tag => { %><span class="tiny-pill"><%= tag %></span><% }) %></div>
+              <% } %>
+              
+              <% if (city.activities && Array.isArray(city.activities) && city.activities.length > 0) { %>
+                <div class="mt-2 border-top pt-2" style="border-top: 1px dashed #cbd5e1 !important;">
+                  <strong style="font-size: 0.72rem; color: #4f46e5; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">Day-wise Itinerary:</strong>
+                  <% city.activities.forEach(day => { %>
+                    <div class="mt-2" style="font-size: 0.8rem;">
+                      <span class="fw-bold text-dark">Day <%= day.dayNumber %>:</span>
+                      <% if (day.activities && day.activities.length > 0) { %>
+                        <ul class="mb-0 ps-3 mt-1" style="list-style-type: disc;">
+                          <% day.activities.forEach(act => { %>
+                            <li style="margin-bottom: 4px; line-height: 1.3;">
+                              <% if(act.time) { %><span class="text-muted" style="font-size: 0.75rem;"><%= act.time %></span> - <% } %>
+                              <strong class="text-secondary"><%= act.description %></strong>
+                              <% if(act.location) { %><span class="text-muted" style="font-size: 0.75rem;">(<%= act.location %>)</span><% } %>
+                            </li>
+                          <% }) %>
+                        </ul>
+                      <% } else { %>
+                        <span class="text-muted italic ms-1">Leisure / Free time</span>
+                      <% } %>
+                    </div>
+                  <% }) %>
+                </div>
+              <% } %>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <div class="mini-sub">No city data.</div>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="detail-card">
+      <div class="detail-card-header">Pricing & Tax</div>
+      <div class="detail-card-body">
+        <form method="POST" action="/admin/bookings/inquiries/<%= inquiry.id %>/price" style="margin: 0;">
+          <div class="info-row" style="align-items: center;">
+            <div class="info-label">Base Price (₹)</div>
+            <div class="info-value" style="display: flex; gap: 8px; align-items: center;">
+              <input type="number" name="base_price" step="0.01" min="0" class="form-control form-control-sm" style="width: 130px; text-align: right; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.35rem 0.6rem; font-size: 0.85rem;" value="<%= inquiry.base_price || '0.00' %>" required>
+              <button type="submit" style="background: #4f46e5; border: 0; color: #fff; padding: 0.38rem 0.8rem; border-radius: 8px; font-weight: 800; font-size: 0.75rem; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="Save price">
+                <i class="bi bi-check-lg"></i> Save
+              </button>
+            </div>
+          </div>
+        </form>
+        <div class="info-row">
+          <div class="info-label">Tax Rule</div>
+          <div class="info-value"><%= inquiry.tax_rule_type || 'N/A' %></div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">GST Config</div>
+          <div class="info-value">
+            <% if (inquiry.destination_info && parseFloat(inquiry.destination_info.gst_amount) > 0) { %>
+              Flat ₹<%= inquiry.destination_info.gst_amount %>
+            <% } else { %>
+              <%= inquiry.gst_rate || 0 %>%
+            <% } %>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">GST Amount</div>
+          <div class="info-value">₹<%= inquiry.gst_amount || '0.00' %></div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">Total</div>
+          <div class="info-value" style="color: #4f46e5; font-size: 1.1rem; font-weight: 800;">₹<%= inquiry.total_amount || '0.00' %></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-card">
+      <div class="detail-card-header">Update Status</div>
+      <div class="detail-card-body">
+        <% if (inquiry.status === 'converted') { %>
+          <span class="status-pill" style="<%= statusStyle.converted %>">converted</span>
+          <div class="mini-sub mt-2">This customer request is frozen after conversion.</div>
+        <% } else { %>
+          <form class="status-form" method="POST" action="/admin/bookings/inquiries/<%= inquiry.id %>/status">
+            <select name="status">
+              <% statuses.forEach(statusName => { %>
+                <option value="<%= statusName %>" <%= inquiry.status === statusName ? 'selected' : '' %>><%= statusName %></option>
+              <% }) %>
+            </select>
+            <textarea name="notes" placeholder="Internal notes"><%= inquiry.notes || '' %></textarea>
+            <button type="submit"><i class="bi bi-check-lg"></i> Save Status</button>
+          </form>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="detail-card" style="grid-column:1 / -1;">
+      <div class="detail-card-header">
+        <span>Custom Package Reviews</span>
+        <span class="tiny-pill"><%= customReviewSummary.count || 0 %> approved / <%= customReviewSummary.average_rating || 0 %> avg</span>
+      </div>
+      <div class="detail-card-body">
+        <form id="customPackageReviewForm" class="mb-4">
+          <div class="review-form-grid">
+            <div>
+              <div class="review-label">Rating</div>
+              <select class="review-input" name="rating" required>
+                <option value="5">5</option>
+                <option value="4">4</option>
+                <option value="3">3</option>
+                <option value="2">2</option>
+                <option value="1">1</option>
+              </select>
+            </div>
+            <div>
+              <div class="review-label">Status</div>
+              <select class="review-input" name="status">
+                <option value="approved">Approved</option>
+                <option value="pending">Pending</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+            <div>
+              <div class="review-label">Reviewer Name</div>
+              <input class="review-input" name="reviewer_name" type="text" value="<%= inquiry.customer_name || '' %>">
+            </div>
+            <div>
+              <div class="review-label">Reviewer Email</div>
+              <input class="review-input" name="reviewer_email" type="email" value="<%= inquiry.customer_email || '' %>">
+            </div>
+            <div class="full">
+              <div class="review-label">Title</div>
+              <input class="review-input" name="title" type="text" placeholder="Review title">
+            </div>
+            <div class="full">
+              <div class="review-label">Comment</div>
+              <textarea class="review-input" name="comment" rows="3" placeholder="Customer review"></textarea>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:0.8rem;">
+            <button type="submit" class="detail-link primary" style="border:0;"><i class="bi bi-plus-lg"></i> Add Review</button>
+          </div>
+        </form>
+
+        <% if (customReviews.length) { %>
+          <div style="overflow:auto;">
+            <table class="review-table">
+              <thead>
+                <tr>
+                  <th>Reviewer</th>
+                  <th>Review</th>
+                  <th>Rating</th>
+                  <th>Status</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% customReviews.forEach(review => { %>
+                  <tr>
+                    <td>
+                      <strong><%= review.reviewer_name || 'Guest' %></strong>
+                      <div class="mini-sub"><%= review.reviewer_email || 'No email' %></div>
+                    </td>
+                    <td>
+                      <strong><%= review.title || 'Untitled review' %></strong>
+                      <div class="mini-sub"><%= review.comment || 'No comment' %></div>
+                    </td>
+                    <td><strong><%= review.rating %>/5</strong></td>
+                    <td><span class="status-pill" style="<%= reviewStatusStyle[review.status] || reviewStatusStyle.pending %>"><%= review.status %></span></td>
+                    <td style="text-align:right;white-space:nowrap;">
+                      <button class="review-action" type="button" onclick="openCustomReviewEdit('<%= review.id %>')" title="Edit review"><i class="bi bi-pencil"></i></button>
+                      <button class="review-action danger" type="button" onclick="deleteCustomReview('<%= review.id %>')" title="Delete review"><i class="bi bi-trash3"></i></button>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } else { %>
+          <div class="mini-sub" style="padding: 1rem; border: 1px dashed #cbd5e1; border-radius: 12px;">No custom package reviews added yet.</div>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="detail-card" style="grid-column:1 / -1;">
+      <div class="detail-card-header">Raw Payload</div>
+      <div class="detail-card-body">
+        <pre class="payload-box"><%= JSON.stringify(inquiry.raw_payload || {}, null, 2) %></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="customReviewEditModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 rounded-4">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Edit Custom Package Review</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="customReviewEditForm">
+        <div class="modal-body">
+          <input type="hidden" id="edit_custom_review_id" name="review_id">
+          <div class="review-form-grid">
+            <div>
+              <div class="review-label">Rating</div>
+              <select class="review-input" id="edit_custom_rating" name="rating" required>
+                <option value="5">5</option>
+                <option value="4">4</option>
+                <option value="3">3</option>
+                <option value="2">2</option>
+                <option value="1">1</option>
+              </select>
+            </div>
+            <div>
+              <div class="review-label">Status</div>
+              <select class="review-input" id="edit_custom_status" name="status">
+                <option value="approved">Approved</option>
+                <option value="pending">Pending</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+            <div>
+              <div class="review-label">Reviewer Name</div>
+              <input class="review-input" id="edit_custom_reviewer_name" name="reviewer_name" type="text">
+            </div>
+            <div>
+              <div class="review-label">Reviewer Email</div>
+              <input class="review-input" id="edit_custom_reviewer_email" name="reviewer_email" type="email">
+            </div>
+            <div>
+              <div class="review-label">Reviewer Phone</div>
+              <input class="review-input" id="edit_custom_reviewer_phone" name="reviewer_phone" type="text">
+            </div>
+            <div>
+              <div class="review-label">Title</div>
+              <input class="review-input" id="edit_custom_title" name="title" type="text">
+            </div>
+            <div class="full">
+              <div class="review-label">Comment</div>
+              <textarea class="review-input" id="edit_custom_comment" name="comment" rows="4"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light border fw-bold" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary fw-bold"><i class="bi bi-check2 me-1"></i> Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  const customReviewData = <%- JSON.stringify(customReviews).replace(/</g, '\\u003c') %>;
+  const customReviewForm = document.getElementById('customPackageReviewForm');
+  const customReviewEditForm = document.getElementById('customReviewEditForm');
+
+  customReviewForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = customReviewForm.querySelector('button[type="submit"]');
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving';
+
+    try {
+      const response = await fetch('/admin/bookings/inquiries/<%= inquiry.id %>/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(Object.fromEntries(new FormData(customReviewForm)))
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.message || 'Failed to add review');
+      window.location.reload();
+    } catch (error) {
+      alert(error.message);
+      button.disabled = false;
+      button.innerHTML = '<i class="bi bi-plus-lg"></i> Add Review';
+    }
+  });
+
+  function openCustomReviewEdit(reviewId) {
+    const review = customReviewData.find(item => String(item.id) === String(reviewId));
+    if (!review) return;
+
+    document.getElementById('edit_custom_review_id').value = review.id;
+    document.getElementById('edit_custom_rating').value = review.rating || 5;
+    document.getElementById('edit_custom_status').value = review.status || 'approved';
+    document.getElementById('edit_custom_reviewer_name').value = review.reviewer_name || '';
+    document.getElementById('edit_custom_reviewer_email').value = review.reviewer_email || '';
+    document.getElementById('edit_custom_reviewer_phone').value = review.reviewer_phone || '';
+    document.getElementById('edit_custom_title').value = review.title || '';
+    document.getElementById('edit_custom_comment').value = review.comment || '';
+
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('customReviewEditModal')).show();
+  }
+
+  customReviewEditForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const reviewId = document.getElementById('edit_custom_review_id').value;
+    const button = customReviewEditForm.querySelector('button[type="submit"]');
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving';
+
+    try {
+      const response = await fetch(`/admin/bookings/inquiries/<%= inquiry.id %>/reviews/${reviewId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(Object.fromEntries(new FormData(customReviewEditForm)))
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.message || 'Failed to update review');
+      window.location.reload();
+    } catch (error) {
+      alert(error.message);
+      button.disabled = false;
+      button.innerHTML = '<i class="bi bi-check2 me-1"></i> Save Changes';
+    }
+  });
+
+  async function deleteCustomReview(reviewId) {
+    if (!confirm('Delete this custom package review?')) return;
+
+    try {
+      const response = await fetch(`/admin/bookings/inquiries/<%= inquiry.id %>/reviews/${reviewId}`, {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.message || 'Failed to delete review');
+      window.location.reload();
+    } catch (error) {
+      alert(error.message);
+    }
+  }
+</script>

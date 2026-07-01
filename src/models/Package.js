@@ -14,6 +14,10 @@ const Package = sequelize.define('Package', {
         type: DataTypes.STRING(255),
         allowNull: false
     },
+    slug: {
+        type: DataTypes.STRING(255),
+        allowNull: true
+    },
     duration_days: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -23,11 +27,30 @@ const Package = sequelize.define('Package', {
         type: DataTypes.INTEGER,
         allowNull: true
     },
+    discount_percentage: {
+        type: DataTypes.DECIMAL(5, 2),
+        allowNull: false,
+        defaultValue: 0.00
+    },
+    tax_type: {
+        type: DataTypes.STRING(100),
+        allowNull: true
+    },
+    tax_percent: {
+        type: DataTypes.DECIMAL(5, 2),
+        allowNull: false,
+        defaultValue: 0.00
+    },
     status: {
         type: DataTypes.BOOLEAN,
         defaultValue: true
     },
     show_in_home_page: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        allowNull: false
+    },
+    is_customizable: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
         allowNull: false
@@ -43,6 +66,14 @@ const Package = sequelize.define('Package', {
             model: 'users',
             key: 'id'
         }
+    },
+    main_image: {
+        type: DataTypes.STRING(255),
+        allowNull: true
+    },
+    main_image_alt: {
+        type: DataTypes.STRING(255),
+        allowNull: true
     }
 }, {
     tableName: 'packages',

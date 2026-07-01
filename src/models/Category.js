@@ -41,12 +41,61 @@ const Category = sequelize.define('Category', {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
         allowNull: false
+    },
+    is_customizable: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        allowNull: false
+    },
+    is_tour_type: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        allowNull: false
+    },
+    slug: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        unique: true
+    },
+    feature_image: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    feature_image_alt: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    meta_title: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    meta_description: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
+    meta_keyword: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
+    schema: {
+        type: DataTypes.TEXT,
+        allowNull: true
     }
 }, {
     tableName: 'categories',
     timestamps: true,
     createdAt: 'created_at',
-    updatedAt: 'updated_at'
+    updatedAt: 'updated_at',
+    hooks: {
+        beforeValidate: (category) => {
+            if (category.slug === '') {
+                category.slug = null;
+            }
+            if (category.name && !category.slug) {
+                category.slug = category.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            }
+        }
+    }
 });
 
 module.exports = Category;

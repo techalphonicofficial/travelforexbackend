@@ -19,12 +19,13 @@ class ApiCustomerController {
 
             const { user } = await this.authService.customerRegister(userData);
             const token = this.authService.generateToken(user);
+            const roleName = user.role_name || (user.role ? user.role.name : null);
 
             res.status(201).json({
                 success: true,
                 message: 'Customer registered successfully',
                 data: {
-                    user: { id: user.id, name: user.name, email: user.email, type: user.type, phone_number: user.phone_number, token: token },
+                    user: { id: user.id, name: user.name, email: user.email, type: user.type, role_id: user.role_id || null, role_name: roleName, phone_number: user.phone_number, token: token },
 
                 }
             });
@@ -50,12 +51,13 @@ class ApiCustomerController {
             }
 
             const token = this.authService.generateToken(user);
+            const roleName = user.role_name || (user.role ? user.role.name : null);
 
             res.json({
                 success: true,
                 message: 'Login successful',
                 data: {
-                    user: { id: user.id, name: user.name, email: user.email, type: user.type },
+                    user: { id: user.id, name: user.name, email: user.email, type: user.type, role_id: user.role_id || null, role_name: roleName },
                     token
                 }
             });

@@ -11,6 +11,61 @@ router.get('/', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/v1/cities/paginated:
+ *   get:
+ *     summary: Get paginated cities with search and filters
+ *     tags: [Cities]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Number of items per page
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search text for city name
+ *       - in: query
+ *         name: countryName
+ *         schema:
+ *           type: string
+ *         description: Filter by Country Name
+ *       - in: query
+ *         name: continentName
+ *         schema:
+ *           type: string
+ *         description: Filter by Continent Name
+ *     responses:
+ *       200:
+ *         description: Successful response
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/paginated', async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const search = req.query.search || '';
+        const continentName = req.query.continentName || '';
+        const countryName = req.query.countryName || '';
+        
+        const data = await cityRepo.findPaginated(page, limit, search, continentName, countryName);
+        res.json({ success: true, data });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 router.get('/by-country/:countryId', async (req, res) => {
     try {
         const data = await cityRepo.findByCountryId(req.params.countryId);

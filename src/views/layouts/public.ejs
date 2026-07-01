@@ -10,13 +10,59 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <%
+        const publicThemeColours = typeof theme_colours === 'object' && theme_colours ? theme_colours : {};
+        const publicThemeCssVariables = typeof theme_css_variables === 'object' && theme_css_variables ? theme_css_variables : {};
+        const publicThemeValue = (key, fallback) => /^#[0-9a-fA-F]{6}$/.test(String(publicThemeColours[key] || ''))
+            ? String(publicThemeColours[key]).toLowerCase()
+            : fallback;
+        const publicThemeRgb = color => [
+            parseInt(color.slice(1, 3), 16),
+            parseInt(color.slice(3, 5), 16),
+            parseInt(color.slice(5, 7), 16)
+        ].join(', ');
+        const publicBrandPrimary = publicThemeValue('theme_brand_primary', '#026eb5');
+        const publicBrandPrimaryHover = publicThemeValue('theme_brand_primary_hover', '#005f9f');
+        const publicBrandPrimaryLight = publicThemeValue('theme_brand_primary_light', '#c5e5fb');
+        const publicBrandPrimaryBorder = publicThemeValue('theme_brand_primary_border', '#7abfee');
+        const publicBrandSecondary = publicThemeValue('theme_brand_secondary', '#fdce2e');
+        const publicBrandSecondaryHover = publicThemeValue('theme_brand_secondary_hover', '#f6b800');
+        const publicAccent = publicThemeValue('theme_color_accent', '#00b894');
+        const publicAccentHover = publicThemeValue('theme_color_accent_hover', '#00a382');
+    %>
     
     <style>
         :root {
-            --primary: #4f46e5;
-            --primary-dark: #3730a3;
-            --secondary: #818cf8;
-            --accent: #f59e0b;
+            --brand-primary: <%= publicBrandPrimary %>;
+            --brand-primary-hover: <%= publicBrandPrimaryHover %>;
+            --brand-primary-light: <%= publicBrandPrimaryLight %>;
+            --brand-primary-border: <%= publicBrandPrimaryBorder %>;
+            --brand-secondary: <%= publicBrandSecondary %>;
+            --brand-secondary-hover: <%= publicBrandSecondaryHover %>;
+            --color-primary: var(--brand-primary);
+            --color-primary-hover: var(--brand-primary-hover);
+            --color-primary-light: var(--brand-primary-light);
+            --color-secondary: var(--brand-secondary);
+            --color-secondary-hover: var(--brand-secondary-hover);
+            --bs-primary: var(--color-primary);
+            --bs-secondary: var(--color-secondary);
+            --bs-link-color: var(--color-primary);
+            --bs-link-hover-color: var(--color-primary-hover);
+            --bs-primary-rgb: <%= publicThemeRgb(publicBrandPrimary) %>;
+            --bs-secondary-rgb: <%= publicThemeRgb(publicBrandSecondary) %>;
+            --color-accent: <%= publicAccent %>;
+            --color-accent-hover: <%= publicAccentHover %>;
+            --primary: var(--color-primary);
+            --primary-dark: var(--color-primary-hover);
+            --primary-hover: var(--color-primary-hover);
+            --primary-light: var(--color-primary-light);
+            --secondary: var(--color-secondary);
+            --secondary-hover: var(--color-secondary-hover);
+            --accent: var(--color-accent);
+            --accent-hover: var(--color-accent-hover);
+            <% Object.entries(publicThemeCssVariables).forEach(([key, value]) => { %>
+            <%= key %>: <%= value %>;
+            <% }) %>
             --bg-light: #f8fafc;
             --text-main: #1e293b;
             --text-muted: #64748b;

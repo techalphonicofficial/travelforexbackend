@@ -1,0 +1,104 @@
+<style>
+  .acc-nav{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.6rem;}
+  .acc-nav a{display:inline-flex;align-items:center;gap:.4rem;padding:.42rem 1rem;border-radius:10px;font-size:.82rem;font-weight:600;text-decoration:none;background:#fff;color:#4f46e5;border:1.5px solid rgba(79,70,229,.2);box-shadow:0 2px 8px rgba(79,70,229,.07);transition:all .15s;}
+  .acc-nav a:hover,.acc-nav a.active{background:#4f46e5;color:#fff;border-color:#4f46e5;}
+  .acc-page-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.4rem;}
+  .acc-page-title{font-size:1.3rem;font-weight:800;color:#1e1b4b;display:flex;align-items:center;gap:.5rem;}
+  .acc-page-title i{color:#4f46e5;}
+  .pnl-section{border-radius:16px;overflow:hidden;margin-bottom:1.2rem;box-shadow:0 4px 20px rgba(79,70,229,.07);}
+  .pnl-section-hdr{padding:.8rem 1.2rem;display:flex;align-items:center;gap:.5rem;font-weight:700;font-size:.88rem;}
+  .pnl-row{display:grid;grid-template-columns:1fr auto;align-items:center;padding:.65rem 1.2rem;background:#fff;border-bottom:1px solid #f4f4fb;}
+  .pnl-row:last-child{border-bottom:0;}
+  .pnl-row:hover{background:#fafafe;}
+  .pnl-code{font-family:monospace;font-size:.75rem;font-weight:700;padding:1px 6px;border-radius:5px;margin-right:.5rem;}
+  .pnl-name{font-size:.84rem;font-weight:600;color:#1e1b4b;}
+  .pnl-val-rev{font-weight:700;color:#059669;font-size:.88rem;}
+  .pnl-val-exp{font-weight:700;color:#dc2626;font-size:.88rem;}
+  .pnl-total-row{display:grid;grid-template-columns:1fr auto;align-items:center;padding:.85rem 1.2rem;font-weight:700;font-size:.92rem;}
+  .pnl-summary{border-radius:16px;padding:1.5rem;margin-bottom:1.2rem;box-shadow:0 4px 20px rgba(79,70,229,.07);}
+  .pnl-net-profit{border-radius:16px;padding:1.5rem 2rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;}
+  .tf-select{border-radius:10px;border:1.5px solid #e5e7f0;background:#fafafa;font-size:.85rem;padding:.42rem .8rem;color:#333;cursor:pointer;}
+</style>
+
+<div class="acc-nav">
+  <a href="/accounting/dashboard"><i class="bi bi-grid-1x2-fill"></i> Dashboard</a>
+  <a href="/accounting/vouchers"><i class="bi bi-receipt-cutoff"></i> Vouchers</a>
+  <a href="/accounting/ledger"><i class="bi bi-journal-text"></i> General Ledger</a>
+  <a href="/accounting/accounts"><i class="bi bi-list-columns-reverse"></i> Chart of Accounts</a>
+  <a href="/accounting/trial-balance"><i class="bi bi-scale"></i> Trial Balance</a>
+  <a href="/accounting/pnl" class="active"><i class="bi bi-graph-up-arrow"></i> P&amp;L Statement</a>
+  <a href="/accounting/vouchers/new"><i class="bi bi-pencil-square"></i> New Voucher</a>
+</div>
+
+<div class="acc-page-hdr">
+  <div class="acc-page-title"><i class="bi bi-graph-up-arrow"></i> Profit &amp; Loss Statement</div>
+  <form method="GET" action="/accounting/pnl" style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
+    <input type="date" name="dateFrom" value="<%= dateFrom||'' %>" class="tf-select" title="From">
+    <input type="date" name="dateTo"   value="<%= dateTo||'' %>"   class="tf-select" title="To">
+    <button type="submit" style="background:#4f46e5;color:#fff;border:none;border-radius:10px;padding:.42rem 1rem;font-size:.85rem;font-weight:600;cursor:pointer;">Apply</button>
+    <% if(dateFrom||dateTo) { %><a href="/accounting/pnl" style="color:#8888bb;font-size:.82rem;font-weight:600;text-decoration:none;">Clear</a><% } %>
+  </form>
+</div>
+
+<!-- Net Profit Banner -->
+<div class="pnl-net-profit" style="background:<%= netProfit>=0?'linear-gradient(135deg,#059669,#10b981)':'linear-gradient(135deg,#dc2626,#ef4444)' %>;">
+  <div>
+    <div style="color:rgba(255,255,255,.75);font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;">Net <%= netProfit>=0?'Profit':'Loss' %></div>
+    <div style="color:#fff;font-size:2.2rem;font-weight:800;line-height:1;font-family:'Outfit',sans-serif;">
+      ₹<%= Number(Math.abs(netProfit)).toLocaleString('en-IN',{minimumFractionDigits:2}) %>
+    </div>
+    <% if(dateFrom||dateTo) { %>
+    <div style="color:rgba(255,255,255,.7);font-size:.75rem;margin-top:.3rem;">
+      <%= dateFrom||'Beginning' %> → <%= dateTo||'Today' %>
+    </div>
+    <% } %>
+  </div>
+  <div style="text-align:right;">
+    <div style="color:rgba(255,255,255,.7);font-size:.78rem;margin-bottom:.4rem;">Revenue</div>
+    <div style="color:#fff;font-size:1.1rem;font-weight:700;">₹<%= Number(totalRevenue).toLocaleString('en-IN',{minimumFractionDigits:2}) %></div>
+    <div style="color:rgba(255,255,255,.7);font-size:.78rem;margin-top:.6rem;margin-bottom:.4rem;">Expenses</div>
+    <div style="color:#fff;font-size:1.1rem;font-weight:700;">₹<%= Number(totalExpenses).toLocaleString('en-IN',{minimumFractionDigits:2}) %></div>
+  </div>
+</div>
+
+<!-- Revenue Section -->
+<div class="pnl-section">
+  <div class="pnl-section-hdr" style="background:linear-gradient(90deg,#ecfdf5,#d1fae5);color:#065f46;">
+    <i class="bi bi-graph-up-arrow" style="color:#059669;"></i> Revenue
+    <span style="margin-left:auto;color:#059669;">₹<%= Number(totalRevenue).toLocaleString('en-IN',{minimumFractionDigits:2}) %></span>
+  </div>
+  <% revenue.forEach(r => { %>
+  <div class="pnl-row">
+    <div>
+      <span class="pnl-code" style="background:#ecfdf5;color:#059669;"><%= r.code %></span>
+      <span class="pnl-name"><%= r.name %></span>
+    </div>
+    <span class="pnl-val-rev">₹<%= (parseFloat(r.total_credit)-parseFloat(r.total_debit)).toLocaleString('en-IN',{minimumFractionDigits:2}) %></span>
+  </div>
+  <% }) %>
+  <div class="pnl-total-row" style="background:#ecfdf5;color:#065f46;">
+    <span>Total Revenue</span>
+    <span>₹<%= Number(totalRevenue).toLocaleString('en-IN',{minimumFractionDigits:2}) %></span>
+  </div>
+</div>
+
+<!-- Expenses Section -->
+<div class="pnl-section">
+  <div class="pnl-section-hdr" style="background:linear-gradient(90deg,#fef2f2,#fee2e2);color:#991b1b;">
+    <i class="bi bi-arrow-down-circle-fill" style="color:#dc2626;"></i> Expenses
+    <span style="margin-left:auto;color:#dc2626;">₹<%= Number(totalExpenses).toLocaleString('en-IN',{minimumFractionDigits:2}) %></span>
+  </div>
+  <% expenses.forEach(e => { %>
+  <div class="pnl-row">
+    <div>
+      <span class="pnl-code" style="background:#fef2f2;color:#dc2626;"><%= e.code %></span>
+      <span class="pnl-name"><%= e.name %></span>
+    </div>
+    <span class="pnl-val-exp">₹<%= (parseFloat(e.total_debit)-parseFloat(e.total_credit)).toLocaleString('en-IN',{minimumFractionDigits:2}) %></span>
+  </div>
+  <% }) %>
+  <div class="pnl-total-row" style="background:#fef2f2;color:#991b1b;">
+    <span>Total Expenses</span>
+    <span>₹<%= Number(totalExpenses).toLocaleString('en-IN',{minimumFractionDigits:2}) %></span>
+  </div>
+</div>

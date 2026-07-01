@@ -191,6 +191,61 @@
       border: 1px solid #e2e8f0;
     }
 
+    .tf-hotel-section {
+      background: #fbfdfd;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .tf-hotel-unit {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+
+    .hotel-thumb {
+      width: 56px;
+      height: 56px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      background: #f1f5f9;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .hotel-icon-thumb {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #0f766e;
+      font-size: 1.35rem;
+    }
+
+    .hotel-meta-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border-radius: 20px;
+      padding: 2px 8px;
+      background: #ecfdf5;
+      color: #0f766e;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .hotel-empty {
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      color: #64748b;
+      font-size: 0.84rem;
+      padding: 14px;
+      text-align: center;
+      background: #f8fafc;
+    }
+
     .days-badge {
       background: #f0fdf4;
       color: #16a34a;
@@ -283,6 +338,7 @@
       align-items: center;
       flex-direction: column;
     }
+
     /* Gallery Styles */
     .gallery-grid {
       display: grid;
@@ -300,7 +356,8 @@
       background: #000;
     }
 
-    .gallery-item img, .gallery-item video {
+    .gallery-item img,
+    .gallery-item video {
       width: 100%;
       height: 100%;
       object-fit: cover;
@@ -356,7 +413,7 @@
       font-size: 2rem;
       pointer-events: none;
     }
-    </style>
+  </style>
 </head>
 
 <body class="bg-light">
@@ -409,9 +466,65 @@
           <label class="form-label">Description</label>
           <textarea class="form-control" id="modalDescription" rows="2"></textarea>
         </div>
+        <div class="mb-3">
+          <label class="form-label">Activity Image</label>
+          <div class="d-flex gap-2 align-items-center">
+            <div id="modalActivityImagePreview"
+              style="width: 60px; height: 60px; border-radius: 8px; border: 1px solid #cbd5e1; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #f8fafc; flex-shrink: 0;">
+              <i class="bi bi-image text-muted opacity-50 fs-4"></i>
+            </div>
+            <div class="flex-grow-1">
+              <input type="file" id="modalActivityImageFile" accept="image/*" style="display: none;"
+                onchange="uploadActivityImage(this)">
+              <button type="button" class="btn btn-outline-secondary btn-sm w-100" id="modalActivityImageBtn"
+                onclick="document.getElementById('modalActivityImageFile').click()">
+                <i class="bi bi-upload me-1"></i> Upload Image
+              </button>
+              <input type="hidden" id="modalActivityImage" value="">
+            </div>
+          </div>
+        </div>
         <div class="d-flex gap-2 justify-content-end">
           <button class="btn btn-light" id="closeModalBtn">Cancel</button>
           <button class="btn btn-primary" id="confirmActivityBtn">Add Activity</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="hotelModal" class="modal-activity">
+      <div class="modal-content-custom">
+        <h5 class="mb-3"><i class="bi bi-building-add me-2"></i> Add Hotel</h5>
+        <div class="mb-3">
+          <label class="form-label">Hotel</label>
+          <select class="form-select" id="modalHotelSelect"></select>
+          <div class="form-text" id="modalHotelHelp">Hotels are filtered by the selected destination.</div>
+        </div>
+        <div class="mb-3">
+          <div class="d-flex gap-2 align-items-center p-2 rounded-3 border bg-light" id="modalHotelPreview">
+            <div class="hotel-thumb hotel-icon-thumb"><i class="bi bi-building"></i></div>
+            <div>
+              <div class="fw-bold">Select a hotel</div>
+              <div class="text-muted small">Price, rating, and room details will appear here.</div>
+            </div>
+          </div>
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label">Nights</label>
+            <input type="number" class="form-control" id="modalHotelNights" min="1" value="1">
+          </div>
+          <div class="col-6">
+            <label class="form-label">Rooms</label>
+            <input type="number" class="form-control" id="modalHotelRooms" min="1" value="1">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Notes</label>
+          <textarea class="form-control" id="modalHotelNotes" rows="2" placeholder="Room type, meal plan, check-in note..."></textarea>
+        </div>
+        <div class="d-flex gap-2 justify-content-end">
+          <button class="btn btn-light" id="closeHotelModalBtn">Cancel</button>
+          <button class="btn btn-primary" id="confirmHotelBtn">Add Hotel</button>
         </div>
       </div>
     </div>
@@ -422,23 +535,90 @@
           <div class="tf-form-header"><i class="bi bi-info-circle text-primary"></i> Basic Details</div>
           <div class="tf-form-body">
             <div class="row g-3">
-              <div class="col-md-12">
+              <div class="col-md-6">
                 <label class="form-label fw-bold">Package Name</label>
                 <input type="text" class="form-control" id="fName">
               </div>
-              <div class="col-md-12">
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Slug</label>
+                <input type="text" class="form-control" id="fSlug" placeholder="goa-beach-getaway">
+              </div>
+              <div class="col-md-12 d-flex flex-wrap gap-4">
                 <div class="form-check form-switch pt-2 pb-2">
-                    <input class="form-check-input" type="checkbox" id="showInHomePage" role="switch">
-                    <label class="form-check-label fw-bold ps-2" for="showInHomePage">Show in Home Page</label>
+                  <input class="form-check-input" type="checkbox" id="showInHomePage" role="switch">
+                  <label class="form-check-label fw-bold ps-2" for="showInHomePage">Show in Home Page</label>
+                </div>
+                <div class="form-check form-switch pt-2 pb-2">
+                  <input class="form-check-input" type="checkbox" id="fIsCustomizable" role="switch">
+                  <label class="form-check-label fw-bold ps-2" for="fIsCustomizable">Customize</label>
                 </div>
               </div>
               <div class="col-md-12">
                 <label class="form-label fw-bold">Description</label>
                 <textarea class="form-control" id="fDesc" rows="3" placeholder="Package description..."></textarea>
               </div>
-              <div class="col-md-12">
+              <div class="col-md-4">
                 <label class="form-label fw-bold">Duration (Days)</label>
                 <input type="number" class="form-control bg-light" id="fDays" readonly>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Price (INR)</label>
+                <input type="number" class="form-control" id="fPrice" placeholder="e.g. 24999">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Discount %</label>
+                <input type="number" class="form-control" id="fDiscountPercentage" min="0" max="100" step="0.01" value="<%= pkg && pkg.discount_percentage ? pkg.discount_percentage : 0 %>" placeholder="0">
+              </div>
+              <% const taxRows = Array.isArray(taxTypes) ? taxTypes : []; %>
+              <% const selectedTaxType = pkg && pkg.tax_type ? pkg.tax_type : ''; %>
+              <% const selectedTaxPercent = pkg && pkg.tax_percent ? pkg.tax_percent : 0; %>
+              <% const hasSelectedTaxType = selectedTaxType && taxRows.some(tax => tax.name === selectedTaxType); %>
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Tax Type</label>
+                <select class="form-select" id="fTaxType">
+                  <option value="" data-percent="0">Select Tax Type</option>
+                  <% if (selectedTaxType && !hasSelectedTaxType) { %>
+                    <option value="<%= selectedTaxType %>" data-percent="<%= selectedTaxPercent %>" selected><%= selectedTaxType %> (<%= selectedTaxPercent %>%)</option>
+                  <% } %>
+                  <% taxRows.forEach(tax => { %>
+                    <option value="<%= tax.name %>" data-percent="<%= tax.percent %>" <%= selectedTaxType === tax.name ? 'selected' : '' %>><%= tax.name %> (<%= tax.percent %>%)</option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Tax %</label>
+                <input type="number" class="form-control bg-light" id="fTaxPercent" value="<%= selectedTaxPercent %>" readonly>
+              </div>
+
+              <div class="col-md-12">
+                <label class="form-label fw-bold">Main Package Image *</label>
+                <div class="d-flex gap-3 align-items-start">
+                  <div id="mainImagePreview"
+                    style="width: 240px; aspect-ratio: 16/9; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; background: #f8fafc; display: flex; align-items: center; justify-content: center; position: relative;">
+                    <% if (pkg && pkg.main_image) { %>
+                      <img src="<%= pkg.main_image %>" style="width: 100%; height: 100%; object-fit: cover;">
+                      <% } else { %>
+                        <i class="bi bi-image text-muted opacity-50 fs-2"></i>
+                        <% } %>
+                  </div>
+                  <div class="flex-grow-1">
+                    <p class="text-muted small mb-3">Upload the primary thumbnail image for this package. (16:9 ratio
+                      recommended)</p>
+                    <input type="file" id="mainImageInput" hidden accept="image/*" onchange="uploadMainImage(this)">
+                    <button type="button" class="btn btn-outline-primary btn-sm"
+                      onclick="document.getElementById('mainImageInput').click()">
+                      <i class="bi bi-upload me-1"></i>
+                      <%= pkg && pkg.main_image ? 'Change Main Image' : 'Upload Main Image' %>
+                    </button>
+                    <input type="hidden" id="fMainImage" value="<%= pkg ? pkg.main_image : '' %>">
+
+                    <div class="mt-3">
+                      <label class="form-label fw-bold small mb-1">Main Image Alt Text</label>
+                      <input type="text" id="fMainImageAlt" class="form-control form-control-sm"
+                        value="<%= pkg ? pkg.main_image_alt : '' %>" placeholder="e.g., Sunset over Bali beaches">
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -508,12 +688,14 @@
     // Server data
     const PKG_DATA = <%- JSON.stringify(pkg).replace(/</g, '\\u003c') %>;
     const DESTINATIONS_LIST = <%- JSON.stringify(destinations).replace(/</g, '\\u003c') %>;
+    const HOTELS_LIST = <%- JSON.stringify(typeof hotels !== 'undefined' ? hotels : []).replace(/</g, '\\u003c') %>;
 
     let destinations = [];
     let inclusions = [];
     let exclusions = [];
     let currentDestIdx = null;
     let currentDayNum = null;
+    let editingHotelId = null;
 
     function showNotification(message, isError = false) {
       const toast = document.getElementById('notificationToast');
@@ -533,14 +715,29 @@
       setTimeout(() => { toast.style.display = 'none'; }, 3000);
     }
 
+    function syncTaxPercent(force = false) {
+      const taxSelect = document.getElementById('fTaxType');
+      const taxPercentInput = document.getElementById('fTaxPercent');
+      if (!taxSelect || !taxPercentInput) return;
+
+      const selectedOption = taxSelect.selectedOptions[0];
+      if (force || taxPercentInput.value === '') {
+        taxPercentInput.value = selectedOption?.dataset.percent || '0';
+      }
+    }
+
     function generateId() {
       return Date.now() + '-' + Math.random().toString(36).substr(2, 9);
     }
 
+    function slugify(value) {
+      return (value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    }
+
     function updateTotalDays() {
       let total = 0;
-      destinations.forEach(dest => { 
-        total += (parseInt(dest.nights) || 0) + 1; 
+      destinations.forEach(dest => {
+        total += (parseInt(dest.nights) || 0) + 1;
       });
       document.getElementById('fDays').value = total;
     }
@@ -556,6 +753,7 @@
 
       let html = '';
       destinations.forEach((dest, idx) => {
+        if (!Array.isArray(dest.hotels)) dest.hotels = [];
         const totalDays = (dest.nights || 0) + 1;
         html += `
                 <div class="tf-row-item" data-dest-idx="${idx}">
@@ -575,6 +773,17 @@
                         <div class="col-md-4">
                             <label class="form-label fw-bold">Day Range</label>
                             <div class="days-badge" id="days_badge_${idx}"><i class="bi bi-sun"></i> ${totalDays} Days</div>
+                        </div>
+                    </div>
+                    <div class="tf-hotel-section mt-3">
+                        <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-2">
+                            <label class="form-label fw-bold mb-0"><i class="bi bi-building me-1 text-success"></i> Hotels</label>
+                            <button type="button" class="btn btn-sm btn-outline-success" onclick="openHotelModal(${idx})">
+                                <i class="bi bi-plus"></i> Add Hotel
+                            </button>
+                        </div>
+                        <div id="hotelsList-${idx}">
+                            ${renderHotelsList(dest.hotels || [], idx)}
                         </div>
                     </div>
                     <div class="mt-3">
@@ -606,6 +815,7 @@
           destinations[idx].destinationId = parseInt(e.target.value);
           const selectedDest = DESTINATIONS_LIST.find(d => d.id == e.target.value);
           if (selectedDest) destinations[idx].destinationName = selectedDest.name;
+          destinations[idx].hotels = [];
           renderDestinations();
         });
       }
@@ -677,17 +887,218 @@
 
       return activities.map((act, idx) => `
             <div class="tf-activity-unit d-flex justify-content-between align-items-start">
-                <div class="flex-grow-1">
-                    <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <strong>${escapeHtml(act.name)}</strong>
-                        <span class="time-slot-badge">${escapeHtml(act.duration || 'Full Day')}</span>
-                        ${act.price ? `<span class="text-muted small">₹${act.price}</span>` : ''}
+                <div class="d-flex gap-3 align-items-start flex-grow-1">
+                    ${act.image ? `<img src="${act.image}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1; flex-shrink: 0;">` : ''}
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <strong>${escapeHtml(act.name)}</strong>
+                            <span class="time-slot-badge">${escapeHtml(act.duration || 'Full Day')}</span>
+                            ${act.price ? `<span class="text-muted small">₹${act.price}</span>` : ''}
+                        </div>
+                        ${act.description ? `<div class="text-muted small mt-1">${escapeHtml(act.description)}</div>` : ''}
                     </div>
-                    ${act.description ? `<div class="text-muted small mt-1">${escapeHtml(act.description)}</div>` : ''}
                 </div>
-                <i class="bi bi-trash3 text-danger remove-activity" style="cursor:pointer" onclick="removeActivity(${destIdx}, ${dayNum}, '${act.id}')"></i>
+                <div class="d-flex gap-2 align-items-center">
+                    <i class="bi bi-pencil text-primary edit-activity" style="cursor:pointer" onclick="openEditActivityModal(${destIdx}, ${dayNum}, '${act.id}')"></i>
+                    <i class="bi bi-trash3 text-danger remove-activity" style="cursor:pointer" onclick="removeActivity(${destIdx}, ${dayNum}, '${act.id}')"></i>
+                </div>
             </div>
         `).join('');
+    }
+
+    function getHotelsForDestination(destIdx) {
+      const destId = destinations[destIdx]?.destinationId;
+      if (!destId) return [];
+      return HOTELS_LIST.filter(hotel => String(hotel.destination_id) === String(destId));
+    }
+
+    function getHotelCatalogItem(hotelId) {
+      return HOTELS_LIST.find(hotel => String(hotel.id) === String(hotelId));
+    }
+
+    function formatMoney(value) {
+      const amount = parseFloat(value) || 0;
+      if (!amount) return 'Price not set';
+      return `₹${amount.toLocaleString('en-IN')}`;
+    }
+
+    function renderStars(count) {
+      const rating = Math.max(0, Math.min(parseInt(count, 10) || 0, 5));
+      if (!rating) return '';
+      return Array.from({ length: rating }, () => '<i class="bi bi-star-fill"></i>').join('');
+    }
+
+    function renderHotelsList(hotels, destIdx) {
+      if (!hotels || hotels.length === 0) {
+        return '<div class="hotel-empty">No hotel added for this stay yet.</div>';
+      }
+
+      return hotels.map(hotel => `
+            <div class="tf-hotel-unit d-flex justify-content-between align-items-start">
+                <div class="d-flex gap-3 align-items-start flex-grow-1">
+                    ${hotel.image ? `<img src="${hotel.image}" class="hotel-thumb" alt="${escapeHtml(hotel.name)}">` : '<div class="hotel-thumb hotel-icon-thumb"><i class="bi bi-building"></i></div>'}
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <strong>${escapeHtml(hotel.name || 'Selected Hotel')}</strong>
+                            ${hotel.starRating ? `<span class="hotel-meta-pill">${renderStars(hotel.starRating)}</span>` : ''}
+                            ${hotel.guestRating ? `<span class="hotel-meta-pill"><i class="bi bi-hand-thumbs-up"></i> ${escapeHtml(hotel.guestRating)}</span>` : ''}
+                        </div>
+                        <div class="text-muted small mt-1">
+                            ${escapeHtml(hotel.nights || 1)} night${parseInt(hotel.nights, 10) === 1 ? '' : 's'} ·
+                            ${escapeHtml(hotel.rooms || 1)} room${parseInt(hotel.rooms, 10) === 1 ? '' : 's'} ·
+                            ${escapeHtml(formatMoney(hotel.pricePerNight))}/night
+                        </div>
+                        ${hotel.notes ? `<div class="text-muted small mt-1">${escapeHtml(hotel.notes)}</div>` : ''}
+                    </div>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <i class="bi bi-pencil text-primary" style="cursor:pointer" onclick="openHotelModal(${destIdx}, '${hotel.id}')"></i>
+                    <i class="bi bi-trash3 text-danger" style="cursor:pointer" onclick="removeHotel(${destIdx}, '${hotel.id}')"></i>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function populateHotelSelect(destIdx, selectedHotelId = '') {
+      const select = document.getElementById('modalHotelSelect');
+      const help = document.getElementById('modalHotelHelp');
+      const hotels = getHotelsForDestination(destIdx);
+
+      if (!select) return;
+
+      if (!destinations[destIdx]?.destinationId) {
+        select.innerHTML = '<option value="">Select destination first</option>';
+        select.disabled = true;
+        if (help) help.textContent = 'Select a destination before adding hotels.';
+        return;
+      }
+
+      if (!hotels.length) {
+        select.innerHTML = '<option value="">No hotels available for this destination</option>';
+        select.disabled = true;
+        if (help) help.innerHTML = 'No hotel found for this destination. Add hotels from <a href="/travel/hotels">Travel Hotels</a>.';
+        return;
+      }
+
+      select.disabled = false;
+      if (help) help.textContent = 'Hotels are filtered by the selected destination.';
+      select.innerHTML = `
+        <option value="">Select Hotel</option>
+        ${hotels.map(hotel => `<option value="${hotel.id}" ${String(selectedHotelId) === String(hotel.id) ? 'selected' : ''}>${escapeHtml(hotel.name)}</option>`).join('')}
+      `;
+    }
+
+    function updateHotelPreview() {
+      const selectedHotelId = document.getElementById('modalHotelSelect')?.value;
+      const preview = document.getElementById('modalHotelPreview');
+      const hotel = getHotelCatalogItem(selectedHotelId);
+      if (!preview) return;
+
+      if (!hotel) {
+        preview.innerHTML = `
+          <div class="hotel-thumb hotel-icon-thumb"><i class="bi bi-building"></i></div>
+          <div>
+            <div class="fw-bold">Select a hotel</div>
+            <div class="text-muted small">Price, rating, and room details will appear here.</div>
+          </div>
+        `;
+        return;
+      }
+
+      preview.innerHTML = `
+        ${hotel.image_url ? `<img src="${hotel.image_url}" class="hotel-thumb" alt="${escapeHtml(hotel.name)}">` : '<div class="hotel-thumb hotel-icon-thumb"><i class="bi bi-building"></i></div>'}
+        <div>
+          <div class="fw-bold">${escapeHtml(hotel.name)}</div>
+          <div class="text-muted small">
+            ${hotel.star_rating ? `${escapeHtml(hotel.star_rating)} star · ` : ''}
+            ${hotel.guest_rating ? `Guest ${escapeHtml(hotel.guest_rating)} · ` : ''}
+            ${escapeHtml(formatMoney(hotel.price_per_night))}/night
+          </div>
+        </div>
+      `;
+    }
+
+    function openHotelModal(destIdx, hotelId = null) {
+      const dest = destinations[destIdx];
+      if (!dest || !dest.destinationId) {
+        showNotification('Please select destination before adding hotel', true);
+        return;
+      }
+
+      currentDestIdx = destIdx;
+      currentDayNum = null;
+      editingHotelId = hotelId;
+      if (!Array.isArray(dest.hotels)) dest.hotels = [];
+
+      const existingHotel = hotelId ? dest.hotels.find(hotel => String(hotel.id) === String(hotelId)) : null;
+
+      populateHotelSelect(destIdx, existingHotel?.hotelId || '');
+      document.getElementById('modalHotelNights').value = existingHotel?.nights || dest.nights || 1;
+      document.getElementById('modalHotelRooms').value = existingHotel?.rooms || 1;
+      document.getElementById('modalHotelNotes').value = existingHotel?.notes || '';
+
+      document.querySelector('#hotelModal h5').innerHTML = existingHotel
+        ? '<i class="bi bi-pencil-square me-2"></i> Edit Hotel'
+        : '<i class="bi bi-building-add me-2"></i> Add Hotel';
+      document.getElementById('confirmHotelBtn').innerText = existingHotel ? 'Save Changes' : 'Add Hotel';
+
+      updateHotelPreview();
+      document.getElementById('hotelModal').classList.add('active');
+    }
+
+    function addHotelFromModal() {
+      const selectedHotelId = document.getElementById('modalHotelSelect')?.value;
+      const hotel = getHotelCatalogItem(selectedHotelId);
+      if (!hotel) {
+        showNotification('Please select a hotel', true);
+        return;
+      }
+
+      const dest = destinations[currentDestIdx];
+      if (!dest) return;
+      if (!Array.isArray(dest.hotels)) dest.hotels = [];
+
+      const duplicate = dest.hotels.find(item => String(item.hotelId) === String(hotel.id) && String(item.id) !== String(editingHotelId));
+      if (duplicate) {
+        showNotification('This hotel is already added for this stay', true);
+        return;
+      }
+
+      const hotelData = {
+        id: editingHotelId || generateId(),
+        hotelId: hotel.id,
+        destinationId: hotel.destination_id,
+        name: hotel.name || '',
+        image: hotel.image_url || '',
+        starRating: parseInt(hotel.star_rating, 10) || 0,
+        guestRating: parseFloat(hotel.guest_rating) || 0,
+        pricePerNight: parseFloat(hotel.price_per_night) || 0,
+        nights: parseInt(document.getElementById('modalHotelNights').value, 10) || 1,
+        rooms: parseInt(document.getElementById('modalHotelRooms').value, 10) || 1,
+        notes: document.getElementById('modalHotelNotes').value.trim()
+      };
+
+      if (editingHotelId) {
+        const index = dest.hotels.findIndex(item => String(item.id) === String(editingHotelId));
+        if (index !== -1) dest.hotels[index] = hotelData;
+        showNotification('Hotel updated successfully!');
+      } else {
+        dest.hotels.push(hotelData);
+        showNotification('Hotel added successfully!');
+      }
+
+      renderDestinations();
+      document.getElementById('hotelModal').classList.remove('active');
+    }
+
+    function removeHotel(destIdx, hotelId) {
+      const hotels = destinations[destIdx]?.hotels || [];
+      const index = hotels.findIndex(hotel => String(hotel.id) === String(hotelId));
+      if (index !== -1) {
+        hotels.splice(index, 1);
+        renderDestinations();
+        showNotification('Hotel removed');
+      }
     }
 
     function showDay(destIdx, dayNum) {
@@ -712,13 +1123,92 @@
       if (activeContent) activeContent.classList.add('active');
     }
 
+    let editingActivityId = null;
+
     function openActivityModal(destIdx, dayNum) {
       currentDestIdx = destIdx;
       currentDayNum = dayNum;
+      editingActivityId = null;
+
       document.getElementById('modalActivityName').value = '';
       document.getElementById('modalTimeSlot').value = 'Full Day';
       document.getElementById('modalDescription').value = '';
+
+      // Reset image preview and hidden input
+      document.getElementById('modalActivityImage').value = '';
+      document.getElementById('modalActivityImagePreview').innerHTML = '<i class="bi bi-image text-muted opacity-50 fs-4"></i>';
+      document.getElementById('modalActivityImageBtn').innerHTML = '<i class="bi bi-upload me-1"></i> Upload Image';
+
+      // Set modal title and confirm button text
+      document.querySelector('#activityModal h5').innerHTML = '<i class="bi bi-plus-circle me-2"></i> Add Activity';
+      document.getElementById('confirmActivityBtn').innerText = 'Add Activity';
+
       document.getElementById('activityModal').classList.add('active');
+    }
+
+    function openEditActivityModal(destIdx, dayNum, activityId) {
+      currentDestIdx = destIdx;
+      currentDayNum = dayNum;
+      editingActivityId = activityId;
+
+      const act = destinations[destIdx].activities[dayNum].find(a => a.id === activityId);
+      if (!act) return;
+
+      document.getElementById('modalActivityName').value = act.name || '';
+      document.getElementById('modalTimeSlot').value = act.duration || 'Full Day';
+      document.getElementById('modalDescription').value = act.description || '';
+
+      // Set image preview and hidden input
+      document.getElementById('modalActivityImage').value = act.image || '';
+      if (act.image) {
+        document.getElementById('modalActivityImagePreview').innerHTML = `<img src="${act.image}" style="width: 100%; height: 100%; object-fit: cover;">`;
+        document.getElementById('modalActivityImageBtn').innerHTML = '<i class="bi bi-check2 me-1"></i> Change Image';
+      } else {
+        document.getElementById('modalActivityImagePreview').innerHTML = '<i class="bi bi-image text-muted opacity-50 fs-4"></i>';
+        document.getElementById('modalActivityImageBtn').innerHTML = '<i class="bi bi-upload me-1"></i> Upload Image';
+      }
+
+      // Set modal title and confirm button text
+      document.querySelector('#activityModal h5').innerHTML = '<i class="bi bi-pencil-square me-2"></i> Edit Activity';
+      document.getElementById('confirmActivityBtn').innerText = 'Save Changes';
+
+      document.getElementById('activityModal').classList.add('active');
+    }
+
+    async function uploadActivityImage(input) {
+      if (!input.files || !input.files[0]) return;
+
+      const formData = new FormData();
+      formData.append('activity_image', input.files[0]);
+
+      try {
+        const btn = document.getElementById('modalActivityImageBtn');
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Uploading...';
+        btn.disabled = true;
+
+        const res = await fetch(`/travel/packages/activity-image`, {
+          method: 'POST',
+          body: formData
+        });
+        const result = await res.json();
+
+        if (result.success) {
+          document.getElementById('modalActivityImage').value = result.imageUrl;
+          document.getElementById('modalActivityImagePreview').innerHTML = `<img src="${result.imageUrl}" style="width: 100%; height: 100%; object-fit: cover;">`;
+          btn.innerHTML = '<i class="bi bi-check2 me-1"></i> Change Image';
+          showNotification('Activity image uploaded successfully!');
+        } else {
+          showNotification('Upload failed: ' + result.message, true);
+          btn.innerHTML = originalHtml;
+        }
+        btn.disabled = false;
+      } catch (err) {
+        showNotification('Server error uploading image', true);
+        document.getElementById('modalActivityImageBtn').disabled = false;
+        document.getElementById('modalActivityImageBtn').innerHTML = '<i class="bi bi-upload me-1"></i> Upload Image';
+      }
+      input.value = '';
     }
 
     function addActivityFromModal() {
@@ -728,21 +1218,41 @@
         return;
       }
 
-      const newActivity = {
-        id: generateId(),
-        name: name,
-        duration: document.getElementById('modalTimeSlot').value,
-        description: document.getElementById('modalDescription').value.trim(),
-        price: 0
-      };
+      const duration = document.getElementById('modalTimeSlot').value;
+      const description = document.getElementById('modalDescription').value.trim();
+      const image = document.getElementById('modalActivityImage').value;
 
-      if (!destinations[currentDestIdx].activities[currentDayNum]) {
-        destinations[currentDestIdx].activities[currentDayNum] = [];
+      if (editingActivityId) {
+        // Find and update existing activity
+        const activities = destinations[currentDestIdx].activities[currentDayNum];
+        const act = activities.find(a => a.id === editingActivityId);
+        if (act) {
+          act.name = name;
+          act.duration = duration;
+          act.description = description;
+          act.image = image;
+        }
+        showNotification('Activity updated successfully!');
+      } else {
+        // Add new activity
+        const newActivity = {
+          id: generateId(),
+          name: name,
+          duration: duration,
+          description: description,
+          price: 0,
+          image: image
+        };
+
+        if (!destinations[currentDestIdx].activities[currentDayNum]) {
+          destinations[currentDestIdx].activities[currentDayNum] = [];
+        }
+        destinations[currentDestIdx].activities[currentDayNum].push(newActivity);
+        showNotification('Activity added successfully!');
       }
-      destinations[currentDestIdx].activities[currentDayNum].push(newActivity);
+
       renderDestinations();
       document.getElementById('activityModal').classList.remove('active');
-      showNotification('Activity added successfully!');
     }
 
     function removeActivity(destIdx, dayNum, activityId) {
@@ -763,10 +1273,12 @@
 
     function escapeHtml(str) {
       if (!str) return '';
-      return str.replace(/[&<>]/g, function (m) {
+      return String(str).replace(/[&<>"']/g, function (m) {
         if (m === '&') return '&amp;';
         if (m === '<') return '&lt;';
         if (m === '>') return '&gt;';
+        if (m === '"') return '&quot;';
+        if (m === "'") return '&#39;';
         return m;
       });
     }
@@ -835,11 +1347,55 @@
       showNotification('Exclusion removed');
     }
 
+    async function uploadMainImage(input) {
+      if (!input.files || !input.files[0]) return;
+      const pkgId = PKG_DATA ? PKG_DATA.id : null;
+      if (!pkgId) {
+        showNotification('Please save basic details first', true);
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('main_image', input.files[0]);
+
+      try {
+        const btn = input.nextElementSibling;
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Uploading...';
+        btn.disabled = true;
+
+        const res = await fetch(`/travel/packages/${pkgId}/main-image`, {
+          method: 'POST',
+          body: formData
+        });
+        const result = await res.json();
+
+        if (result.success) {
+          document.getElementById('fMainImage').value = result.imageUrl;
+          document.getElementById('mainImagePreview').innerHTML = `<img src="${result.imageUrl}" style="width: 100%; height: 100%; object-fit: cover;">`;
+          btn.innerHTML = '<i class="bi bi-check2 me-1"></i> Change Main Image';
+          showNotification('Main image uploaded successfully!');
+        } else {
+          showNotification('Upload failed: ' + result.message, true);
+          btn.innerHTML = originalHtml;
+        }
+        btn.disabled = false;
+      } catch (err) {
+        showNotification('Server error uploading image', true);
+      }
+    }
+
     async function savePackage() {
       const packageName = document.getElementById('fName').value;
+      const slug = document.getElementById('fSlug')?.value.trim() || '';
       const description = document.getElementById('fDesc')?.value || '';
       const showInHomePage = !!document.getElementById('showInHomePage')?.checked;
+      const isCustomizable = !!document.getElementById('fIsCustomizable')?.checked;
       const duration = parseInt(document.getElementById('fDays').value) || 0;
+      const price = parseInt(document.getElementById('fPrice').value) || 0;
+      const discountPercentage = parseFloat(document.getElementById('fDiscountPercentage')?.value) || 0;
+      const taxType = document.getElementById('fTaxType')?.value || '';
+      const taxPercent = parseFloat(document.getElementById('fTaxPercent')?.value) || 0;
 
       if (!packageName) {
         showNotification('Please enter package name', true);
@@ -853,13 +1409,22 @@
       const packageData = {
         id: PKG_DATA ? PKG_DATA.id : null,
         name: packageName,
+        slug: slug,
         description: description,
         show_in_home_page: showInHomePage,
+        is_customizable: isCustomizable,
         duration: duration,
+        price: price,
+        discount_percentage: discountPercentage,
+        tax_type: taxType,
+        tax_percent: taxPercent,
+        main_image: document.getElementById('fMainImage').value,
+        main_image_alt: document.getElementById('fMainImageAlt').value,
         destinations: destinations.map(dest => ({
           destinationId: dest.destinationId,
           nights: dest.nights,
-          activities: dest.activities
+          activities: dest.activities,
+          hotels: dest.hotels || []
         })),
         inclusions: inclusions,
         exclusions: exclusions
@@ -891,8 +1456,16 @@
 
       // Fill package name
       document.getElementById('fName').value = PKG_DATA.name || '';
+      if (document.getElementById('fSlug')) {
+        document.getElementById('fSlug').value = PKG_DATA.slug || slugify(PKG_DATA.name || '');
+        if (PKG_DATA.slug) document.getElementById('fSlug').dataset.touched = 'true';
+      }
       if (document.getElementById('fDesc')) document.getElementById('fDesc').value = PKG_DATA.description || '';
+      if (document.getElementById('fPrice')) document.getElementById('fPrice').value = PKG_DATA.price || '';
+      if (document.getElementById('fDiscountPercentage')) document.getElementById('fDiscountPercentage').value = PKG_DATA.discount_percentage || 0;
       if (document.getElementById('showInHomePage')) document.getElementById('showInHomePage').checked = !!PKG_DATA.show_in_home_page;
+      if (document.getElementById('fIsCustomizable')) document.getElementById('fIsCustomizable').checked = !!PKG_DATA.is_customizable;
+      if (document.getElementById('fMainImageAlt')) document.getElementById('fMainImageAlt').value = PKG_DATA.main_image_alt || '';
 
       // Fill inclusions
       if (PKG_DATA.inclusions && PKG_DATA.inclusions.length) {
@@ -912,7 +1485,8 @@
           destinationId: stay.id,
           destinationName: stay.name,
           nights: parseInt(stay.nights) || 2,
-          activities: stay.activities || {}
+          activities: stay.activities || {},
+          hotels: stay.hotels || []
         }));
       }
 
@@ -925,7 +1499,7 @@
       const gallery = PKG_DATA.gallery || [];
       const container = document.getElementById('packageGallery');
       const uploadCard = container.querySelector('.gallery-upload-card');
-      
+
       // Clear existing items
       container.querySelectorAll('.gallery-item').forEach(el => el.remove());
 
@@ -933,8 +1507,8 @@
         const div = document.createElement('div');
         div.className = 'gallery-item';
         div.innerHTML = `
-          ${item.media_type === 'video' 
-            ? `<video src="${item.url}"></video><div class="video-overlay"><i class="bi bi-play-circle-fill"></i></div>` 
+          ${item.media_type === 'video'
+            ? `<video src="${item.url}"></video><div class="video-overlay"><i class="bi bi-play-circle-fill"></i></div>`
             : `<img src="${item.url}" alt="${item.alt_text || ''}">`
           }
           <button class="delete-btn" onclick="deleteGalleryItem(${item.id})"><i class="bi bi-trash3-fill"></i></button>
@@ -994,17 +1568,31 @@
 
     // Event Listeners
     document.getElementById('addDestinationBtn')?.addEventListener('click', () => {
-      destinations.push({ destinationId: null, destinationName: '', nights: 2, activities: {} });
+      destinations.push({ destinationId: null, destinationName: '', nights: 2, activities: {}, hotels: [] });
       renderDestinations();
       showNotification('Destination added');
     });
     document.getElementById('addInclusionBtn')?.addEventListener('click', addInclusion);
     document.getElementById('addExclusionBtn')?.addEventListener('click', addExclusion);
     document.getElementById('savePackageBtn')?.addEventListener('click', savePackage);
+    document.getElementById('fTaxType')?.addEventListener('change', () => syncTaxPercent(true));
+    document.getElementById('fName')?.addEventListener('input', (e) => {
+      const slugInput = document.getElementById('fSlug');
+      if (slugInput && !slugInput.dataset.touched) slugInput.value = slugify(e.target.value);
+    });
+    document.getElementById('fSlug')?.addEventListener('input', (e) => {
+      e.target.dataset.touched = 'true';
+      e.target.value = slugify(e.target.value);
+    });
     document.getElementById('closeModalBtn')?.addEventListener('click', () => {
       document.getElementById('activityModal').classList.remove('active');
     });
     document.getElementById('confirmActivityBtn')?.addEventListener('click', addActivityFromModal);
+    document.getElementById('closeHotelModalBtn')?.addEventListener('click', () => {
+      document.getElementById('hotelModal').classList.remove('active');
+    });
+    document.getElementById('confirmHotelBtn')?.addEventListener('click', addHotelFromModal);
+    document.getElementById('modalHotelSelect')?.addEventListener('change', updateHotelPreview);
     document.getElementById('newInclusion')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') addInclusion(); });
     document.getElementById('newExclusion')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') addExclusion(); });
     document.getElementById('galleryInput')?.addEventListener('change', handleGalleryUpload);
@@ -1012,6 +1600,7 @@
     // Initialize with auto-fill
     autoFillExistingData();
     renderGallery();
+    syncTaxPercent();
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

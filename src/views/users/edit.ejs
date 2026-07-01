@@ -1,45 +1,616 @@
-<div class="card" style="max-width: 600px; margin: 0 auto;">
-    <h3>Edit User</h3>
-    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 2rem;">Update profile and role for <%= user.name %>.</p>
+<%
+    const accountType = String(user.type || 'employee').toLowerCase();
+    const typeLabels = {
+        admin: 'Admin',
+        manager: 'Manager',
+        employee: 'Employee',
+        customer: 'Customer',
+        vendor: 'Vendor'
+    };
+    const typeIcons = {
+        admin: 'bi-shield-lock',
+        manager: 'bi-person-workspace',
+        employee: 'bi-person-badge',
+        customer: 'bi-person-heart',
+        vendor: 'bi-shop'
+    };
+    const typeLabel = typeLabels[accountType] || 'Employee';
+    const typeIcon = typeIcons[accountType] || 'bi-person-badge';
+    const initials = String(user.name || 'User')
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(part => part.charAt(0).toUpperCase())
+        .join('') || 'U';
+    const joinedDate = user.created_at ? new Date(user.created_at) : null;
+    const joinedLabel = joinedDate && !Number.isNaN(joinedDate.getTime())
+        ? joinedDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+        : 'Not available';
+    const usersBackUrl = accountType === 'customer' || accountType === 'vendor'
+        ? `/users?type=${accountType}`
+        : '/users?type=employee';
+%>
 
-    <form action="/users/<%= user.id %>?_method=PUT" method="POST">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-            <div class="form-group" style="margin-bottom: 1.25rem;">
-                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;">Full Name</label>
-                <input type="text" name="name" value="<%= user.name %>" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem;">
-            </div>
-            <div class="form-group" style="margin-bottom: 1.25rem;">
-                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;">Email Address</label>
-                <input type="email" name="email" value="<%= user.email %>" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem;">
-            </div>
-        </div>
+<style>
+    .user-edit-page {
+        max-width: 1120px;
+        margin: 0 auto;
+    }
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-            <div class="form-group" style="margin-bottom: 1.25rem;">
-                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;">Phone Number</label>
-                <input type="text" name="phone" value="<%= user.phone %>" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem;">
-            </div>
-            <div class="form-group" style="margin-bottom: 1.25rem;">
-                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;">Role</label>
-                <select name="role_id" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem; background: white;">
-                    <% roles.forEach(role => { %>
-                        <option value="<%= role.id %>" <%= user.role_id === role.id ? 'selected' : '' %>><%= role.name %></option>
-                    <% }) %>
-                </select>
-            </div>
-        </div>
+    .user-edit-header {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
 
-        <div class="form-group" style="margin-bottom: 1.25rem;">
-            <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;">Account Status</label>
-            <select name="status" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem; background: white;">
-                <option value="true" <%= user.status ? 'selected' : '' %>>Active</option>
-                <option value="false" <%= !user.status ? 'selected' : '' %>>Inactive</option>
-            </select>
-        </div>
+    .user-edit-kicker {
+        color: #4f46e5;
+        font-size: 0.76rem;
+        font-weight: 800;
+        letter-spacing: 0;
+        text-transform: uppercase;
+        margin-bottom: 0.35rem;
+    }
 
-        <div style="display: flex; gap: 1rem; margin-top: 2rem; justify-content: flex-end;">
-            <a href="/users" class="btn" style="background: #f1f5f9; color: var(--text-main);">Cancel</a>
-            <button type="submit" class="btn btn-primary">Save Changes</button>
+    .user-edit-title {
+        color: #101828;
+        font-size: 1.75rem;
+        font-weight: 900;
+        margin: 0;
+    }
+
+    .user-edit-subtitle {
+        color: #667085;
+        font-size: 0.92rem;
+        margin: 0.35rem 0 0;
+    }
+
+    .user-edit-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        flex-wrap: wrap;
+    }
+
+    .user-link-btn,
+    .user-submit-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        min-height: 40px;
+        padding: 0.62rem 0.9rem;
+        border-radius: 8px;
+        font-size: 0.88rem;
+        font-weight: 800;
+        text-decoration: none;
+        border: 1px solid #d8deea;
+        background: #fff;
+        color: #344054;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+    }
+
+    .user-link-btn:hover,
+    .user-submit-btn:hover {
+        transform: translateY(-1px);
+        border-color: #bfc7d8;
+        color: #121633;
+        box-shadow: 0 10px 20px rgba(18, 22, 51, 0.08);
+    }
+
+    .user-submit-btn {
+        border-color: #4f46e5;
+        background: #4f46e5;
+        color: #fff;
+        box-shadow: 0 12px 24px rgba(79, 70, 229, 0.22);
+        cursor: pointer;
+    }
+
+    .user-submit-btn:hover {
+        border-color: #4338ca;
+        background: #4338ca;
+        color: #fff;
+        box-shadow: 0 14px 28px rgba(79, 70, 229, 0.28);
+    }
+
+    .user-edit-shell {
+        display: grid;
+        grid-template-columns: 300px minmax(0, 1fr);
+        border: 1px solid #e1e7f0;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #fff;
+        box-shadow: 0 18px 42px rgba(18, 22, 51, 0.08);
+    }
+
+    .user-profile-rail {
+        background: #f8fafc;
+        border-right: 1px solid #e1e7f0;
+        padding: 1.35rem;
+    }
+
+    .user-avatar-card {
+        display: grid;
+        justify-items: start;
+        gap: 0.85rem;
+        padding-bottom: 1.15rem;
+        border-bottom: 1px solid #e5eaf2;
+    }
+
+    .user-edit-avatar {
+        width: 72px;
+        height: 72px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #e0f2fe;
+        color: #075985;
+        font-size: 1.55rem;
+        font-weight: 900;
+        box-shadow: 0 14px 28px rgba(14, 116, 144, 0.16);
+    }
+
+    .user-name-card {
+        min-width: 0;
+    }
+
+    .user-name-card h2 {
+        color: #101828;
+        font-size: 1.1rem;
+        font-weight: 900;
+        margin: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .user-name-card p {
+        color: #667085;
+        font-size: 0.83rem;
+        margin: 0.25rem 0 0;
+        overflow-wrap: anywhere;
+    }
+
+    .user-rail-list {
+        display: grid;
+        gap: 0.75rem;
+        margin: 1.15rem 0 0;
+    }
+
+    .user-rail-item {
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr);
+        gap: 0.7rem;
+        align-items: center;
+        padding: 0.78rem;
+        border: 1px solid #e5eaf2;
+        border-radius: 8px;
+        background: #fff;
+    }
+
+    .user-rail-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #eef2ff;
+        color: #4f46e5;
+        font-size: 0.98rem;
+    }
+
+    .user-rail-label {
+        color: #7a8497;
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0;
+    }
+
+    .user-rail-value {
+        color: #25304f;
+        font-size: 0.86rem;
+        font-weight: 850;
+        margin-top: 0.1rem;
+        overflow-wrap: anywhere;
+    }
+
+    .user-status-dot {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .user-status-dot::before {
+        content: '';
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: #16a34a;
+    }
+
+    .user-status-dot.inactive::before {
+        background: #dc2626;
+    }
+
+    .user-edit-form {
+        padding: 1.45rem;
+    }
+
+    .user-form-section {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.9rem;
+        border-bottom: 1px solid #edf1f7;
+    }
+
+    .user-section-title {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        color: #121633;
+        font-size: 1rem;
+        font-weight: 900;
+        margin: 0;
+    }
+
+    .user-section-title i {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #f0fdfa;
+        color: #0f766e;
+        font-size: 1rem;
+    }
+
+    .user-form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem 1.1rem;
+    }
+
+    .user-form-field {
+        min-width: 0;
+    }
+
+    .user-form-field.full {
+        grid-column: 1 / -1;
+    }
+
+    .user-form-label {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        color: #25304f;
+        font-size: 0.82rem;
+        font-weight: 850;
+        margin-bottom: 0.42rem;
+    }
+
+    .user-required {
+        color: #dc2626;
+        font-weight: 900;
+    }
+
+    .user-input-wrap {
+        position: relative;
+    }
+
+    .user-input-icon {
+        position: absolute;
+        left: 0.88rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #8a94a6;
+        font-size: 1rem;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .user-input,
+    .user-select {
+        width: 100%;
+        height: 48px;
+        border: 1px solid #d8deea;
+        border-radius: 8px;
+        background: #fff;
+        color: #121633;
+        font-size: 0.94rem;
+        font-weight: 650;
+        padding: 0 0.95rem 0 2.65rem;
+        outline: none;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    }
+
+    .user-select {
+        cursor: pointer;
+        padding-right: 2.2rem;
+    }
+
+    .user-input:focus,
+    .user-select:focus {
+        border-color: #4f46e5;
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
+    }
+
+    .user-status-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .user-status-input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .user-status-choice {
+        min-height: 52px;
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.75rem 0.85rem;
+        border: 1px solid #d8deea;
+        border-radius: 8px;
+        background: #fff;
+        color: #344054;
+        font-weight: 850;
+        cursor: pointer;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, color 0.18s ease;
+    }
+
+    .user-status-choice i {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #f2f4f7;
+        color: #667085;
+        flex: 0 0 auto;
+    }
+
+    .user-status-input:focus + .user-status-choice {
+        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
+    }
+
+    .user-status-input:checked + .user-status-choice {
+        border-color: #4f46e5;
+        background: #eef2ff;
+        color: #4338ca;
+    }
+
+    .user-status-input:checked + .user-status-choice i {
+        background: #4f46e5;
+        color: #fff;
+    }
+
+    .user-form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        margin-top: 1.35rem;
+        padding-top: 1.15rem;
+        border-top: 1px solid #edf1f7;
+    }
+
+    @media (max-width: 980px) {
+        .user-edit-shell {
+            grid-template-columns: 1fr;
+        }
+
+        .user-profile-rail {
+            border-right: 0;
+            border-bottom: 1px solid #e1e7f0;
+        }
+
+        .user-rail-list {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 680px) {
+        .user-edit-page {
+            max-width: none;
+        }
+
+        .user-edit-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .user-edit-actions,
+        .user-form-actions {
+            width: 100%;
+            flex-direction: column-reverse;
+        }
+
+        .user-link-btn,
+        .user-submit-btn {
+            width: 100%;
+        }
+
+        .user-profile-rail,
+        .user-edit-form {
+            padding: 1rem;
+        }
+
+        .user-rail-list,
+        .user-form-grid,
+        .user-status-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .user-form-section {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+    }
+</style>
+
+<section class="user-edit-page">
+    <div class="user-edit-header">
+        <div>
+            <div class="user-edit-kicker">Access Control</div>
+            <h1 class="user-edit-title"><%= user.name || 'User account' %></h1>
+            <p class="user-edit-subtitle">Profile, role, and account status.</p>
         </div>
-    </form>
-</div>
+        <div class="user-edit-actions">
+            <a href="<%= usersBackUrl %>" class="user-link-btn">
+                <i class="bi bi-arrow-left"></i>
+                Users
+            </a>
+            <a href="/users/change-password/<%= user.id %>" class="user-link-btn">
+                <i class="bi bi-key"></i>
+                Password
+            </a>
+        </div>
+    </div>
+
+    <div class="user-edit-shell">
+        <aside class="user-profile-rail">
+            <div class="user-avatar-card">
+                <div class="user-edit-avatar"><%= initials %></div>
+                <div class="user-name-card">
+                    <h2><%= user.name || 'User account' %></h2>
+                    <p><%= user.email || 'No email added' %></p>
+                </div>
+            </div>
+
+            <div class="user-rail-list">
+                <div class="user-rail-item">
+                    <div class="user-rail-icon"><i class="bi <%= typeIcon %>"></i></div>
+                    <div>
+                        <div class="user-rail-label">Type</div>
+                        <div class="user-rail-value"><%= typeLabel %></div>
+                    </div>
+                </div>
+
+                <div class="user-rail-item">
+                    <div class="user-rail-icon"><i class="bi bi-shield-check"></i></div>
+                    <div>
+                        <div class="user-rail-label">Role</div>
+                        <div class="user-rail-value"><%= user.role_name || (user.role ? user.role.name : 'No Role') %></div>
+                    </div>
+                </div>
+
+                <div class="user-rail-item">
+                    <div class="user-rail-icon"><i class="bi bi-activity"></i></div>
+                    <div>
+                        <div class="user-rail-label">Status</div>
+                        <div class="user-rail-value user-status-dot <%= user.status ? '' : 'inactive' %>"><%= user.status ? 'Active' : 'Inactive' %></div>
+                    </div>
+                </div>
+
+                <div class="user-rail-item">
+                    <div class="user-rail-icon"><i class="bi bi-calendar2-check"></i></div>
+                    <div>
+                        <div class="user-rail-label">Joined</div>
+                        <div class="user-rail-value"><%= joinedLabel %></div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <form action="/users/<%= user.id %>?_method=PUT" method="POST" class="user-edit-form">
+            <input type="hidden" name="type" value="<%= user.type || 'employee' %>">
+
+            <div class="user-form-section">
+                <h2 class="user-section-title">
+                    <i class="bi bi-person-gear"></i>
+                    Account Details
+                </h2>
+            </div>
+
+            <div class="user-form-grid">
+                <div class="user-form-field">
+                    <label for="editUserName" class="user-form-label">
+                        Full Name <span class="user-required">*</span>
+                    </label>
+                    <div class="user-input-wrap">
+                        <i class="bi bi-person user-input-icon"></i>
+                        <input id="editUserName" class="user-input" type="text" name="name" value="<%= user.name || '' %>" autocomplete="name" required>
+                    </div>
+                </div>
+
+                <div class="user-form-field">
+                    <label for="editUserEmail" class="user-form-label">
+                        Email Address <span class="user-required">*</span>
+                    </label>
+                    <div class="user-input-wrap">
+                        <i class="bi bi-envelope user-input-icon"></i>
+                        <input id="editUserEmail" class="user-input" type="email" name="email" value="<%= user.email || '' %>" autocomplete="email" required>
+                    </div>
+                </div>
+
+                <div class="user-form-field">
+                    <label for="editUserPhone" class="user-form-label">Phone Number</label>
+                    <div class="user-input-wrap">
+                        <i class="bi bi-telephone user-input-icon"></i>
+                        <input id="editUserPhone" class="user-input" type="tel" name="phone_number" value="<%= user.phone_number || '' %>" autocomplete="tel">
+                    </div>
+                </div>
+
+                <div class="user-form-field">
+                    <label for="editUserRole" class="user-form-label">
+                        Role
+                        <% if (user.type !== 'customer' && user.type !== 'vendor') { %>
+                            <span class="user-required">*</span>
+                        <% } %>
+                    </label>
+                    <div class="user-input-wrap">
+                        <i class="bi bi-shield-lock user-input-icon"></i>
+                        <select id="editUserRole" class="user-select" name="role_id" <%= user.type === 'customer' || user.type === 'vendor' ? '' : 'required' %>>
+                            <option value="" <%= !user.role_id ? 'selected' : '' %>>No Role</option>
+                            <% roles.forEach(role => { %>
+                                <option value="<%= role.id %>" <%= user.role_id === role.id ? 'selected' : '' %>><%= role.name %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="user-form-field full">
+                    <label class="user-form-label">Account Status</label>
+                    <div class="user-status-grid">
+                        <div>
+                            <input class="user-status-input" id="statusActive" type="radio" name="status" value="true" <%= user.status ? 'checked' : '' %>>
+                            <label class="user-status-choice" for="statusActive">
+                                <i class="bi bi-check2-circle"></i>
+                                Active
+                            </label>
+                        </div>
+                        <div>
+                            <input class="user-status-input" id="statusInactive" type="radio" name="status" value="false" <%= !user.status ? 'checked' : '' %>>
+                            <label class="user-status-choice" for="statusInactive">
+                                <i class="bi bi-slash-circle"></i>
+                                Inactive
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="user-form-actions">
+                <a href="<%= usersBackUrl %>" class="user-link-btn">
+                    <i class="bi bi-x-lg"></i>
+                    Cancel
+                </a>
+                <button type="submit" class="user-submit-btn">
+                    <i class="bi bi-check2-circle"></i>
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</section>

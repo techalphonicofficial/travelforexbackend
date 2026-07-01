@@ -6,8 +6,28 @@ class UserService {
     this.roleRepo = roleRepo;
   }
 
-  async getAllUsers() {
-    return this.userRepo.getUsersWithRoles();
+  normalizeUserData(userData = {}, { isCreate = false } = {}) {
+    const normalized = { ...userData };
+
+    if (normalized.phone && !normalized.phone_number) {
+      normalized.phone_number = normalized.phone;
+    }
+    delete normalized.phone;
+
+    if (isCreate && !normalized.type) normalized.type = 'employee';
+    if (normalized.status === 'true') normalized.status = true;
+    if (normalized.status === 'false') normalized.status = false;
+    if (normalized.role_id === '') normalized.role_id = null;
+
+    return normalized;
+  }
+
+  async getAllUsers(filters = {}) {
+    return this.userRepo.getUsersWithRoles(filters);
+  }
+
+  async getUserCountsByType() {
+    return this.userRepo.countByType();
   }
 
   async getCustomers() {
@@ -24,6 +44,7 @@ class UserService {
   }
 
   async createUser(userData) {
+    userData = this.normalizeUserData(userData, { isCreate: true });
     if (userData.password) {
       userData.password = await bcrypt.hash(userData.password, 10);
     }
@@ -31,6 +52,7 @@ class UserService {
   }
 
   async updateUser(id, userData) {
+    userData = this.normalizeUserData(userData);
     // Exclude password from general update if present
     const { password, ...updateData } = userData;
     return this.userRepo.update(id, updateData);

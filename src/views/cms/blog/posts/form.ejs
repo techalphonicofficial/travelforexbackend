@@ -29,7 +29,7 @@
           </div>
           <div class="mb-0">
             <label class="form-label fw-bold">Full Content</label>
-            <textarea name="content" id="editor" class="form-control" rows="15"><%= post ? post.content : '' %></textarea>
+            <textarea name="content" class="form-control rich-editor" rows="15"><%= post ? post.content : '' %></textarea>
           </div>
         </div>
       </div>
@@ -41,10 +41,53 @@
             <label class="form-label fw-bold">Meta Title</label>
             <input type="text" name="meta_title" class="form-control" value="<%= post ? post.meta_title : '' %>">
           </div>
-          <div class="mb-0">
+          <div class="mb-3">
             <label class="form-label fw-bold">Meta Description</label>
             <textarea name="meta_description" class="form-control" rows="3"><%= post ? post.meta_description : '' %></textarea>
           </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Meta Keywords</label>
+            <input type="text" name="meta_keywords" class="form-control" placeholder="comma, separated, keywords" value="<%= post ? post.meta_keywords : '' %>">
+          </div>
+          <div class="mb-0">
+            <label class="form-label fw-bold">Schema Markup (JSON-LD)</label>
+            <textarea name="schema_markup" class="form-control text-monospace" rows="4" placeholder='{"@context": "https://schema.org"...}'><%= post ? post.schema_markup : '' %></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Blog Details Section -->
+      <div class="card tf-form-card mt-4">
+        <div class="tf-form-header d-flex justify-content-between align-items-center">
+          <span>Blog Details (Sections)</span>
+          <button type="button" class="btn btn-sm btn-outline-primary" onclick="addBlogDetail()">+ Add Detail</button>
+        </div>
+        <div class="tf-form-body">
+          <div id="blogDetailsContainer" class="d-flex flex-column gap-3">
+            <% if (post && post.details && post.details.length > 0) { %>
+              <% post.details.forEach((detail, index) => { %>
+                <div class="detail-item border p-3 rounded position-relative">
+                  <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 mt-2 me-2" onclick="this.parentElement.remove()"><i class="bi bi-trash"></i></button>
+                  <div class="mb-2 media-selector-wrap">
+                    <label class="small fw-bold">Image URL</label>
+                    <div class="input-group input-group-sm">
+                      <input type="text" name="details[<%= index %>][image]" class="form-control" value="<%= detail.image || '' %>">
+                      <button type="button" class="btn btn-outline-primary" onclick="openMediaLibrary(this)"><i class="bi bi-folder2-open"></i></button>
+                    </div>
+                  </div>
+                  <div class="mb-2">
+                    <label class="small fw-bold">Alt Text</label>
+                    <input type="text" name="details[<%= index %>][alt_text]" class="form-control form-control-sm" value="<%= detail.alt_text || '' %>">
+                  </div>
+                  <div class="mb-0">
+                    <label class="small fw-bold">Content</label>
+                    <textarea name="details[<%= index %>][content]" class="form-control form-control-sm detail-content rich-editor" rows="3"><%= detail.content || '' %></textarea>
+                  </div>
+                </div>
+              <% }) %>
+            <% } %>
+          </div>
+          <input type="hidden" name="parsed_details" id="parsedDetailsInput">
         </div>
       </div>
     </div>
@@ -64,10 +107,27 @@
             </select>
           </div>
           <div class="mb-4">
+            <label class="form-label fw-bold">Author (Employee)</label>
+            <select name="author_id" class="form-select">
+              <option value="">Select Author</option>
+              <% if (typeof employees !== 'undefined') { %>
+                <% employees.forEach(emp => { %>
+                  <option value="<%= emp.id %>" <%= post && post.author_id === emp.id ? 'selected' : '' %>><%= emp.name %> (<%= emp.email %>)</option>
+                <% }) %>
+              <% } %>
+            </select>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-bold">Publish Date</label>
+            <input type="date" name="published_at" class="form-control" value="<%= post && post.published_at ? new Date(post.published_at).toISOString().split('T')[0] : '' %>">
+          </div>
+          <div class="mb-4">
             <label class="form-label fw-bold">Status</label>
             <select name="status" class="form-select">
               <option value="draft" <%= post && post.status === 'draft' ? 'selected' : '' %>>Draft</option>
               <option value="published" <%= post && post.status === 'published' ? 'selected' : '' %>>Published</option>
+              <option value="active" <%= post && post.status === 'active' ? 'selected' : '' %>>Active</option>
+              <option value="inactive" <%= post && post.status === 'inactive' ? 'selected' : '' %>>Inactive</option>
               <option value="scheduled" <%= post && post.status === 'scheduled' ? 'selected' : '' %>>Scheduled</option>
             </select>
           </div>
@@ -110,6 +170,78 @@
 </form>
 
 <script>
+  let detailCount = <%= post && post.details ? post.details.length : 0 %>;
+
+  function addBlogDetail() {
+    const container = document.getElementById('blogDetailsContainer');
+    const html = `
+      <div class="detail-item border p-3 rounded position-relative">
+        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 mt-2 me-2" onclick="this.parentElement.remove()"><i class="bi bi-trash"></i></button>
+        <div class="mb-2 media-selector-wrap">
+          <label class="small fw-bold">Image URL</label>
+          <div class="input-group input-group-sm">
+            <input type="text" name="details[${detailCount}][image]" class="form-control" placeholder="URL">
+            <button type="button" class="btn btn-outline-primary" onclick="openMediaLibrary(this)"><i class="bi bi-folder2-open"></i></button>
+          </div>
+        </div>
+        <div class="mb-2">
+          <label class="small fw-bold">Alt Text</label>
+          <input type="text" name="details[${detailCount}][alt_text]" class="form-control form-control-sm" placeholder="Alt text">
+        </div>
+        <div class="mb-0">
+          <label class="small fw-bold">Content</label>
+          <textarea name="details[${detailCount}][content]" class="form-control form-control-sm detail-content rich-editor" rows="3" placeholder="HTML content..."></textarea>
+        </div>
+      </div>
+    `;
+    container.insertAdjacentHTML('beforeend', html);
+    
+    // Initialize CKEditor on the newly added rich-editor
+    const newTextarea = container.lastElementChild.querySelector('.rich-editor');
+    if (newTextarea) {
+      ClassicEditor.create(newTextarea).then(editor => {
+        newTextarea.ckeditorInstance = editor;
+      }).catch(err => console.error(err));
+    }
+    
+    detailCount++;
+  }
+
+  document.querySelector('form').addEventListener('submit', function(e) {
+    // Sync CKEditor data to underlying textareas before processing details
+    document.querySelectorAll('.rich-editor').forEach(textarea => {
+      if (textarea.ckeditorInstance) {
+        textarea.value = textarea.ckeditorInstance.getData();
+      }
+    });
+
+    const details = [];
+    document.querySelectorAll('.detail-item').forEach(item => {
+      details.push({
+        image: item.querySelector('input[name*="[image]"]').value,
+        alt_text: item.querySelector('input[name*="[alt_text]"]').value,
+        content: item.querySelector('textarea[name*="[content]"]').value
+      });
+    });
+    document.getElementById('parsedDetailsInput').value = JSON.stringify(details);
+  });
+</script>
+
+<!-- CKEditor Script -->
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll('.rich-editor').forEach(textarea => {
+      ClassicEditor.create(textarea).then(editor => {
+        textarea.ckeditorInstance = editor;
+      }).catch(error => {
+        console.error(error);
+      });
+    });
+  });
+</script>
+
+<script>
   function previewImage(input) {
     if (input.files && input.files[0]) {
       const reader = new FileReader();
@@ -128,3 +260,91 @@
   .tf-form-header { background: #f8fafc; padding: 1rem 1.25rem; font-weight: 700; color: #1e1e4a; border-bottom: 1px solid rgba(0,0,0,0.05); }
   .tf-form-body { padding: 1.5rem; }
 </style>
+
+<!-- Media Library Modal -->
+<div class="modal fade" id="mediaLibraryModal" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-light border-bottom d-flex justify-content-between">
+        <h5 class="modal-title fw-bold"><i class="bi bi-images text-primary me-2"></i> Media Library</h5>
+        <div class="d-flex gap-2">
+          <input type="file" id="modalUploadInput" class="d-none" accept="image/*,video/*" onchange="uploadFromModal(this)">
+          <button type="button" class="btn btn-sm btn-primary" onclick="document.getElementById('modalUploadInput').click()">
+            <i class="bi bi-upload me-1"></i> Upload New
+          </button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+      </div>
+      <div class="modal-body p-4">
+        <div id="mediaGrid" class="row g-3">
+          <!-- Loaded via JS -->
+        </div>
+      </div>
+      <div class="modal-footer bg-light border-top">
+        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let activeMediaTarget = null;
+  function openMediaLibrary(btn) {
+    activeMediaTarget = btn.closest('.media-selector-wrap') || btn.parentElement;
+    const modal = new bootstrap.Modal(document.getElementById('mediaLibraryModal'));
+    loadMediaLibrary();
+    modal.show();
+  }
+
+  async function loadMediaLibrary() {
+    const container = document.getElementById('mediaGrid');
+    container.innerHTML = '<div class="text-center py-5 w-100"><div class="spinner-border text-primary"></div></div>';
+    try {
+      const res = await fetch('/cms/media/all');
+      const result = await res.json();
+      if (result.success) {
+        container.innerHTML = result.data.map(m => {
+          const isVideo = m.url && m.url.match(/\.(mp4|webm|ogg|mov|avi)$/i);
+          return `
+          <div class="col-md-3 col-6 mb-3">
+            <div class="media-item border rounded-3 p-1 position-relative" style="cursor:pointer" onclick="selectMedia('${m.url}')">
+              ${isVideo 
+                ? `<video src="${m.url}" style="height:100px; width:100%; object-fit:cover; background:#000;" class="rounded-2" muted></video><div style="position:absolute; top:5px; right:5px; background:rgba(0,0,0,0.5); color:#fff; border-radius:4px; padding:2px 5px; font-size:10px;"><i class="bi bi-camera-video"></i></div>` 
+                : `<img src="${m.url}" class="img-fluid rounded-2" style="height:100px; width:100%; object-fit:cover;">`}
+              <div class="media-info small text-truncate mt-1 px-1">${m.label || 'Unnamed'}</div>
+            </div>
+          </div>
+        `}).join('');
+      }
+    } catch (e) {
+      container.innerHTML = '<div class="alert alert-danger">Failed to load media</div>';
+    }
+  }
+
+  function selectMedia(url) {
+    const input = activeMediaTarget.querySelector('input[type="text"]');
+    if (input) input.value = url;
+    bootstrap.Modal.getInstance(document.getElementById('mediaLibraryModal')).hide();
+  }
+
+  async function uploadFromModal(input) {
+    if (!input.files || !input.files[0]) return;
+    const formData = new FormData();
+    formData.append('media', input.files[0]);
+    formData.append('entity_type', 'blog_post');
+
+    try {
+      const res = await fetch('/cms/media/upload', { method: 'POST', body: formData });
+      const result = await res.json();
+      if (result.success) {
+        loadMediaLibrary(); // Refresh grid
+      } else {
+        alert(result.message);
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Upload failed');
+    }
+    input.value = ''; // Reset
+  }
+</script>

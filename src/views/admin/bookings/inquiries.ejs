@@ -1,0 +1,565 @@
+<%- contentFor('body') %>
+
+<%
+const statuses = ['new', 'contacted', 'quoted', 'converted', 'cancelled'];
+const statusStyle = {
+  new: 'background:#e0f2fe;color:#0369a1;',
+  contacted: 'background:#eef2ff;color:#4f46e5;',
+  quoted: 'background:#fef3c7;color:#92400e;',
+  converted: 'background:#dcfce7;color:#166534;',
+  cancelled: 'background:#fee2e2;color:#991b1b;'
+};
+const totalPagesSafe = Math.max(1, totalPages || 1);
+const selectedLimit = limit || 10;
+const startItem = totalInquiries ? ((currentPage - 1) * selectedLimit) + 1 : 0;
+const endItem = Math.min(currentPage * selectedLimit, totalInquiries || 0);
+const pageItems = [];
+for (let pageNo = 1; pageNo <= totalPagesSafe; pageNo++) {
+  if (pageNo === 1 || pageNo === totalPagesSafe || Math.abs(pageNo - currentPage) <= 1) {
+    pageItems.push(pageNo);
+  } else if (pageItems[pageItems.length - 1] !== '...') {
+    pageItems.push('...');
+  }
+}
+const pageUrl = (pageNo) => `/admin/bookings/inquiries?page=${pageNo}&limit=${selectedLimit}&search=${encodeURIComponent(searchQuery || '')}&status=${encodeURIComponent(statusFilter || '')}`;
+const getRoomCount = (inquiry) => {
+  if (inquiry && inquiry.raw_payload && inquiry.raw_payload.room_count) return parseInt(inquiry.raw_payload.room_count, 10) || 0;
+  const rooms = Array.isArray(inquiry.rooms) ? inquiry.rooms : [];
+  return rooms.reduce((sum, room) => sum + (parseInt(room.room_count, 10) || 1), 0);
+};
+%>
+
+<style>
+  .inquiry-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .inquiry-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .inquiry-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #111827;
+    margin: 0;
+  }
+
+  .inquiry-muted {
+    color: #64748b;
+    font-size: 0.88rem;
+    margin: 0.15rem 0 0;
+  }
+
+  .booking-tabs {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #eef2ff;
+    padding: 0.28rem;
+    border-radius: 10px;
+  }
+
+  .booking-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.48rem 0.85rem;
+    color: #4f46e5;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 0.86rem;
+    font-weight: 700;
+  }
+
+  .booking-tab.active {
+    background: #fff;
+    color: #1e1b4b;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.12);
+  }
+
+  .inquiry-create-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    border-radius: 10px;
+    background: #4f46e5;
+    color: #fff;
+    padding: 0.68rem 1rem;
+    font-size: 0.88rem;
+    font-weight: 800;
+    text-decoration: none;
+    box-shadow: 0 8px 20px rgba(79, 70, 229, 0.22);
+  }
+
+  .inquiry-create-btn:hover {
+    background: #4338ca;
+    color: #fff;
+  }
+
+  .inquiry-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.8rem;
+  }
+
+  .inquiry-stat {
+    background: #fff;
+    border: 1px solid #eef2ff;
+    border-radius: 12px;
+    padding: 0.95rem 1rem;
+    box-shadow: 0 4px 16px rgba(79, 70, 229, 0.06);
+  }
+
+  .inquiry-stat-label {
+    color: #64748b;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .inquiry-stat-value {
+    color: #111827;
+    font-size: 1.45rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-top: 0.4rem;
+  }
+
+  .inquiry-toolbar {
+    background: #fff;
+    border: 1px solid #eef2ff;
+    border-radius: 12px;
+    padding: 0.9rem;
+    box-shadow: 0 4px 16px rgba(79, 70, 229, 0.06);
+  }
+
+  .inquiry-toolbar form {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin: 0;
+  }
+
+  .inquiry-search {
+    position: relative;
+    min-width: min(320px, 100%);
+  }
+
+  .inquiry-search i {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+  }
+
+  .inquiry-search input {
+    width: 100%;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.58rem 0.75rem 0.58rem 2.2rem;
+    outline: none;
+  }
+
+  .inquiry-select {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.58rem 0.75rem;
+    background: #fff;
+    color: #334155;
+  }
+
+  .inquiry-btn {
+    border: 0;
+    border-radius: 10px;
+    background: #4f46e5;
+    color: #fff;
+    padding: 0.62rem 1rem;
+    font-weight: 700;
+  }
+
+  .inquiry-table-wrap {
+    background: #fff;
+    border: 1px solid #eef2ff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(79, 70, 229, 0.07);
+  }
+
+  .inquiry-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .inquiry-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.74rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid #eef2ff;
+  }
+
+  .inquiry-table td {
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    font-size: 0.88rem;
+    vertical-align: top;
+  }
+
+  .inquiry-table tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .customer-main {
+    font-weight: 800;
+    color: #111827;
+  }
+
+  .customer-sub,
+  .trip-sub {
+    color: #64748b;
+    font-size: 0.78rem;
+    margin-top: 0.2rem;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.25rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: capitalize;
+  }
+
+  .tiny-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #475569;
+    padding: 0.22rem 0.55rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin: 0.12rem;
+  }
+
+  .detail-toggle {
+    color: #4f46e5;
+    cursor: pointer;
+    font-weight: 800;
+    font-size: 0.78rem;
+  }
+
+  .payload-box {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 0.9rem;
+    max-height: 260px;
+    overflow: auto;
+    font-size: 0.75rem;
+    margin-top: 0.7rem;
+  }
+
+  .status-form {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .status-form select {
+    width: 125px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.38rem 0.45rem;
+    font-size: 0.8rem;
+  }
+
+  .status-form button {
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 8px;
+    background: #eef2ff;
+    color: #4f46e5;
+  }
+
+  .action-stack {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .action-btn {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    text-decoration: none;
+    border: 1px solid #dbeafe;
+    background: #eff6ff;
+    color: #2563eb;
+  }
+
+  .action-btn:hover {
+    background: #2563eb;
+    color: #fff;
+  }
+
+  .action-btn.create-booking {
+    background: #f5f3ff;
+    border-color: #ddd6fe;
+    color: #7c3aed;
+  }
+
+  .action-btn.create-booking:hover {
+    background: #7c3aed;
+    border-color: #7c3aed;
+    color: #fff;
+  }
+
+  .pagination-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    background: #fff;
+    border: 1px solid #eef2ff;
+    border-radius: 12px;
+    padding: 0.75rem 0.9rem;
+  }
+
+  .pagination-row a,
+  .pagination-row span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #4f46e5;
+    font-weight: 700;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+  }
+
+  .pagination-row span.disabled {
+    color: #94a3b8;
+    background: #f8fafc;
+  }
+
+  .pagination-row span.active {
+    background: #4f46e5;
+    color: #fff;
+    border-color: #4f46e5;
+  }
+
+  @media (max-width: 900px) {
+    .inquiry-table-wrap {
+      overflow-x: auto;
+    }
+
+    .inquiry-table {
+      min-width: 980px;
+    }
+  }
+</style>
+
+<div class="inquiry-shell">
+  <div class="inquiry-header">
+    <div>
+      <h1 class="inquiry-title">Custom Trip Inquiries</h1>
+      <p class="inquiry-muted">Customize-flow requests received from frontend.</p>
+    </div>
+
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="/admin/bookings/package-bookings" class="booking-tab" style="background:#eef2ff;color:#4f46e5;"><i class="bi bi-receipt-cutoff"></i> Package Bookings</a>
+      <a href="/admin/bookings/hotel-bookings" class="booking-tab" style="background:#ecfeff;color:#0e7490;"><i class="bi bi-building"></i> Hotel Bookings</a>
+      <a href="/admin/bookings/create" class="inquiry-create-btn">
+        <i class="bi bi-plus-circle"></i>
+        Create Custom Booking
+      </a>
+    </div>
+  </div>
+
+  <div class="inquiry-stats">
+    <div class="inquiry-stat">
+      <div class="inquiry-stat-label">Total Showing</div>
+      <div class="inquiry-stat-value"><%= totalInquiries || 0 %></div>
+    </div>
+    <% statuses.forEach(statusName => { %>
+      <div class="inquiry-stat">
+        <div class="inquiry-stat-label"><%= statusName %></div>
+        <div class="inquiry-stat-value"><%= statusCounts[statusName] || 0 %></div>
+      </div>
+    <% }) %>
+  </div>
+
+  <div class="inquiry-toolbar">
+    <form method="GET" action="/admin/bookings/inquiries">
+      <div class="inquiry-search">
+        <i class="bi bi-search"></i>
+        <input type="text" name="search" value="<%= searchQuery || '' %>" placeholder="Search customer, email, phone, destination">
+      </div>
+      <select name="status" class="inquiry-select">
+        <option value="">All Statuses</option>
+        <% statuses.forEach(statusName => { %>
+          <option value="<%= statusName %>" <%= statusFilter === statusName ? 'selected' : '' %>><%= statusName %></option>
+        <% }) %>
+      </select>
+      <select name="limit" class="inquiry-select">
+        <% limitOptions.forEach(option => { %>
+          <option value="<%= option %>" <%= selectedLimit === option ? 'selected' : '' %>><%= option %> / page</option>
+        <% }) %>
+      </select>
+      <button class="inquiry-btn" type="submit">Filter</button>
+      <% if (searchQuery || statusFilter) { %>
+        <a href="/admin/bookings/inquiries" class="booking-tab" style="background:#f8fafc;">Clear</a>
+      <% } %>
+    </form>
+  </div>
+
+  <div class="inquiry-table-wrap">
+    <table class="inquiry-table">
+      <thead>
+        <tr>
+          <th>Customer</th>
+          <th>Trip</th>
+          <th>Travellers</th>
+          <th>Rooms & Cities</th>
+          <th>Status</th>
+          <th>Submitted</th>
+          <th>Update</th>
+          <th>View</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (inquiries && inquiries.length) { %>
+          <% inquiries.forEach(inquiry => { %>
+            <tr>
+              <td>
+                <div class="customer-main"><%= inquiry.customer_name || 'Guest Customer' %></div>
+                <div class="customer-sub"><%= inquiry.customer_email || 'No email' %></div>
+                <div class="customer-sub"><%= inquiry.customer_phone || 'No phone' %></div>
+              </td>
+              <td>
+                <div class="customer-main"><%= inquiry.destination %></div>
+                <div class="trip-sub"><%= inquiry.travel_with || 'N/A' %> &middot; <%= inquiry.duration || 'N/A' %></div>
+                <div class="trip-sub"><%= inquiry.departure_city || 'N/A' %> &middot; <%= inquiry.departure_date || 'N/A' %></div>
+              </td>
+              <td>
+                <span class="tiny-pill"><i class="bi bi-people me-1"></i><%= inquiry.total_travellers || 1 %></span>
+              </td>
+              <td>
+                <% const rooms = Array.isArray(inquiry.rooms) ? inquiry.rooms : []; %>
+                <% const cities = Array.isArray(inquiry.cities) ? inquiry.cities : []; %>
+                <div>
+                  <span class="tiny-pill"><%= getRoomCount(inquiry) %> room<%= getRoomCount(inquiry) === 1 ? '' : 's' %></span>
+                  <span class="tiny-pill"><%= cities.length %> cit<%= cities.length === 1 ? 'y' : 'ies' %></span>
+                </div>
+                <% if (cities.length) { %>
+                  <div class="trip-sub"><%= cities.map(city => city.name).filter(Boolean).join(', ') %></div>
+                <% } %>
+                <details>
+                  <summary class="detail-toggle">View payload</summary>
+                  <pre class="payload-box"><%= JSON.stringify(inquiry.raw_payload || {}, null, 2) %></pre>
+                </details>
+              </td>
+              <td>
+                <span class="status-pill" style="<%= statusStyle[inquiry.status] || statusStyle.new %>"><%= inquiry.status %></span>
+              </td>
+              <td>
+                <div><%= new Date(inquiry.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) %></div>
+                <div class="trip-sub"><%= new Date(inquiry.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) %></div>
+              </td>
+              <td>
+                <% if (inquiry.status === 'converted') { %>
+                  <span class="status-pill" style="<%= statusStyle.converted %>">converted</span>
+                  <div class="trip-sub">Frozen</div>
+                <% } else { %>
+                  <form class="status-form" method="POST" action="/admin/bookings/inquiries/<%= inquiry.id %>/status">
+                    <select name="status">
+                      <% statuses.forEach(statusName => { %>
+                        <option value="<%= statusName %>" <%= inquiry.status === statusName ? 'selected' : '' %>><%= statusName %></option>
+                      <% }) %>
+                    </select>
+                    <button type="submit" title="Save status"><i class="bi bi-check-lg"></i></button>
+                  </form>
+                <% } %>
+              </td>
+              <td>
+                <div class="action-stack">
+                  <a href="/admin/bookings/inquiries/<%= inquiry.id %>" class="action-btn" title="View inquiry">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  <% if (inquiry.status !== 'converted') { %>
+                    <a href="/admin/bookings/inquiries/<%= inquiry.id %>/build" class="action-btn create-booking" title="Create custom booking">
+                      <i class="bi bi-magic"></i>
+                    </a>
+                    <a href="/admin/bookings/inquiries/<%= inquiry.id %>/edit" class="action-btn" title="Edit inquiry" style="background: #ecfdf5; border-color: #a7f3d0; color: #059669;">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                  <% } %>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        <% } else { %>
+          <tr>
+            <td colspan="8" class="text-center py-5 text-muted">
+              <i class="bi bi-inbox" style="font-size:2rem;"></i>
+              <div class="mt-2 fw-bold">No custom requests found.</div>
+            </td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <% if (totalInquiries > 0) { %>
+    <div class="pagination-row">
+      <div class="text-muted small">
+        Showing <%= startItem %>-<%= endItem %> of <%= totalInquiries %>
+      </div>
+      <div class="d-flex gap-1">
+        <% if (currentPage > 1) { %>
+          <a href="<%= pageUrl(currentPage - 1) %>" title="Previous"><i class="bi bi-chevron-left"></i></a>
+        <% } else { %>
+          <span class="disabled"><i class="bi bi-chevron-left"></i></span>
+        <% } %>
+
+        <% pageItems.forEach(item => { %>
+          <% if (item === '...') { %>
+            <span class="disabled">...</span>
+          <% } else if (item === currentPage) { %>
+            <span class="active"><%= item %></span>
+          <% } else { %>
+            <a href="<%= pageUrl(item) %>"><%= item %></a>
+          <% } %>
+        <% }) %>
+
+        <% if (currentPage < totalPagesSafe) { %>
+          <a href="<%= pageUrl(currentPage + 1) %>" title="Next"><i class="bi bi-chevron-right"></i></a>
+        <% } else { %>
+          <span class="disabled"><i class="bi bi-chevron-right"></i></span>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+</div>

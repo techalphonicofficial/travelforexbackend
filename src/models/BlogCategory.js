@@ -20,6 +20,26 @@ const BlogCategory = sequelize.define('BlogCategory', {
         type: DataTypes.TEXT,
         allowNull: true
     },
+    image: {
+        type: DataTypes.STRING(255),
+        allowNull: true
+    },
+    image_alt: {
+        type: DataTypes.STRING(255),
+        allowNull: true
+    },
+    meta_title: {
+        type: DataTypes.STRING(255),
+        allowNull: true
+    },
+    meta_description: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
+    meta_keywords: {
+        type: DataTypes.STRING(255),
+        allowNull: true
+    },
     status: {
         type: DataTypes.SMALLINT,
         defaultValue: 1

@@ -1,0 +1,360 @@
+<%
+const activeCount = (forexRates || []).filter(rate => rate.is_active !== false).length;
+const uniqueCodes = new Set((forexRates || []).map(rate => rate.code).filter(Boolean)).size;
+%>
+
+<style>
+  .forex-rate-page {
+    color: #111827;
+  }
+  .rate-panel {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+  }
+  .rate-header {
+    padding: 1.25rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .rate-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .rate-chip {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+  }
+  .rate-chip-label {
+    color: #6b7280;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .rate-chip-value {
+    font-size: 1.35rem;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+  .rate-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .rate-filter {
+    min-width: 190px;
+    border-radius: 6px;
+    border-color: #d1d5db;
+    font-size: 0.86rem;
+  }
+  .rate-table-wrap {
+    overflow-x: auto;
+  }
+  .rate-table {
+    min-width: 860px;
+    margin-bottom: 0;
+  }
+  .rate-table thead th {
+    background: #f8fafc;
+    color: #374151;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 0.75rem;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    padding: 0.85rem 1rem;
+    white-space: nowrap;
+  }
+  .rate-table tbody td {
+    padding: 0.9rem 1rem;
+    border-color: #eef2f7;
+    vertical-align: middle;
+    font-size: 0.88rem;
+  }
+  .code-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #4338ca;
+    font-size: 0.78rem;
+    font-weight: 800;
+    padding: 0.28rem 0.62rem;
+  }
+  .base-pill {
+    background: #ecfdf5;
+    color: #047857;
+  }
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 999px;
+    padding: 0.28rem 0.6rem;
+    font-size: 0.76rem;
+    font-weight: 700;
+  }
+  .status-pill.active {
+    background: #dcfce7;
+    color: #166534;
+  }
+  .status-pill.inactive {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+  .icon-btn {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+  }
+  .empty-state {
+    padding: 2.5rem 1rem;
+    text-align: center;
+    color: #6b7280;
+  }
+</style>
+
+<div class="forex-rate-page">
+  <div class="rate-summary">
+    <div class="rate-chip">
+      <div class="rate-chip-label">Total Rates</div>
+      <div class="rate-chip-value"><%= forexRates.length %></div>
+    </div>
+    <div class="rate-chip">
+      <div class="rate-chip-label">Active</div>
+      <div class="rate-chip-value"><%= activeCount %></div>
+    </div>
+    <div class="rate-chip">
+      <div class="rate-chip-label">Currency Codes</div>
+      <div class="rate-chip-value"><%= uniqueCodes %></div>
+    </div>
+  </div>
+
+  <div class="rate-panel">
+    <div class="rate-header">
+      <div class="rate-toolbar">
+        <div>
+          <h3 class="fw-bold mb-1">Forex Conversion Rates</h3>
+          <p class="text-muted mb-0" style="font-size:0.88rem;">Country-wise currency code and conversion rate records.</p>
+        </div>
+        <button class="btn btn-primary d-inline-flex align-items-center gap-2" type="button" onclick="openCreateRate()">
+          <i class="bi bi-plus-lg"></i>
+          Add Rate
+        </button>
+      </div>
+      <div class="rate-toolbar mt-3">
+        <div class="d-flex flex-wrap gap-2">
+          <div class="position-relative">
+            <i class="bi bi-search position-absolute text-muted" style="left:12px; top:50%; transform:translateY(-50%);"></i>
+            <input id="rateSearch" class="form-control rate-filter ps-5" type="search" placeholder="Search country or code" oninput="filterRates()">
+          </div>
+          <select id="countryFilter" class="form-select rate-filter" onchange="filterRates()">
+            <option value="">All Countries</option>
+            <% countries.forEach(country => { %>
+              <option value="<%= country.id %>"><%= country.name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <span class="text-muted fw-semibold" id="rateCountLabel" style="font-size:0.84rem;"></span>
+      </div>
+    </div>
+
+    <div class="rate-table-wrap">
+      <table class="table rate-table" id="rateTable">
+        <thead>
+          <tr>
+            <th>Country</th>
+            <th>Code</th>
+            <th>Base</th>
+            <th>Conversion Rate</th>
+            <th>Status</th>
+            <th>Notes</th>
+            <th class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (!forexRates.length) { %>
+            <tr>
+              <td colspan="7">
+                <div class="empty-state">
+                  <i class="bi bi-currency-exchange d-block mb-2" style="font-size:2rem;"></i>
+                  No forex conversion rates created yet.
+                </div>
+              </td>
+            </tr>
+          <% } %>
+          <% forexRates.forEach(rate => { %>
+            <tr class="rate-row"
+              data-country-id="<%= rate.country_id %>"
+              data-search="<%= [rate.country && rate.country.name, rate.code, rate.base_code, rate.notes].filter(Boolean).join(' ').toLowerCase() %>">
+              <td>
+                <div class="fw-bold"><%= rate.country ? rate.country.name : 'Unknown country' %></div>
+                <% if (rate.country && rate.country.continent) { %>
+                  <div class="text-muted" style="font-size:0.78rem;"><%= rate.country.continent.name %></div>
+                <% } %>
+              </td>
+              <td><span class="code-pill"><%= rate.code %></span></td>
+              <td><span class="code-pill base-pill"><%= rate.base_code || 'INR' %></span></td>
+              <td class="fw-bold"><%= Number(rate.conversion_rate || 0).toFixed(6) %></td>
+              <td>
+                <span class="status-pill <%= rate.is_active === false ? 'inactive' : 'active' %>">
+                  <i class="bi <%= rate.is_active === false ? 'bi-circle' : 'bi-check-circle-fill' %>"></i>
+                  <%= rate.is_active === false ? 'Inactive' : 'Active' %>
+                </span>
+              </td>
+              <td class="text-muted"><%= rate.notes || '-' %></td>
+              <td class="text-end">
+                <button
+                  type="button"
+                  class="btn btn-outline-primary btn-sm icon-btn me-1"
+                  title="Edit rate"
+                  data-id="<%= rate.id %>"
+                  data-country-id="<%= rate.country_id %>"
+                  data-code="<%= rate.code %>"
+                  data-base-code="<%= rate.base_code || 'INR' %>"
+                  data-conversion-rate="<%= rate.conversion_rate %>"
+                  data-active="<%= rate.is_active === false ? '0' : '1' %>"
+                  data-notes="<%= rate.notes || '' %>"
+                  onclick="openEditRate(this)">
+                  <i class="bi bi-pencil-square"></i>
+                </button>
+                <form action="/travel/forex-rates/<%= rate.id %>/delete" method="POST" class="d-inline" onsubmit="return confirm('Delete this forex rate?')">
+                  <button type="submit" class="btn btn-outline-danger btn-sm icon-btn" title="Delete rate">
+                    <i class="bi bi-trash3"></i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="rateModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content" style="border-radius:8px;">
+      <form action="/travel/forex-rates/save" method="POST">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="rateModalTitle">Add Forex Rate</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="id" id="rateId">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Country</label>
+              <select class="form-select" name="country_id" id="rateCountry" required>
+                <option value="">Select country</option>
+                <% countries.forEach(country => { %>
+                  <option value="<%= country.id %>"><%= country.name %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Code</label>
+              <input class="form-control text-uppercase" name="code" id="rateCode" maxlength="10" placeholder="USD" required>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Base Code</label>
+              <input class="form-control text-uppercase" name="base_code" id="rateBaseCode" maxlength="10" value="INR" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Conversion Rate</label>
+              <input class="form-control" name="conversion_rate" id="rateConversionRate" type="number" min="0" step="0.000001" placeholder="83.500000" required>
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+              <div class="form-check form-switch pb-2">
+                <input type="hidden" name="is_active" id="rateActiveValue" value="1">
+                <input class="form-check-input" type="checkbox" role="switch" id="rateActive" checked>
+                <label class="form-check-label fw-semibold" for="rateActive">Active</label>
+              </div>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Notes</label>
+              <textarea class="form-control" name="notes" id="rateNotes" rows="3" maxlength="255" placeholder="Optional admin notes"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-2">
+            <i class="bi bi-save"></i>
+            Save Rate
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  const rateModalElement = document.getElementById('rateModal');
+  const rateModal = rateModalElement ? new bootstrap.Modal(rateModalElement) : null;
+
+  function openCreateRate() {
+    document.getElementById('rateModalTitle').textContent = 'Add Forex Rate';
+    document.getElementById('rateId').value = '';
+    document.getElementById('rateCountry').value = '';
+    document.getElementById('rateCode').value = '';
+    document.getElementById('rateBaseCode').value = 'INR';
+    document.getElementById('rateConversionRate').value = '';
+    document.getElementById('rateActive').checked = true;
+    syncActiveValue();
+    document.getElementById('rateNotes').value = '';
+    rateModal.show();
+  }
+
+  function openEditRate(button) {
+    document.getElementById('rateModalTitle').textContent = 'Edit Forex Rate';
+    document.getElementById('rateId').value = button.dataset.id || '';
+    document.getElementById('rateCountry').value = button.dataset.countryId || '';
+    document.getElementById('rateCode').value = button.dataset.code || '';
+    document.getElementById('rateBaseCode').value = button.dataset.baseCode || 'INR';
+    document.getElementById('rateConversionRate').value = button.dataset.conversionRate || '';
+    document.getElementById('rateActive').checked = button.dataset.active !== '0';
+    syncActiveValue();
+    document.getElementById('rateNotes').value = button.dataset.notes || '';
+    rateModal.show();
+  }
+
+  function syncActiveValue() {
+    document.getElementById('rateActiveValue').value = document.getElementById('rateActive').checked ? '1' : '0';
+  }
+
+  function filterRates() {
+    const search = document.getElementById('rateSearch').value.trim().toLowerCase();
+    const countryId = document.getElementById('countryFilter').value;
+    const rows = Array.from(document.querySelectorAll('.rate-row'));
+    let visible = 0;
+
+    rows.forEach(row => {
+      const matchesSearch = !search || row.dataset.search.includes(search);
+      const matchesCountry = !countryId || row.dataset.countryId === countryId;
+      const show = matchesSearch && matchesCountry;
+      row.style.display = show ? '' : 'none';
+      if (show) visible += 1;
+    });
+
+    const label = document.getElementById('rateCountLabel');
+    if (label) label.textContent = rows.length ? visible + ' of ' + rows.length + ' shown' : '';
+  }
+
+  document.querySelectorAll('#rateCode, #rateBaseCode').forEach(input => {
+    input.addEventListener('input', () => {
+      input.value = input.value.toUpperCase();
+    });
+  });
+  document.getElementById('rateActive').addEventListener('change', syncActiveValue);
+
+  filterRates();
+</script>

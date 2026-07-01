@@ -7,14 +7,38 @@
  *       properties:
  *         id:
  *           type: integer
+ *           description: Auto-incremented ID of the package
  *         name:
  *           type: string
+ *           description: Name of the travel package
  *         price:
  *           type: number
+ *           description: Price of the package
  *         duration_days:
  *           type: integer
+ *           description: Number of days of the package duration
+ *         status:
+ *           type: boolean
+ *           description: Active status of the package
+ *         show_in_home_page:
+ *           type: boolean
+ *           description: Whether the package should be displayed on the home page
+ *         description:
+ *           type: string
+ *           description: Detailed description of the travel package
+ *         vendor_id:
+ *           type: string
+ *           format: uuid
+ *           description: UUID of the vendor that owns this package
+ *         main_image:
+ *           type: string
+ *           description: URL/path to the main display image of the package
+ *         main_image_alt:
+ *           type: string
+ *           description: Alternate descriptive text for the main package image
  *         destinations:
  *           type: array
+ *           description: List of mapped destinations in this package
  *           items:
  *             type: object
  */
@@ -29,6 +53,59 @@ const { repositories: { packageRepo } } = require('../container');
  *   get:
  *     summary: Retrieve all packages
  *     tags: [Packages]
+ *     parameters:
+ *       - in: query
+ *         name: minPrice
+ *         schema:
+ *           type: integer
+ *         description: Minimum price of the package
+ *       - in: query
+ *         name: maxPrice
+ *         schema:
+ *           type: integer
+ *         description: Maximum price of the package
+ *       - in: query
+ *         name: duration
+ *         schema:
+ *           type: integer
+ *         description: Duration in days of the package
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter starting from this date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter ending at this date
+ *       - in: query
+ *         name: city
+ *         schema:
+ *           type: string
+ *         description: City name filter
+ *       - in: query
+ *         name: country
+ *         schema:
+ *           type: string
+ *         description: Country name filter
+ *       - in: query
+ *         name: continent
+ *         schema:
+ *           type: string
+ *         description: Continent name filter
+ *       - in: query
+ *         name: destination
+ *         schema:
+ *           type: string
+ *         description: Destination slug or name filter
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: Category slug or name filter
  *     responses:
  *       200:
  *         description: A list of packages
@@ -46,13 +123,80 @@ const { repositories: { packageRepo } } = require('../container');
  */
 router.get('/', async (req, res) => {
     try {
-        const { minPrice, maxPrice, duration, startDate, endDate } = req.query;
+        const { minPrice, maxPrice, duration, startDate, endDate, city, country, continent, destination, category } = req.query;
         let data;
-        if (minPrice || maxPrice || duration || startDate || endDate) {
-            data = await packageRepo.filterPackages({ minPrice, maxPrice, duration, startDate, endDate });
+        if (minPrice || maxPrice || duration || startDate || endDate || city || country || continent || destination || category) {
+            data = await packageRepo.filterPackages({ minPrice, maxPrice, duration, startDate, endDate, city, country, continent, destination, category });
         } else {
             data = await packageRepo.findAll();
         }
+        res.json({ success: true, data });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+/**
+ * @swagger
+ * /api/v1/packages/filters:
+ *   get:
+ *     summary: Get dynamic package filter metadata
+ *     description: Returns counts and ranges for the package listing sidebar filters.
+ *     tags: [Packages]
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search text for package, destination, city, country, or tour type
+ *       - in: query
+ *         name: tour_type
+ *         schema:
+ *           type: string
+ *         description: Tour type id, slug, or name
+ *       - in: query
+ *         name: minPrice
+ *         schema:
+ *           type: number
+ *         description: Selected minimum package price
+ *       - in: query
+ *         name: maxPrice
+ *         schema:
+ *           type: number
+ *         description: Selected maximum package price
+ *       - in: query
+ *         name: duration
+ *         schema:
+ *           type: string
+ *           enum: [1-3, 4-7, 8-14, 15-plus]
+ *         description: Duration bucket
+ *       - in: query
+ *         name: city
+ *         schema:
+ *           type: string
+ *         description: City filter
+ *       - in: query
+ *         name: country
+ *         schema:
+ *           type: string
+ *         description: Country filter
+ *       - in: query
+ *         name: continent
+ *         schema:
+ *           type: string
+ *         description: Continent filter
+ *       - in: query
+ *         name: destination
+ *         schema:
+ *           type: string
+ *         description: Destination id, slug, or name
+ *     responses:
+ *       200:
+ *         description: Dynamic filter metadata
+ */
+router.get('/filters', async (req, res) => {
+    try {
+        const data = await packageRepo.getDynamicFilters(req.query);
         res.json({ success: true, data });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -98,29 +242,43 @@ router.get('/destination/:slug', async (req, res) => {
 
 /**
  * @swagger
- * /api/v1/packages/{id}:
+ * /api/v1/packages/{slug}:
  *   get:
- *     summary: Get package by ID
+ *     summary: Get package by slug
  *     tags: [Packages]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: slug
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
  *     responses:
  *       200:
  *         description: Package details
  *       404:
  *         description: Package not found
  */
-router.get('/:id', async (req, res) => {
+router.get('/:slug', async (req, res) => {
     try {
-        const data = await packageRepo.findById(req.params.id);
-        if (!data) return res.status(404).json({ success: false, message: 'Not found' });
-        res.json({ success: true, data });
+        const data = await packageRepo.findBySlug(req.params.slug);
+
+        if (!data) {
+            return res.status(404).json({
+                success: false,
+                message: 'Not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data
+        });
+
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
     }
 });
 

@@ -6,51 +6,639 @@
 </div>
 
 <div class="row g-4">
-  <div class="col-md-6">
+  <div class="col-md-8">
     <div class="tf-form-card shadow-sm border-0">
-      <div class="tf-form-header"><i class="bi bi-gear-wide-connected text-primary"></i> Automations & Defaults</div>
-      <div class="tf-form-body">
+      <div class="tf-form-header border-bottom-0 pb-0">
+        <ul class="nav nav-tabs card-header-tabs" id="crmSettingsTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab" aria-controls="general" aria-selected="true">
+              <i class="bi bi-gear-wide-connected me-1"></i> Automations &amp; Defaults
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="mapping-tab" data-bs-toggle="tab" data-bs-target="#mapping" type="button" role="tab" aria-controls="mapping" aria-selected="false">
+              <i class="bi bi-map me-1"></i> Category Mapping
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="api-tab" data-bs-toggle="tab" data-bs-target="#api-integration" type="button" role="tab" aria-controls="api-integration" aria-selected="false">
+              <i class="bi bi-plugin me-1"></i> API Integration
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="forex-tab" data-bs-toggle="tab" data-bs-target="#forex" type="button" role="tab" aria-controls="forex" aria-selected="false">
+              <i class="bi bi-currency-exchange me-1"></i> Forex
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="company-info-tab" data-bs-toggle="tab" data-bs-target="#company-info" type="button" role="tab" aria-controls="company-info" aria-selected="false">
+              <i class="bi bi-info-circle me-1"></i> Company Info
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="theme-colour-tab" data-bs-toggle="tab" data-bs-target="#theme-colour" type="button" role="tab" aria-controls="theme-colour" aria-selected="false">
+              <i class="bi bi-palette me-1"></i> Theme Colour
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="taxes-tab" data-bs-toggle="tab" data-bs-target="#taxes" type="button" role="tab" aria-controls="taxes" aria-selected="false">
+              <i class="bi bi-percent me-1"></i> Taxes
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="cancellation-tab" data-bs-toggle="tab" data-bs-target="#cancellation" type="button" role="tab" aria-controls="cancellation" aria-selected="false">
+              <i class="bi bi-calendar-x me-1"></i> Cancellation
+            </button>
+          </li>
+
+        </ul>
+      </div>
+      <div class="tf-form-body pt-4">
         <form id="crmSettingsForm">
-          <div class="mb-4">
-            <label class="form-label fw-bold">Default Pipeline for New Leads</label>
-            <p class="text-muted small">This pipeline will be pre-selected when creating a new lead manually.</p>
-            <select class="form-select" name="crm_default_pipeline_id">
-              <option value="">-- No Default (Manual Selection) --</option>
-              <% pipelines.forEach(p=> { %>
-                <option value="<%= p.id %>" <%=p.id==defaultPipelineId ? 'selected' : '' %>><%= p.name %>
-                </option>
-                <% }) %>
-            </select>
-          </div>
+          <div class="tab-content" id="crmSettingsTabsContent">
+            
+            <!-- GENERAL TAB -->
+            <div class="tab-pane fade show active" id="general" role="tabpanel" aria-labelledby="general-tab">
+              <div class="mb-4">
+                <label class="form-label fw-bold">Default Assignee for New Leads</label>
+                <p class="text-muted small">New leads (including those from API) will be automatically assigned to this user.</p>
+                <select class="form-select" name="crm_default_assignee_id">
+                  <option value="">-- No Default (Unassigned) --</option>
+                  <% users.forEach(u=> { %>
+                    <option value="<%= u.id %>" <%=u.id==defaultAssigneeId ? 'selected' : '' %>><%= u.name %></option>
+                  <% }) %>
+                </select>
+              </div>
 
-          <div class="mb-4">
-            <label class="form-label fw-bold">Default Assignee for New Leads</label>
-            <p class="text-muted small">New leads (including those from API) will be automatically assigned to this
-              user.</p>
-            <select class="form-select" name="crm_default_assignee_id">
-              <option value="">-- No Default (Unassigned) --</option>
-              <% users.forEach(u=> { %>
-                <option value="<%= u.id %>" <%=u.id==defaultAssigneeId ? 'selected' : '' %>><%= u.name %>
-                </option>
-                <% }) %>
-            </select>
-          </div>
+              <div class="mb-4">
+                <label class="form-label fw-bold">Auto-Assignment Rule</label>
+                <p class="text-muted small">Automatically assign new leads using Round Robin</p>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" name="assignment_type" id="assignManual" value="manual" <%= assignmentType === 'manual' ? 'checked' : '' %>>
+                  <label class="form-check-label" for="assignManual">Manual</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" name="assignment_type" id="assignRR" value="round_robin" <%= assignmentType === 'round_robin' ? 'checked' : '' %>>
+                  <label class="form-check-label" for="assignRR">Round Robin</label>
+                </div>
+              </div>
 
-          <div class="mb-4 opacity-50 pe-none">
-            <label class="form-label fw-bold">Auto-Assignment Rule</label>
-            <p class="text-muted small">Automatically assign new leads using Round Robin [COMING SOON]</p>
-            <div class="form-check form-check-inline">
-              <input class="form-check-input" type="radio" name="assignment_type" id="assignManual" value="manual"
-                checked>
-              <label class="form-check-label" for="assignManual">Manual</label>
+              <div class="mb-4 p-4 rounded-3 border">
+                <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap mb-3">
+                  <div>
+                    <label class="form-label fw-bold mb-1">Partial Booking</label>
+                    <p class="text-muted small mb-0">Allow customers to reserve a booking by paying only a configured percentage.</p>
+                  </div>
+                  <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" role="switch" id="partialBookingToggle"
+                      name="partial_booking_enabled"
+                      <%= partialBookingEnabled === 'true' ? 'checked' : '' %>>
+                    <label class="form-check-label fw-semibold" for="partialBookingToggle">
+                      <%= partialBookingEnabled === 'true' ? 'Enabled' : 'Disabled' %>
+                    </label>
+                  </div>
+                </div>
+                <div class="row g-3 align-items-end">
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold small">Booking Percentage</label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" name="partial_booking_percentage"
+                        min="0" max="100" step="0.01"
+                        value="<%= typeof partialBookingPercentage !== 'undefined' ? partialBookingPercentage : 0 %>">
+                      <span class="input-group-text">%</span>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-text">Example: 25 means customer pays 25% now and balance later.</div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="form-check form-check-inline">
-              <input class="form-check-input" type="radio" name="assignment_type" id="assignRR" value="round_robin">
-              <label class="form-check-label" for="assignRR">Round Robin</label>
+
+            <!-- MAPPING TAB -->
+            <div class="tab-pane fade" id="mapping" role="tabpanel" aria-labelledby="mapping-tab">
+              <div class="mb-4 bg-light p-3 rounded-3 border">
+                <label class="form-label fw-bold text-primary">Global Default Pipeline</label>
+                <p class="text-muted small">All leads will go to this pipeline by default unless a specific category override is added below.</p>
+                <select class="form-select border-primary" name="crm_default_pipeline_id">
+                  <option value="">-- No Default (Manual Selection) --</option>
+                  <% pipelines.forEach(p=> { %>
+                    <option value="<%= p.id %>" <%=p.id==defaultPipelineId ? 'selected' : '' %>><%= p.name %></option>
+                  <% }) %>
+                </select>
+              </div>
+
+              <div class="mb-4 mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <div>
+                    <label class="form-label fw-bold mb-0">Category Overrides</label>
+                    <p class="text-muted small mb-0">Set specific pipelines for certain categories.</p>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-outline-primary fw-bold" id="addMappingBtn">
+                    <i class="bi bi-plus-circle"></i> Add Override
+                  </button>
+                </div>
+                
+                <div class="table-responsive">
+                  <table class="table table-sm align-middle border" id="mappingTable">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Category</th>
+                        <th>Mapped Pipeline</th>
+                        <th class="text-end" style="width: 80px;">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="mappingTableBody">
+                      <!-- Rows dynamically added via JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
+
+            <!-- API INTEGRATION TAB -->
+            <div class="tab-pane fade" id="api-integration" role="tabpanel" aria-labelledby="api-tab">
+
+              <!-- API KEY SECTION -->
+              <div class="mb-4 p-4 rounded-3 border" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #e2e8f0;">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                  <div style="background: #6366f1; border-radius: 8px; padding: 6px 10px;">
+                    <i class="bi bi-key-fill text-white fs-5"></i>
+                  </div>
+                  <div>
+                    <h6 class="mb-0 fw-bold text-white">API Key</h6>
+                    <small style="color: #94a3b8;">3rd party apps use this key to submit leads</small>
+                  </div>
+                </div>
+
+                <% if (crmApiKey) { %>
+                  <div class="input-group mb-3">
+                    <input type="password" id="apiKeyDisplay" class="form-control font-monospace" value="<%= crmApiKey %>" readonly
+                      style="background: #0f172a; border-color: #334155; color: #38bdf8; letter-spacing: 0.05em;">
+                    <button class="btn btn-outline-secondary" type="button" id="toggleKeyBtn" title="Show/Hide">
+                      <i class="bi bi-eye" id="toggleKeyIcon"></i>
+                    </button>
+                    <button class="btn btn-outline-info" type="button" id="copyKeyBtn" title="Copy API Key">
+                      <i class="bi bi-clipboard"></i>
+                    </button>
+                  </div>
+                  <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <button type="button" class="btn btn-sm btn-danger" id="regenKeyBtn">
+                      <i class="bi bi-arrow-repeat me-1"></i>Regenerate Key
+                    </button>
+                    <small style="color: #94a3b8;"><i class="bi bi-info-circle me-1"></i>Regenerating will invalidate the current key immediately.</small>
+                  </div>
+                <% } else { %>
+                  <div class="text-center py-3">
+                    <div style="color: #94a3b8;" class="mb-3">
+                      <i class="bi bi-shield-lock fs-3 d-block mb-2"></i>
+                      No API key generated yet. Generate one to enable 3rd party integrations.
+                    </div>
+                    <button type="button" class="btn btn-primary" id="regenKeyBtn">
+                      <i class="bi bi-plus-circle me-1"></i>Generate API Key
+                    </button>
+                  </div>
+                <% } %>
+              </div>
+
+              <!-- WEBHOOK SECTION -->
+              <div class="mb-4 p-4 rounded-3 border">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                  <div class="d-flex align-items-center gap-2">
+                    <div style="background: #0ea5e9; border-radius: 8px; padding: 6px 10px;">
+                      <i class="bi bi-broadcast text-white fs-5"></i>
+                    </div>
+                    <div>
+                      <h6 class="mb-0 fw-bold">Webhook</h6>
+                      <small class="text-muted">Notify a URL when a new lead is created</small>
+                    </div>
+                  </div>
+                  <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" role="switch" id="webhookEnabledToggle"
+                      name="crm_webhook_enabled"
+                      <%= crmWebhookEnabled === 'true' ? 'checked' : '' %>>
+                    <label class="form-check-label fw-semibold" for="webhookEnabledToggle">
+                      <%= crmWebhookEnabled === 'true' ? 'Enabled' : 'Disabled' %>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label fw-semibold small">Webhook URL</label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+                    <input type="url" class="form-control" name="crm_webhook_url" id="webhookUrlInput"
+                      placeholder="https://your-app.com/webhook/lead"
+                      value="<%= crmWebhookUrl %>">
+                    <button type="button" class="btn btn-outline-primary" id="testWebhookBtn">
+                      <i class="bi bi-send me-1"></i>Test
+                    </button>
+                  </div>
+                  <div class="form-text">A POST request will be sent to this URL with lead details as JSON.</div>
+                </div>
+
+                <div id="webhookTestResult" class="mt-2" style="display:none;"></div>
+              </div>
+
+              <!-- LIVE API DOCS SECTION -->
+              <div class="mb-2 p-4 rounded-3 border">
+                <div class="d-flex align-items-center gap-2 mb-4">
+                  <div style="background: #10b981; border-radius: 8px; padding: 6px 10px;">
+                    <i class="bi bi-code-slash text-white fs-5"></i>
+                  </div>
+                  <div>
+                    <h6 class="mb-0 fw-bold">API Documentation</h6>
+                    <small class="text-muted">Send leads from your website or 3rd party apps</small>
+                  </div>
+                </div>
+
+                <!-- Base URL -->
+                <div class="mb-4">
+                  <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="fw-semibold small text-muted text-uppercase" style="letter-spacing:.05em;">Base URL</span>
+                    <button type="button" class="btn btn-link btn-sm p-0 text-muted" onclick="copyCode('baseUrlCode')"><i class="bi bi-clipboard"></i></button>
+                  </div>
+                  <div class="rounded-3 p-3 font-monospace" style="background: #f8fafc; border: 1px solid #e2e8f0; font-size: 0.82rem;">
+                    <span id="baseUrlCode" class="text-success fw-bold" data-base-url></span>
+                  </div>
+                </div>
+
+                <!-- Endpoint 1: List Pipelines -->
+                <div class="mb-4">
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-primary">GET</span>
+                    <code class="small">/api/v1/crm/pipelines</code>
+                    <span class="text-muted small">— List available pipelines</span>
+                  </div>
+                  <div class="rounded-3 p-3 position-relative" style="background: #1e293b; font-size: 0.78rem;">
+                    <button type="button" class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2" onclick="copyCode('ep1Code')" style="font-size:0.7rem;"><i class="bi bi-clipboard"></i></button>
+                    <pre class="mb-0 text-info" id="ep1Code"></pre>
+                  </div>
+                </div>
+
+                <!-- Endpoint 2: Submit Lead -->
+                <div class="mb-4">
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-success">POST</span>
+                    <code class="small">/api/v1/crm/leads/submit</code>
+                    <span class="text-muted small">— Submit a new lead</span>
+                  </div>
+                  <div class="rounded-3 p-3 position-relative" style="background: #1e293b; font-size: 0.78rem;">
+                    <button type="button" class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2" onclick="copyCode('ep2Code')" style="font-size:0.7rem;"><i class="bi bi-clipboard"></i></button>
+                    <pre class="mb-0 text-info" id="ep2Code"></pre>
+                  </div>
+                </div>
+
+                <!-- Endpoint 3: Partial Booking Settings -->
+                <div class="mb-4">
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-primary">GET</span>
+                    <code class="small">/api/v1/crm/settings/partial-booking</code>
+                    <span class="text-muted small">- Get partial booking flag and percentage</span>
+                  </div>
+                  <div class="rounded-3 p-3 position-relative" style="background: #1e293b; font-size: 0.78rem;">
+                    <button type="button" class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2" onclick="copyCode('ep3Code')" style="font-size:0.7rem;"><i class="bi bi-clipboard"></i></button>
+                    <pre class="mb-0 text-info" id="ep3Code"></pre>
+                  </div>
+                </div>
+
+                <!-- Endpoint 4: Theme Colours -->
+                <div class="mb-4">
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-primary">GET</span>
+                    <code class="small">/api/v1/crm/settings/theme-colours</code>
+                    <span class="text-muted small">- Get theme colour CSS variables</span>
+                  </div>
+                  <div class="rounded-3 p-3 position-relative" style="background: #1e293b; font-size: 0.78rem;">
+                    <button type="button" class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2" onclick="copyCode('ep4Code')" style="font-size:0.7rem;"><i class="bi bi-clipboard"></i></button>
+                    <pre class="mb-0 text-info" id="ep4Code"></pre>
+                  </div>
+                </div>
+
+                <!-- Response -->
+                <div class="mb-2">
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge" style="background:#6366f1;">201</span>
+                    <span class="text-muted small">— Success Response</span>
+                  </div>
+                  <div class="rounded-3 p-3" style="background: #1e293b; font-size: 0.78rem;">
+                    <pre class="mb-0 text-success">{
+  "success": true,
+  "message": "Lead captured successfully",
+  "data": { "id": 42 }
+}</pre>
+                  </div>
+                </div>
+
+              </div>
+
+            </div><!-- /api-integration -->
+
+            <!-- FOREX TAB -->
+            <div class="tab-pane fade" id="forex" role="tabpanel" aria-labelledby="forex-tab">
+              <div class="mb-4 p-4 rounded-3 border">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                  <div style="background: #0ea5e9; border-radius: 8px; padding: 6px 10px;">
+                    <i class="bi bi-currency-exchange text-white fs-5"></i>
+                  </div>
+                  <div>
+                    <h6 class="mb-0 fw-bold">Forex Service Charge</h6>
+                    <small class="text-muted">Used by the Forex Converter to calculate customer payable amount.</small>
+                  </div>
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold small">Charge Type</label>
+                    <select class="form-select" name="forex_service_charge_type">
+                      <option value="percent" <%= forexServiceChargeType === 'fixed' ? '' : 'selected' %>>Percentage of converted amount</option>
+                      <option value="fixed" <%= forexServiceChargeType === 'fixed' ? 'selected' : '' %>>Fixed INR amount</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold small">Service Charge</label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" name="forex_service_charge_value"
+                        min="0" step="0.01"
+                        value="<%= typeof forexServiceChargeValue !== 'undefined' ? forexServiceChargeValue : 0 %>">
+                      <span class="input-group-text">% / ₹</span>
+                    </div>
+                    <div class="form-text">Example: type Percentage with value 2 means 2% service charge.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- COMPANY INFO TAB -->
+            <div class="tab-pane fade" id="company-info" role="tabpanel" aria-labelledby="company-info-tab">
+              <div class="mb-4">
+                <h6 class="fw-bold"><i class="bi bi-building-fill me-2"></i> Company Profile</h6>
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label fw-bold">Company Name</label>
+                    <input type="text" class="form-control" name="company_name" value="<%= typeof company_name !== 'undefined' ? company_name : '' %>" placeholder="Pick Trails Ltd.">
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-4 mt-4 pt-3 border-top">
+                <h6 class="fw-bold"><i class="bi bi-credit-card me-2"></i> Payment Integration</h6>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold">Razorpay Key ID</label>
+                    <input type="text" class="form-control" name="razorpay_key_id" value="<%= typeof razorpay_key_id !== 'undefined' ? razorpay_key_id : '' %>" placeholder="rzp_test_...">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold">Razorpay Key Secret</label>
+                    <input type="password" class="form-control" name="razorpay_key_secret" value="<%= typeof razorpay_key_secret !== 'undefined' ? razorpay_key_secret : '' %>" placeholder="••••••••••••••••">
+                  </div>
+                </div>
+              </div>
+
+
+
+              <div class="mb-4 mt-4 pt-3 border-top">
+                <h6 class="fw-bold"><i class="bi bi-telephone me-2"></i> Contact Information</h6>
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label fw-bold">Phone Number</label>
+                    <input type="text" class="form-control" name="company_phone" value="<%= typeof company_phone !== 'undefined' ? company_phone : '' %>" placeholder="+91 9876543210">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label fw-bold">WhatsApp Number</label>
+                    <input type="text" class="form-control" name="company_whatsapp" value="<%= typeof company_whatsapp !== 'undefined' ? company_whatsapp : '' %>" placeholder="+91 9876543210">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label fw-bold">Email Address</label>
+                    <input type="email" class="form-control" name="company_email" value="<%= typeof company_email !== 'undefined' ? company_email : '' %>" placeholder="hello@company.com">
+                  </div>
+                </div>
+                
+                <div class="row g-3 mt-2">
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold">Office Address</label>
+                    <textarea class="form-control" name="company_office_address" rows="3" placeholder="106, AGGARWAL BHAWAN..."><%= typeof company_office_address !== 'undefined' ? company_office_address : '' %></textarea>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold">Map Coordinates (or Map Embed URL)</label>
+                    <textarea class="form-control" name="company_map_coordinates" rows="3" placeholder="e.g. 123 Travel Street, New York or iframe code"><%= typeof company_map_coordinates !== 'undefined' ? company_map_coordinates : '' %></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-4 mt-4 pt-3 border-top">
+                <h6 class="fw-bold"><i class="bi bi-share me-2"></i> Social Links</h6>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold">Facebook Link</label>
+                    <input type="url" class="form-control" name="social_facebook" value="<%= typeof social_facebook !== 'undefined' ? social_facebook : '' %>" placeholder="https://facebook.com/...">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold">Twitter Link</label>
+                    <input type="url" class="form-control" name="social_twitter" value="<%= typeof social_twitter !== 'undefined' ? social_twitter : '' %>" placeholder="https://twitter.com/...">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold">YouTube Link</label>
+                    <input type="url" class="form-control" name="social_youtube" value="<%= typeof social_youtube !== 'undefined' ? social_youtube : '' %>" placeholder="https://youtube.com/...">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold">Instagram Link</label>
+                    <input type="url" class="form-control" name="social_instagram" value="<%= typeof social_instagram !== 'undefined' ? social_instagram : '' %>" placeholder="https://instagram.com/...">
+                  </div>
+                </div>
+              </div>
+
+
+            </div><!-- /company-info -->
+
+            <!-- THEME COLOUR TAB -->
+            <div class="tab-pane fade" id="theme-colour" role="tabpanel" aria-labelledby="theme-colour-tab">
+              <%
+                const themeColourDefinitions = Array.isArray(typeof theme_colour_definitions !== 'undefined' ? theme_colour_definitions : null)
+                  ? theme_colour_definitions
+                  : [
+                      { key: 'theme_brand_primary', cssVar: '--brand-primary', label: 'Brand Primary', group: 'Primary Palette', type: 'color', default: '#026eb5' },
+                      { key: 'theme_brand_primary_hover', cssVar: '--brand-primary-hover', label: 'Brand Primary Hover', group: 'Primary Palette', type: 'color', default: '#005f9f' },
+                      { key: 'theme_brand_primary_light', cssVar: '--brand-primary-light', label: 'Brand Primary Light', group: 'Primary Palette', type: 'color', default: '#c5e5fb' },
+                      { key: 'theme_brand_primary_border', cssVar: '--brand-primary-border', label: 'Brand Primary Border', group: 'Primary Palette', type: 'color', default: '#7abfee' },
+                      { key: 'theme_brand_secondary', cssVar: '--brand-secondary', label: 'Brand Secondary', group: 'Primary Palette', type: 'color', default: '#fdce2e' },
+                      { key: 'theme_brand_secondary_hover', cssVar: '--brand-secondary-hover', label: 'Brand Secondary Hover', group: 'Primary Palette', type: 'color', default: '#f6b800' },
+                      { key: 'theme_color_accent', cssVar: '--color-accent', label: 'Accent', group: 'Primary Palette', type: 'color', default: '#00b894' },
+                      { key: 'theme_color_accent_hover', cssVar: '--color-accent-hover', label: 'Accent Hover', group: 'Primary Palette', type: 'color', default: '#00a382' }
+                    ];
+                const themeColours = typeof theme_colours !== 'undefined' && theme_colours ? theme_colours : {};
+                const savedThemeRecords = Array.isArray(typeof theme_themes !== 'undefined' ? theme_themes : null) ? theme_themes : [];
+                const activeThemeId = typeof active_theme_id !== 'undefined' && active_theme_id ? String(active_theme_id) : '';
+                const activeThemeRecord = savedThemeRecords.find(theme => String(theme.id) === activeThemeId) || savedThemeRecords.find(theme => theme.is_active);
+                const activeThemeName = activeThemeRecord ? activeThemeRecord.name : 'Default Theme';
+                const themeDefinitionType = item => item.type === 'css' ? 'css' : 'color';
+                const themeColourValue = item => {
+                  const savedValue = String(themeColours[item.key] || '').trim();
+                  if (themeDefinitionType(item) === 'color') {
+                    return /^#[0-9a-fA-F]{6}$/.test(savedValue) ? savedValue.toLowerCase() : item.default;
+                  }
+                  return savedValue || item.default;
+                };
+                const themeColourGroups = themeColourDefinitions.reduce((groups, item) => {
+                  const groupName = item.group || 'Theme Tokens';
+                  if (!groups[groupName]) groups[groupName] = [];
+                  groups[groupName].push(item);
+                  return groups;
+                }, {});
+              %>
+              <div class="mb-4 p-4 rounded-3 border">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                  <div class="theme-colour-icon" id="themeColourIcon">
+                    <i class="bi bi-palette-fill text-white fs-5"></i>
+                  </div>
+                  <div>
+                    <h6 class="mb-0 fw-bold">Brand Palette</h6>
+                    <small class="text-muted">Theme variables</small>
+                  </div>
+                </div>
+
+                <div class="theme-manager mb-4">
+                  <input type="hidden" name="theme_id" id="themeIdInput" value="<%= activeThemeRecord ? activeThemeRecord.id : '' %>">
+                  <div class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                      <label class="form-label fw-semibold small mb-1">Saved Theme</label>
+                      <select class="form-select form-select-sm" id="themeSelect">
+                        <option value="">Create New Theme</option>
+                        <% savedThemeRecords.forEach(theme => { %>
+                          <option value="<%= theme.id %>" <%= activeThemeRecord && String(theme.id) === String(activeThemeRecord.id) ? 'selected' : '' %>>
+                            <%= theme.name %><%= theme.is_active ? ' (Active)' : '' %>
+                          </option>
+                        <% }) %>
+                      </select>
+                    </div>
+                    <div class="col-md-5">
+                      <label class="form-label fw-semibold small mb-1">Theme Name</label>
+                      <input type="text" class="form-control form-control-sm" name="theme_name" id="themeNameInput" value="<%= activeThemeName %>" maxlength="120" required>
+                    </div>
+                    <div class="col-md-2">
+                      <button type="button" class="btn btn-outline-primary btn-sm w-100" id="newThemeButton">
+                        <i class="bi bi-plus-lg"></i> New
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <% Object.entries(themeColourGroups).forEach(([groupName, groupItems]) => { %>
+                  <div class="theme-token-group">
+                    <div class="theme-token-group-title"><%= groupName %></div>
+                    <div class="row g-3">
+                      <% groupItems.forEach(item => { const value = themeColourValue(item); const isColour = themeDefinitionType(item) === 'color'; %>
+                        <div class="col-md-6">
+                          <label class="form-label fw-semibold small mb-1"><%= item.label %></label>
+                          <% if (isColour) { %>
+                            <div class="theme-colour-field">
+                              <input type="color" class="form-control form-control-color theme-colour-input"
+                                id="<%= item.key %>Color"
+                                name="<%= item.key %>"
+                                data-theme-colour-key="<%= item.key %>"
+                                data-theme-css-var="<%= item.cssVar %>"
+                                value="<%= value %>">
+                              <div class="input-group input-group-sm">
+                                <span class="input-group-text theme-colour-var"><%= item.cssVar %></span>
+                                <input type="text" class="form-control text-uppercase theme-colour-hex"
+                                  data-theme-colour-hex="<%= item.key %>"
+                                  value="<%= value %>"
+                                  maxlength="7"
+                                  pattern="^#[0-9A-Fa-f]{6}$">
+                              </div>
+                            </div>
+                          <% } else { %>
+                            <div class="input-group input-group-sm theme-css-field">
+                              <span class="input-group-text theme-colour-var"><%= item.cssVar %></span>
+                              <input type="text" class="form-control theme-css-value"
+                                name="<%= item.key %>"
+                                data-theme-css-key="<%= item.key %>"
+                                data-theme-css-var="<%= item.cssVar %>"
+                                value="<%= value %>"
+                                maxlength="240">
+                            </div>
+                          <% } %>
+                        </div>
+                      <% }) %>
+                    </div>
+                  </div>
+                  <% }) %>
+              </div>
+
+              <div class="p-4 rounded-3 border theme-colour-preview" id="themeColourPreview">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="theme-colour-dot" id="themeColourDot"></span>
+                    <span class="fw-bold">Preview</span>
+                  </div>
+                  <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="theme-colour-pill" id="themeColourPrimaryPill">Primary</span>
+                    <span class="theme-colour-pill" id="themeColourSecondaryPill">Secondary</span>
+                    <span class="theme-colour-pill" id="themeColourAccentPill">Accent</span>
+                    <button type="button" class="btn btn-primary btn-sm px-4" id="themeColourButton">Save</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAXES TAB -->
+            <div class="tab-pane fade" id="taxes" role="tabpanel" aria-labelledby="taxes-tab">
+              <div class="mb-4">
+                <h6 class="fw-bold"><i class="bi bi-receipt me-2"></i> Tax Types</h6>
+                <p class="text-muted small">Define tax types available as a dropdown when adding taxes to destinations. Each tax type has a name and a default percent.</p>
+                <div class="d-flex justify-content-between mb-2 align-items-center">
+                  <strong>Available Taxes</strong>
+                  <button type="button" class="btn btn-sm btn-outline-primary" onclick="addTaxTypeRow()"><i class="bi bi-plus"></i> Add Tax</button>
+                </div>
+                <div id="tax-types-container" class="d-flex flex-column gap-2">
+                  <div class="row fw-semibold small text-muted px-2 mb-1">
+                    <div class="col-5">Tax Name</div>
+                    <div class="col-5">Default %</div>
+                    <div class="col-2"></div>
+                  </div>
+                </div>
+                <input type="hidden" name="tax_types" id="taxTypesInput">
+              </div>
+            </div>
+
+            <!-- CANCELLATION TAB -->
+            <div class="tab-pane fade" id="cancellation" role="tabpanel" aria-labelledby="cancellation-tab">
+              <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <div>
+                    <h6 class="fw-bold mb-1"><i class="bi bi-calendar-x me-2"></i> Cancellation Rules</h6>
+                    <p class="text-muted small mb-0">Define refund and cancellation percentages based on days before departure.</p>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-outline-primary" onclick="addCancellationRuleRow()">
+                    <i class="bi bi-plus"></i> Add Rule
+                  </button>
+                </div>
+
+                <div class="table-responsive">
+                  <table class="table table-sm align-middle border">
+                    <thead class="table-light">
+                      <tr>
+                        <th style="width:110px;">Min Days</th>
+                        <th style="width:110px;">Max Days</th>
+                        <th style="width:130px;">Refund %</th>
+                        <th style="width:150px;">Cancellation %</th>
+                        <th>Description</th>
+                        <th style="width:90px;">Active</th>
+                        <th class="text-end" style="width:70px;">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="cancellationRulesBody"></tbody>
+                  </table>
+                </div>
+                <input type="hidden" name="cancellation_rules" id="cancellationRulesInput">
+              </div>
+            </div>
+
+
+
           </div>
 
-          <div class="mt-4 pt-3 border-top">
+          <div class="mt-4 pt-3 border-top" id="saveSettingsFooter">
             <button type="button" class="btn btn-primary px-5 rounded-pill fw-bold" id="saveCrmSettingsBtn">
               Save CRM Settings
             </button>
@@ -60,25 +648,26 @@
     </div>
   </div>
 
-  <div class="col-md-6">
+  <div class="col-md-4">
     <div class="tf-form-card shadow-sm border-0 h-100">
-      <div class="tf-form-header"><i class="bi bi-info-circle text-info"></i> Help & Usage</div>
+      <div class="tf-form-header"><i class="bi bi-info-circle text-info"></i> Help &amp; Usage</div>
       <div class="tf-form-body">
         <div class="d-flex flex-column gap-3">
           <div class="p-3 bg-light rounded-3">
             <h6 class="fw-bold"><i class="bi bi-diagram-3 me-2"></i> Pipelines</h6>
-            <p class="small text-muted mb-0">Use the Pipelines section to define your sales funnel. Each stage can have
-              a unique color for the Kanban board.</p>
+            <p class="small text-muted mb-0">Use the Pipelines section to define your sales funnel. Each stage can have a unique color for the Kanban board.</p>
           </div>
           <div class="p-3 bg-light rounded-3">
             <h6 class="fw-bold"><i class="bi bi-ui-checks me-2"></i> Custom Fields</h6>
-            <p class="small text-muted mb-0">The Form Builder allows you to capture specific data (like travel dates or
-              budget) on a per-pipeline basis.</p>
+            <p class="small text-muted mb-0">The Form Builder allows you to capture specific data (like travel dates or budget) on a per-pipeline basis.</p>
           </div>
           <div class="p-3 bg-light rounded-3">
             <h6 class="fw-bold"><i class="bi bi-calendar-event me-2"></i> Follow-ups</h6>
-            <p class="small text-muted mb-0">Never miss a lead! Schedule calls and set reminders directly from the lead
-              detail view.</p>
+            <p class="small text-muted mb-0">Never miss a lead! Schedule calls and set reminders directly from the lead detail view.</p>
+          </div>
+          <div class="p-3 rounded-3 border border-primary-subtle" style="background: #eff6ff;">
+            <h6 class="fw-bold text-primary"><i class="bi bi-plugin me-2"></i> API Integration</h6>
+            <p class="small text-muted mb-0">Generate an API key and share it with 3rd party apps to let them submit leads directly into your CRM pipeline.</p>
           </div>
         </div>
       </div>
@@ -87,12 +676,411 @@
 </div>
 
 <script>
+  const categoriesList = <%- JSON.stringify(categories.map(c => ({id: c.id, name: c.name}))) %>;
+  const pipelinesList = <%- JSON.stringify(pipelines.map(p => ({id: p.id, name: p.name}))) %>;
+  const initialMapping = <%- JSON.stringify(categoryPipelineMapping || {}) %>;
+  const savedApiKey = `<%= crmApiKey %>`;
+  const themeColourDefinitions = <%- JSON.stringify(typeof theme_colour_definitions !== 'undefined' ? theme_colour_definitions : []) %>;
+  const fallbackThemeColourDefinitions = [
+    { key: 'theme_brand_primary', cssVar: '--brand-primary', label: 'Brand Primary', group: 'Primary Palette', type: 'color', default: '#026eb5' },
+    { key: 'theme_brand_primary_hover', cssVar: '--brand-primary-hover', label: 'Brand Primary Hover', group: 'Primary Palette', type: 'color', default: '#005f9f' },
+    { key: 'theme_brand_primary_light', cssVar: '--brand-primary-light', label: 'Brand Primary Light', group: 'Primary Palette', type: 'color', default: '#c5e5fb' },
+    { key: 'theme_brand_primary_border', cssVar: '--brand-primary-border', label: 'Brand Primary Border', group: 'Primary Palette', type: 'color', default: '#7abfee' },
+    { key: 'theme_brand_secondary', cssVar: '--brand-secondary', label: 'Brand Secondary', group: 'Primary Palette', type: 'color', default: '#fdce2e' },
+    { key: 'theme_brand_secondary_hover', cssVar: '--brand-secondary-hover', label: 'Brand Secondary Hover', group: 'Primary Palette', type: 'color', default: '#f6b800' },
+    { key: 'theme_color_accent', cssVar: '--color-accent', label: 'Accent', group: 'Primary Palette', type: 'color', default: '#00b894' },
+    { key: 'theme_color_accent_hover', cssVar: '--color-accent-hover', label: 'Accent Hover', group: 'Primary Palette', type: 'color', default: '#00a382' }
+  ];
+  const activeThemeColourDefinitions = themeColourDefinitions.length ? themeColourDefinitions : fallbackThemeColourDefinitions;
+  const activeThemeCssVars = new Set(activeThemeColourDefinitions.map(item => item.cssVar));
+  const savedThemes = <%- JSON.stringify(typeof theme_themes !== 'undefined' ? theme_themes : []) %>;
+
+  const initialTaxTypes = <%- JSON.stringify(typeof tax_types !== 'undefined' ? tax_types : []) %>;
+  const initialCancellationRules = <%- JSON.stringify(typeof cancellationRules !== 'undefined' ? cancellationRules : []) %>;
+
+  function escapeAttr(value = '') {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function normalizeHexColor(value = '', fallback = '#026eb5') {
+    const raw = String(value || '').trim();
+    const color = raw.startsWith('#') ? raw : `#${raw}`;
+    return /^#[0-9a-f]{6}$/i.test(color) ? color.toLowerCase() : fallback;
+  }
+
+  function normalizeCssValue(value = '', fallback = '') {
+    const raw = String(value || '').trim();
+    if (!raw) return fallback;
+    if (raw.length > 240) return fallback;
+    return /[;{}<>"'`\\]/.test(raw) ? fallback : raw;
+  }
+
+  function hexToRgb(color, fallback = '#026eb5') {
+    const safeColor = normalizeHexColor(color, fallback);
+    return [
+      parseInt(safeColor.slice(1, 3), 16),
+      parseInt(safeColor.slice(3, 5), 16),
+      parseInt(safeColor.slice(5, 7), 16)
+    ];
+  }
+
+  function setThemeVar(name, value) {
+    document.documentElement.style.setProperty(name, value);
+  }
+
+  function setThemeVarDefault(name, value) {
+    if (!activeThemeCssVars.has(name)) setThemeVar(name, value);
+  }
+
+  function getThemeDefaultValues() {
+    return activeThemeColourDefinitions.reduce((acc, item) => {
+      acc[item.key] = item.default;
+      return acc;
+    }, {});
+  }
+
+  function setThemeInputsFromValues(values = {}) {
+    const mergedValues = { ...getThemeDefaultValues(), ...(values || {}) };
+    activeThemeColourDefinitions.forEach(item => {
+      if (item.type === 'css') {
+        const input = document.querySelector(`[data-theme-css-key="${item.key}"]`);
+        if (input) input.value = normalizeCssValue(mergedValues[item.key], item.default);
+        return;
+      }
+
+      const value = normalizeHexColor(mergedValues[item.key], item.default);
+      const colorInput = document.querySelector(`[data-theme-colour-key="${item.key}"]`);
+      const hexInput = document.querySelector(`[data-theme-colour-hex="${item.key}"]`);
+      if (colorInput) colorInput.value = value;
+      if (hexInput) hexInput.value = value.toUpperCase();
+    });
+    applyThemeColoursPreview();
+  }
+
+  function renderThemeOptions(selectedId = '') {
+    const select = document.getElementById('themeSelect');
+    if (!select) return;
+    const normalizedSelectedId = String(selectedId || '');
+    select.innerHTML = `<option value="">Create New Theme</option>${savedThemes.map(theme => {
+      const value = String(theme.id);
+      const selected = value === normalizedSelectedId ? ' selected' : '';
+      const label = `${theme.name}${theme.is_active ? ' (Active)' : ''}`;
+      return `<option value="${escapeAttr(value)}"${selected}>${escapeAttr(label)}</option>`;
+    }).join('')}`;
+  }
+
+  function syncThemeAfterSave(themeId) {
+    if (!themeId) return;
+    const id = Number(themeId);
+    const name = document.getElementById('themeNameInput')?.value.trim() || 'Default Theme';
+    const values = getThemeColoursFromInputs();
+    let theme = savedThemes.find(item => Number(item.id) === id);
+    savedThemes.forEach(item => { item.is_active = Number(item.id) === id; });
+
+    if (theme) {
+      theme.name = name;
+      theme.values = values;
+      theme.is_active = true;
+    } else {
+      theme = { id, name, values, is_active: true };
+      savedThemes.unshift(theme);
+    }
+
+    const themeIdInput = document.getElementById('themeIdInput');
+    if (themeIdInput) themeIdInput.value = id;
+    renderThemeOptions(id);
+  }
+
+  function getThemeColoursFromInputs() {
+    return activeThemeColourDefinitions.reduce((acc, item) => {
+      if (item.type === 'css') {
+        const input = document.querySelector(`[data-theme-css-key="${item.key}"]`);
+        const value = normalizeCssValue(input?.value, item.default);
+        acc[item.key] = value;
+        if (input) input.value = value;
+        return acc;
+      }
+
+      const colorInput = document.querySelector(`[data-theme-colour-key="${item.key}"]`);
+      const hexInput = document.querySelector(`[data-theme-colour-hex="${item.key}"]`);
+      const value = normalizeHexColor(colorInput?.value || hexInput?.value, item.default);
+      acc[item.key] = value;
+      if (colorInput) colorInput.value = value;
+      if (hexInput) hexInput.value = value.toUpperCase();
+      return acc;
+    }, {});
+  }
+
+  function applyThemeColoursPreview() {
+    const colours = getThemeColoursFromInputs();
+    const primaryRgb = hexToRgb(colours.theme_brand_primary).join(', ');
+    const secondaryRgb = hexToRgb(colours.theme_brand_secondary, '#fdce2e').join(', ');
+
+    activeThemeColourDefinitions.forEach(item => {
+      setThemeVar(item.cssVar, colours[item.key]);
+    });
+
+    setThemeVarDefault('--color-primary', 'var(--brand-primary)');
+    setThemeVarDefault('--color-primary-hover', 'var(--brand-primary-hover)');
+    setThemeVarDefault('--color-primary-light', 'var(--brand-primary-light)');
+    setThemeVarDefault('--color-secondary', 'var(--brand-secondary)');
+    setThemeVarDefault('--color-secondary-hover', 'var(--brand-secondary-hover)');
+    setThemeVarDefault('--bs-primary', 'var(--color-primary)');
+    setThemeVarDefault('--bs-secondary', 'var(--color-secondary)');
+    setThemeVarDefault('--bs-link-color', 'var(--color-primary)');
+    setThemeVarDefault('--bs-link-hover-color', 'var(--color-primary-hover)');
+    setThemeVar('--bs-primary-rgb', primaryRgb);
+    setThemeVar('--bs-secondary-rgb', secondaryRgb);
+    setThemeVar('--primary', 'var(--color-primary)');
+    setThemeVar('--primary-hover', 'var(--color-primary-hover)');
+    setThemeVar('--primary-light', 'var(--color-primary-light)');
+    setThemeVar('--secondary', 'var(--color-secondary)');
+    setThemeVar('--secondary-hover', 'var(--color-secondary-hover)');
+    setThemeVar('--accent', 'var(--color-accent)');
+    setThemeVar('--accent-hover', 'var(--color-accent-hover)');
+
+    const icon = document.getElementById('themeColourIcon');
+    const dot = document.getElementById('themeColourDot');
+    const primaryPill = document.getElementById('themeColourPrimaryPill');
+    const secondaryPill = document.getElementById('themeColourSecondaryPill');
+    const accentPill = document.getElementById('themeColourAccentPill');
+    const preview = document.getElementById('themeColourPreview');
+
+    if (icon) icon.style.background = colours.theme_brand_primary;
+    if (dot) dot.style.background = colours.theme_brand_primary;
+    if (primaryPill) styleThemePill(primaryPill, colours.theme_brand_primary, primaryRgb);
+    if (secondaryPill) styleThemePill(secondaryPill, colours.theme_brand_secondary, secondaryRgb);
+    if (accentPill) styleThemePill(accentPill, colours.theme_color_accent, hexToRgb(colours.theme_color_accent, '#00b894').join(', '));
+    if (preview) {
+      preview.style.borderColor = colours.theme_brand_primary_border;
+      preview.style.boxShadow = `0 10px 25px rgba(${primaryRgb}, 0.10)`;
+    }
+  }
+
+  function styleThemePill(element, color, rgb) {
+    element.style.color = color;
+    element.style.background = `rgba(${rgb}, 0.12)`;
+    element.style.borderColor = `rgba(${rgb}, 0.25)`;
+  }
+
+  document.querySelectorAll('[data-theme-colour-key]').forEach(input => {
+    input.addEventListener('input', () => applyThemeColoursPreview());
+  });
+
+  document.querySelectorAll('[data-theme-colour-hex]').forEach(input => {
+    input.addEventListener('input', () => {
+      const key = input.getAttribute('data-theme-colour-hex');
+      const colorInput = document.querySelector(`[data-theme-colour-key="${key}"]`);
+      const raw = input.value.trim();
+      const normalized = raw.startsWith('#') ? raw : `#${raw}`;
+      if (/^#[0-9a-f]{6}$/i.test(normalized)) {
+        if (colorInput) colorInput.value = normalized.toLowerCase();
+        applyThemeColoursPreview();
+      }
+    });
+    input.addEventListener('blur', () => applyThemeColoursPreview());
+  });
+
+  document.querySelectorAll('[data-theme-css-key]').forEach(input => {
+    input.addEventListener('input', () => applyThemeColoursPreview());
+    input.addEventListener('blur', () => applyThemeColoursPreview());
+  });
+
+  document.getElementById('themeSelect')?.addEventListener('change', event => {
+    const selectedId = event.target.value;
+    const selectedTheme = savedThemes.find(theme => String(theme.id) === String(selectedId));
+    const themeIdInput = document.getElementById('themeIdInput');
+    const themeNameInput = document.getElementById('themeNameInput');
+
+    if (themeIdInput) themeIdInput.value = selectedTheme ? selectedTheme.id : '';
+    if (themeNameInput) themeNameInput.value = selectedTheme ? selectedTheme.name : 'New Theme';
+    setThemeInputsFromValues(selectedTheme ? selectedTheme.values : getThemeDefaultValues());
+  });
+
+  document.getElementById('newThemeButton')?.addEventListener('click', () => {
+    const select = document.getElementById('themeSelect');
+    const themeIdInput = document.getElementById('themeIdInput');
+    const themeNameInput = document.getElementById('themeNameInput');
+    if (select) select.value = '';
+    if (themeIdInput) themeIdInput.value = '';
+    if (themeNameInput) {
+      themeNameInput.value = 'New Theme';
+      themeNameInput.focus();
+      themeNameInput.select();
+    }
+  });
+
+  document.getElementById('themeColourButton')?.addEventListener('click', () => {
+    document.getElementById('saveCrmSettingsBtn')?.click();
+  });
+
+  applyThemeColoursPreview();
+
+  // ── Category Mapping ──────────────────────────────────────────
+  const mappingTableBody = document.getElementById('mappingTableBody');
+  const addMappingBtn = document.getElementById('addMappingBtn');
+
+  function createMappingRow(catId = '', pipelineId = '') {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <select class="form-select form-select-sm mapping-category">
+          <option value="">-- Select Category --</option>
+          ${categoriesList.map(c => `<option value="${c.id}" ${c.id == catId ? 'selected' : ''}>${c.name}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <select class="form-select form-select-sm mapping-pipeline">
+          <option value="">-- Select Pipeline --</option>
+          ${pipelinesList.map(p => `<option value="${p.id}" ${p.id == pipelineId ? 'selected' : ''}>${p.name}</option>`).join('')}
+        </select>
+      </td>
+      <td class="text-end">
+        <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove()"><i class="bi bi-trash"></i></button>
+      </td>
+    `;
+    mappingTableBody.appendChild(tr);
+  }
+
+  const existingCatIds = Object.keys(initialMapping);
+  if (existingCatIds.length > 0) {
+    existingCatIds.forEach(catId => createMappingRow(catId, initialMapping[catId]));
+  } else {
+    createMappingRow();
+  }
+
+  addMappingBtn.addEventListener('click', () => createMappingRow());
+
+
+
+  // ── Tax Types Configuration ───────────────────────────────────
+  function addTaxTypeRow(name = '', percent = 0) {
+    const container = document.getElementById('tax-types-container');
+    const row = document.createElement('div');
+    row.className = 'd-flex gap-2 tax-type-row align-items-center bg-white p-2 border rounded';
+    row.innerHTML = `
+      <input type="text" class="form-control form-control-sm tt-name" placeholder="Tax Name (e.g. GST)" value="${name.replace(/"/g, '&quot;')}">
+      <input type="number" step="0.01" class="form-control form-control-sm tt-percent" placeholder="Default %" value="${percent}">
+      <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.tax-type-row').remove()"><i class="bi bi-trash"></i></button>
+    `;
+    container.appendChild(row);
+  }
+
+  if (initialTaxTypes && Array.isArray(initialTaxTypes)) {
+    if (initialTaxTypes.length > 0) {
+      initialTaxTypes.forEach(t => addTaxTypeRow(t.name, t.percent));
+    } else {
+      addTaxTypeRow();
+    }
+  } else {
+    addTaxTypeRow();
+  }
+  
+  function serializeTaxTypes() {
+    const arr = [];
+    document.querySelectorAll('.tax-type-row').forEach(row => {
+      const name = row.querySelector('.tt-name').value.trim();
+      const percent = parseFloat(row.querySelector('.tt-percent').value) || 0;
+      if (name) arr.push({ name, percent });
+    });
+    return arr;
+  }
+
+  // ── Save Settings ─────────────────────────────────────────────
+  function addCancellationRuleRow(rule = {}) {
+    const tbody = document.getElementById('cancellationRulesBody');
+    if (!tbody) return;
+    const tr = document.createElement('tr');
+    tr.className = 'cancellation-rule-row';
+    tr.innerHTML = `
+      <td><input type="number" min="0" step="1" class="form-control form-control-sm cr-min" value="${escapeAttr(rule.min_days_before_departure ?? '')}"></td>
+      <td><input type="number" min="0" step="1" class="form-control form-control-sm cr-max" value="${escapeAttr(rule.max_days_before_departure ?? '')}"></td>
+      <td><input type="number" min="0" max="100" step="0.01" class="form-control form-control-sm cr-refund" value="${escapeAttr(rule.refund_percentage ?? 0)}"></td>
+      <td><input type="number" min="0" max="100" step="0.01" class="form-control form-control-sm cr-cancel" value="${escapeAttr(rule.cancellation_percentage ?? 0)}"></td>
+      <td><input type="text" maxlength="255" class="form-control form-control-sm cr-description" placeholder="e.g. 50% refund if cancelled 7-14 days before departure" value="${escapeAttr(rule.description ?? '')}"></td>
+      <td>
+        <div class="form-check form-switch mb-0">
+          <input class="form-check-input cr-active" type="checkbox" ${rule.is_active === false ? '' : 'checked'}>
+        </div>
+      </td>
+      <td class="text-end">
+        <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove()"><i class="bi bi-trash"></i></button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  function serializeCancellationRules() {
+    const arr = [];
+    document.querySelectorAll('.cancellation-rule-row').forEach(row => {
+      const minDays = parseInt(row.querySelector('.cr-min')?.value, 10);
+      const maxDays = parseInt(row.querySelector('.cr-max')?.value, 10);
+      if (!Number.isInteger(minDays) || !Number.isInteger(maxDays)) return;
+      arr.push({
+        min_days_before_departure: Math.max(minDays, 0),
+        max_days_before_departure: Math.max(maxDays, 0),
+        refund_percentage: parseFloat(row.querySelector('.cr-refund')?.value) || 0,
+        cancellation_percentage: parseFloat(row.querySelector('.cr-cancel')?.value) || 0,
+        description: row.querySelector('.cr-description')?.value.trim() || null,
+        is_active: Boolean(row.querySelector('.cr-active')?.checked)
+      });
+    });
+    return arr;
+  }
+
+  if (initialCancellationRules && Array.isArray(initialCancellationRules) && initialCancellationRules.length) {
+    initialCancellationRules.forEach(rule => addCancellationRuleRow(rule));
+  } else {
+    addCancellationRuleRow({
+      min_days_before_departure: 0,
+      max_days_before_departure: 7,
+      refund_percentage: 0,
+      cancellation_percentage: 100,
+      description: '',
+      is_active: true
+    });
+  }
+
   document.getElementById('saveCrmSettingsBtn').addEventListener('click', async () => {
     const btn = document.getElementById('saveCrmSettingsBtn');
     const form = document.getElementById('crmSettingsForm');
+    
+
+    document.getElementById('taxTypesInput').value = JSON.stringify(serializeTaxTypes());
+    document.getElementById('cancellationRulesInput').value = JSON.stringify(serializeCancellationRules());
+    
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+
     const formData = new FormData(form);
+    const categoryMapping = {};
+    
+    const mappingRows = mappingTableBody.querySelectorAll('tr');
+    mappingRows.forEach(row => {
+      const catSelect = row.querySelector('.mapping-category');
+      const pipSelect = row.querySelector('.mapping-pipeline');
+      if (catSelect && pipSelect && catSelect.value && pipSelect.value) {
+        categoryMapping[catSelect.value] = pipSelect.value;
+      }
+    });
+
+    formData.set('crm_category_pipeline_mapping', JSON.stringify(categoryMapping));
+
     const body = {};
     formData.forEach((value, key) => body[key] = value);
+
+    // Explicitly handle checkboxes that are unchecked
+    const webhookToggle = document.getElementById('webhookEnabledToggle');
+    if (webhookToggle) {
+      body.crm_webhook_enabled = webhookToggle.checked ? 'true' : 'false';
+    }
+    const partialBookingToggle = document.getElementById('partialBookingToggle');
+    if (partialBookingToggle) {
+      body.partial_booking_enabled = partialBookingToggle.checked ? 'true' : 'false';
+    }
 
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Saving...';
@@ -105,16 +1093,292 @@
       });
       const data = await res.json();
       if (data.success) {
-        alert('CRM Settings updated successfully');
-        location.reload();
+        showToast('CRM Settings saved successfully!', 'success');
+        if (data.active_theme_id) syncThemeAfterSave(data.active_theme_id);
+        // Update webhook URL preview
+        const wUrl = document.getElementById('webhookUrlInput')?.value;
+        const wUrlPreview = document.getElementById('webhookUrlPreview');
+        if (wUrl && wUrlPreview) wUrlPreview.textContent = wUrl;
       } else {
-        alert('Error: ' + data.message);
+        showToast('Error: ' + data.message, 'danger');
       }
     } catch (err) {
-      alert('Network error');
+      showToast('Network error', 'danger');
     } finally {
       btn.disabled = false;
       btn.innerHTML = 'Save CRM Settings';
     }
   });
+
+  // ── Webhook toggle label ──────────────────────────────────────
+  const webhookToggle = document.getElementById('webhookEnabledToggle');
+  if (webhookToggle) {
+    webhookToggle.addEventListener('change', function() {
+      this.nextElementSibling.textContent = this.checked ? 'Enabled' : 'Disabled';
+    });
+  }
+
+  const partialBookingToggle = document.getElementById('partialBookingToggle');
+  if (partialBookingToggle) {
+    partialBookingToggle.addEventListener('change', function() {
+      this.nextElementSibling.textContent = this.checked ? 'Enabled' : 'Disabled';
+    });
+  }
+
+  // ── API Key Actions ───────────────────────────────────────────
+  const regenKeyBtn = document.getElementById('regenKeyBtn');
+  if (regenKeyBtn) {
+    regenKeyBtn.addEventListener('click', async () => {
+      const isExisting = savedApiKey && savedApiKey.length > 0;
+      if (isExisting) {
+        if (!confirm('Are you sure? The current key will stop working immediately.')) return;
+      }
+      regenKeyBtn.disabled = true;
+      regenKeyBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Generating...';
+      try {
+        const res = await fetch('/crm/settings/generate-api-key', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast('New API key generated! Page will reload.', 'success');
+          setTimeout(() => location.reload(), 1200);
+        } else {
+          showToast('Error: ' + data.message, 'danger');
+        }
+      } catch (err) {
+        showToast('Network error', 'danger');
+      } finally {
+        regenKeyBtn.disabled = false;
+        regenKeyBtn.innerHTML = isExisting ? '<i class="bi bi-arrow-repeat me-1"></i>Regenerate Key' : '<i class="bi bi-plus-circle me-1"></i>Generate API Key';
+      }
+    });
+  }
+
+  // Toggle show/hide API key
+  const toggleKeyBtn = document.getElementById('toggleKeyBtn');
+  if (toggleKeyBtn) {
+    toggleKeyBtn.addEventListener('click', () => {
+      const inp = document.getElementById('apiKeyDisplay');
+      const icon = document.getElementById('toggleKeyIcon');
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        icon.className = 'bi bi-eye-slash';
+      } else {
+        inp.type = 'password';
+        icon.className = 'bi bi-eye';
+      }
+    });
+  }
+
+  // Copy API key
+  const copyKeyBtn = document.getElementById('copyKeyBtn');
+  if (copyKeyBtn) {
+    copyKeyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(savedApiKey).then(() => {
+        copyKeyBtn.innerHTML = '<i class="bi bi-check-lg text-success"></i>';
+        setTimeout(() => { copyKeyBtn.innerHTML = '<i class="bi bi-clipboard"></i>'; }, 2000);
+      });
+    });
+  }
+
+  // ── Test Webhook ──────────────────────────────────────────────
+  const testWebhookBtn = document.getElementById('testWebhookBtn');
+  if (testWebhookBtn) {
+    testWebhookBtn.addEventListener('click', async () => {
+      const resultDiv = document.getElementById('webhookTestResult');
+      // Read URL directly from the input field (no need to save first)
+      const webhookUrlInput = document.getElementById('webhookUrlInput');
+      const currentUrl = webhookUrlInput ? webhookUrlInput.value.trim() : '';
+      if (!currentUrl) {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = `<div class="alert alert-warning py-2 mb-0 small"><i class="bi bi-exclamation-triangle me-1"></i> Please enter a Webhook URL first.</div>`;
+        return;
+      }
+      testWebhookBtn.disabled = true;
+      testWebhookBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+      resultDiv.style.display = 'none';
+      try {
+        const res = await fetch('/crm/settings/test-webhook', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ webhook_url: currentUrl })
+        });
+        const data = await res.json();
+        resultDiv.style.display = 'block';
+        if (data.success) {
+          resultDiv.innerHTML = `<div class="alert alert-success py-2 mb-0 small"><i class="bi bi-check-circle me-1"></i> Webhook fired! Server responded with <strong>${data.status} ${data.statusText}</strong></div>`;
+        } else {
+          resultDiv.innerHTML = `<div class="alert alert-danger py-2 mb-0 small"><i class="bi bi-x-circle me-1"></i> ${data.message}</div>`;
+        }
+      } catch (err) {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = `<div class="alert alert-danger py-2 mb-0 small">Network error: ${err.message}</div>`;
+      } finally {
+        testWebhookBtn.disabled = false;
+        testWebhookBtn.innerHTML = '<i class="bi bi-send me-1"></i>Test';
+      }
+    });
+  }
+
+  // ── Live API Docs ─────────────────────────────────────────────
+  const BASE_URL = window.location.origin;
+  const API_KEY_PLACEHOLDER = savedApiKey || 'YOUR_API_KEY_HERE';
+
+  document.querySelectorAll('[data-base-url]').forEach(el => { el.textContent = BASE_URL; });
+
+  document.getElementById('baseUrlCode').textContent = BASE_URL + '/api/v1/crm';
+
+  document.getElementById('ep1Code').textContent =
+`curl -X GET "${BASE_URL}/api/v1/crm/pipelines" \\
+  -H "x-api-key: ${API_KEY_PLACEHOLDER}"`;
+
+  document.getElementById('ep2Code').textContent =
+`curl -X POST "${BASE_URL}/api/v1/crm/leads/submit" \\
+  -H "Content-Type: application/json" \\
+  -H "x-api-key: ${API_KEY_PLACEHOLDER}" \\
+  -d '{
+    "pipeline_id": 1,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "phone": "+91 98765 43210",
+    "source": "Website Contact Form",
+    "notes": "Interested in Rajasthan tour",
+    "custom_fields": {
+      "travel_date": "2025-03-15",
+      "budget": "50000"
+    }
+  }'`;
+
+  document.getElementById('ep3Code').textContent =
+`curl -X GET "${BASE_URL}/api/v1/crm/settings/partial-booking" \\
+  -H "x-api-key: ${API_KEY_PLACEHOLDER}"`;
+
+  document.getElementById('ep4Code').textContent =
+`curl -X GET "${BASE_URL}/api/v1/crm/settings/theme-colours" \\
+  -H "x-api-key: ${API_KEY_PLACEHOLDER}"`;
+
+  function copyCode(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    navigator.clipboard.writeText(el.textContent).then(() => {
+      showToast('Copied to clipboard!', 'success');
+    });
+  }
+
+  // ── Toast Notification ────────────────────────────────────────
+  function showToast(msg, type = 'success') {
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'toastContainer';
+      container.style.cssText = 'position:fixed;top:1.2rem;right:1.2rem;z-index:9999;display:flex;flex-direction:column;gap:8px;';
+      document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} shadow-lg py-2 px-3 mb-0`;
+    toast.style.cssText = 'min-width:260px;animation:slideIn .25s ease;';
+    toast.innerHTML = msg;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3500);
+  }
+
+  // ── Hide save button on API tab (api key has its own action) ──
+  document.querySelectorAll('[data-bs-toggle="tab"]').forEach(btn => {
+    btn.addEventListener('shown.bs.tab', e => {
+      const target = e.target.getAttribute('data-bs-target');
+      const footer = document.getElementById('saveSettingsFooter');
+      footer.style.display = target === '#api-integration' ? 'none' : '';
+    });
+  });
+
+
 </script>
+
+<style>
+  .theme-colour-input {
+    flex: 0 0 48px;
+    height: 42px;
+    padding: 0.25rem;
+    width: 48px;
+  }
+
+  .theme-colour-field {
+    align-items: center;
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .theme-colour-field .input-group {
+    min-width: 0;
+  }
+
+  .theme-manager {
+    background: #f8faff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.9rem;
+  }
+
+  .theme-token-group + .theme-token-group {
+    border-top: 1px solid #e2e8f0;
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+  }
+
+  .theme-token-group-title {
+    color: #4a5568;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0;
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+  }
+
+  .theme-colour-var {
+    font-family: monospace;
+    font-size: 0.72rem;
+    min-width: 166px;
+  }
+
+  .theme-colour-icon {
+    align-items: center;
+    background: var(--primary);
+    border-radius: 8px;
+    display: inline-flex;
+    justify-content: center;
+    padding: 6px 10px;
+  }
+
+  .theme-colour-dot {
+    border-radius: 999px;
+    display: inline-block;
+    height: 16px;
+    width: 16px;
+  }
+
+  .theme-colour-pill {
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 0.35rem 0.75rem;
+  }
+
+  .theme-colour-hex {
+    font-family: monospace;
+  }
+
+  .theme-css-field .theme-css-value {
+    font-family: monospace;
+    font-size: 0.78rem;
+  }
+
+  .theme-colour-preview {
+    background: #fff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(30px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+</style>

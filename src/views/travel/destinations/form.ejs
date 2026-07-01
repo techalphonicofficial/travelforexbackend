@@ -1,3 +1,4 @@
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
 <style>
   .form-container {
     padding: 2.5rem;
@@ -15,22 +16,116 @@
   }
 
   .form-header {
-    margin-bottom: 2.5rem;
+    margin-bottom: 2rem;
     border-bottom: 2px solid #f1f5f9;
-    padding-bottom: 1.5rem;
+    padding-bottom: 1rem;
   }
 
   .form-header h2 {
     font-weight: 800;
     color: #1e293b;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
   }
 
   .form-header p {
     color: #64748b;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
   }
 
+  /* Step Wizard Styles */
+  .step-wizard {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2.5rem;
+    position: relative;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .step-wizard::before {
+    content: '';
+    position: absolute;
+    top: 30px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #e2e8f0;
+    z-index: 0;
+  }
+  .step-item {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    background: transparent;
+    cursor: pointer;
+  }
+  .step-circle {
+    width: 48px;
+    height: 48px;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 8px;
+    font-weight: 800;
+    color: #94a3b8;
+    transition: all 0.2s;
+  }
+  .step-item.active .step-circle {
+    border-color: #f59e0b;
+    background: #fef3c7;
+    color: #b45309;
+  }
+  .step-item.completed .step-circle {
+    background: #f59e0b;
+    border-color: #f59e0b;
+    color: white;
+  }
+  .step-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+  }
+  .step-item.active .step-label {
+    color: #b45309;
+    font-weight: 700;
+  }
+  .step-pane {
+    display: none;
+    animation: fadeIn 0.25s ease;
+  }
+  .step-pane.active-pane {
+    display: block;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .step-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eef2ff;
+  }
+  .btn-prev, .btn-next {
+    background: white;
+    border: 1.5px solid #e2e8f0;
+    padding: 0.6rem 1.8rem;
+    border-radius: 40px;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .btn-next {
+    background: #f59e0b;
+    border-color: #f59e0b;
+    color: white;
+  }
+  .btn-next:hover {
+    background: #d97706;
+  }
   .form-label {
     font-weight: 700;
     color: #475569;
@@ -108,17 +203,17 @@
     background: linear-gradient(135deg, #f59e0b, #fbbf24);
     color: white;
     border: none;
-    padding: 1rem 2.5rem;
-    border-radius: 12px;
+    padding: 0.75rem 2rem;
+    border-radius: 40px;
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 0.9rem;
     transition: all 0.3s;
-    box-shadow: 0 10px 20px rgba(245, 158, 11, 0.2);
+    box-shadow: 0 6px 14px rgba(245, 158, 11, 0.2);
   }
 
   .btn-submit:hover {
     transform: translateY(-2px);
-    box-shadow: 0 15px 30px rgba(245, 158, 11, 0.3);
+    box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3);
     color: white;
   }
 
@@ -126,8 +221,8 @@
     background: white;
     color: #64748b;
     border: 1.5px solid #e2e8f0;
-    padding: 1rem 2rem;
-    border-radius: 12px;
+    padding: 0.75rem 1.8rem;
+    border-radius: 40px;
     font-weight: 600;
     text-decoration: none;
     transition: all 0.2s;
@@ -153,174 +248,428 @@
   .input-icon input {
     padding-left: 2.75rem;
   }
+
+  /* Booking Calendar UI */
+  .booking-calendar-wrapper {
+    background: #ffffff;
+    border-radius: 18px;
+    box-shadow: 0 4px 20px rgba(79,70,229,0.07);
+    padding: 1.5rem;
+    margin-top: 1rem;
+  }
+  .bc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  .bc-nav-btn {
+    background: #f8fafc;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #10b981;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  .bc-nav-btn:hover { background: #e2e8f0; }
+  .bc-months-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  @media (max-width: 1024px) { .bc-months-container { grid-template-columns: 1fr; } }
+  .bc-month-title { text-align: center; font-weight: 700; color: #1f2937; font-size: 0.85rem; margin-bottom: 0.8rem; }
+  .bc-days-header { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 0.65rem; color: #9ca3af; margin-bottom: 0.5rem; }
+  .bc-days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.3rem; justify-items: center; }
+  .bc-day { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+  .bc-day:hover:not(.past) { background: #f8fafc; }
+  .bc-day.past { color: #cbd5e1; pointer-events: none; }
+  .bc-day.crowd-low { border-color: #3b82f6; }
+  .bc-day.crowd-high { border-color: #f59e0b; }
+  .bc-legend { display: flex; justify-content: center; gap: 1.5rem; margin-top: 1rem; font-size: 0.7rem; }
+
+  /* Crowd Modal */
+  #crowdModal {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1050; align-items: center; justify-content: center;
+  }
+  .crowd-modal-content {
+    background: white; border-radius: 16px; padding: 1.5rem; width: 90%; max-width: 360px;
+  }
+  .crowd-option {
+    padding: 0.8rem; margin-bottom: 0.8rem; border-radius: 10px; border: 2px solid #e2e8f0; cursor: pointer; display: flex; align-items: center; gap: 1rem;
+  }
+
+  /* Activities Section */
+  .activities-section {
+    margin-top: 1rem;
+    background: #ffffff;
+    border-radius: 20px;
+    border: 1px solid #eef2ff;
+    overflow: hidden;
+  }
+  .activities-header {
+    background: #fefce8;
+    padding: 0.8rem 1.2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .add-day-btn {
+    background: #f59e0b;
+    border: none;
+    padding: 0.3rem 1rem;
+    border-radius: 40px;
+    font-size: 0.75rem;
+    color: white;
+  }
+  .day-card {
+    background: white;
+    border-radius: 16px;
+    margin-bottom: 1rem;
+    border: 1px solid #f1f5f9;
+  }
+  .day-card-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.7rem 1rem;
+    background: #faf9fe;
+    border-radius: 16px 16px 0 0;
+    cursor: pointer;
+  }
+  .day-number-badge {
+    background: #fef3c7;
+    font-weight: 700;
+    padding: 0.2rem 0.8rem;
+    border-radius: 60px;
+    font-size: 0.75rem;
+  }
+  .activity-items-container {
+    padding: 0.8rem;
+  }
+  .single-activity-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: center;
+  }
+  .activity-time-input, .activity-desc-input, .activity-location-input {
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    padding: 0.35rem 0.7rem;
+    font-size: 0.8rem;
+  }
+  .activity-desc-input { flex: 2; min-width: 150px; }
+  .remove-activity-btn, .add-activity-btn-sm {
+    background: #f1f5f9;
+    border: none;
+    border-radius: 30px;
+    padding: 0.2rem 0.7rem;
+    font-size: 0.7rem;
+  }
 </style>
 
 <div class="form-container">
-  <div class="container maxWidth-800">
+  <div class="container" style="max-width: 1000px;">
     <div class="glass-card">
       <div class="form-header">
-        <h2>
-          <%= destination ? 'Edit Destination' : 'Add New Destination' %>
-        </h2>
-        <p>
-          <%= destination ? 'Keep your travel spot details up to date.'
-            : 'Introduce a new breathtaking location to your catalog.' %>
-        </p>
+        <h2><%= destination ? 'Edit Destination' : 'Add New Destination' %></h2>
+        <p><%= destination ? 'Update your travel spot details.' : 'Create a new breathtaking location.' %></p>
+      </div>
+
+      <!-- Step Wizard -->
+      <div class="step-wizard" id="stepWizard">
+        <div class="step-item active" data-step="0">
+          <div class="step-circle">1</div>
+          <div class="step-label">Basic Info</div>
+        </div>
+        <div class="step-item" data-step="1">
+          <div class="step-circle">2</div>
+          <div class="step-label">Media & Amount</div>
+        </div>
+        <div class="step-item" data-step="2">
+          <div class="step-circle">3</div>
+          <div class="step-label">Itinerary</div>
+        </div>
+        <div class="step-item" data-step="3">
+          <div class="step-circle">4</div>
+          <div class="step-label">Crowd & SEO</div>
+        </div>
       </div>
 
       <form id="destinationForm" onsubmit="handleSave(event)">
         <input type="hidden" name="id" value="<%= destination ? destination.id : '' %>">
+        <%
+          let crowdObj = {};
+          if (destination && destination.crowdLevels) {
+            destination.crowdLevels.forEach(cl => { crowdObj[cl.date] = cl.level; });
+          }
+          let existingActivities = [];
+          if (destination && destination.activities_data && Array.isArray(destination.activities_data)) {
+            existingActivities = destination.activities_data;
+          }
+        %>
+        <input type="hidden" name="crowd_levels" id="crowdLevelsInput" value='<%= JSON.stringify(crowdObj) %>'>
+        <input type="hidden" name="activities_data" id="activitiesDataInput" value='<%= JSON.stringify(existingActivities) %>'>
 
-        <div class="row g-4">
-          <div class="col-md-8">
-            <label class="form-label">Destination Name <span class="text-danger">*</span></label>
-            <div class="input-icon">
-              <i class="bi bi-geo-alt"></i>
-              <input type="text" name="name" class="form-control" value="<%= destination ? destination.name : '' %>"
-                placeholder="e.g. Santorini, Paris, Ubud" required>
+
+        <!-- STEP 1 - Basic Info -->
+        <div class="step-pane active-pane" id="step0">
+          <div class="row g-4">
+            <div class="col-md-6">
+              <label class="form-label">Destination Name <span class="text-danger">*</span></label>
+              <div class="input-icon"><i class="bi bi-geo-alt"></i><input type="text" name="name" class="form-control" value="<%= destination ? destination.name : '' %>" placeholder="e.g. Santorini" required></div>
             </div>
-          </div>
-
-          <div class="col-md-4">
-            <label class="form-label">Type / Vibe</label>
-            <div class="input-icon">
-              <i class="bi bi-tag"></i>
-              <input type="text" name="type" class="form-control" value="<%= destination ? destination.type : '' %>"
-                placeholder="e.g. Beach, Heritage, City">
+            <div class="col-md-6">
+              <label class="form-label">Title / Headline</label>
+              <div class="input-icon"><i class="bi bi-fonts"></i><input type="text" name="title" class="form-control" value="<%= destination ? destination.title : '' %>" placeholder="e.g. The Beautiful Island"></div>
             </div>
-          </div>
-
-          <div class="col-12 mt-2">
-            <div class="d-flex gap-4 p-3 bg-light rounded-4 border border-dashed">
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" name="is_trending" id="isTrending" <%= destination && destination.is_trending ? 'checked' : '' %>>
-                    <label class="form-check-label fw-bold text-dark" for="isTrending">🔥 Trending Destination</label>
-                </div>
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" name="is_visa_free" id="isVisaFree" <%= destination && destination.is_visa_free ? 'checked' : '' %>>
-                    <label class="form-check-label fw-bold text-dark" for="isVisaFree">🛂 Visa Free Destination</label>
-                </div>
+            <div class="col-md-6">
+              <label class="form-label">Type / Vibe</label>
+              <input type="text" name="type" class="form-control" value="<%= destination ? destination.type : '' %>" placeholder="Beach, Heritage, City">
             </div>
-          </div>
-
-          <div class="col-12">
-            <label class="form-label">Categories</label>
-            <div class="category-container">
-              <div class="category-grid">
-                <% categories.forEach(cat=> { %>
-                  <% const isChecked=destination && destination.categories && destination.categories.some(c=> c.id ===
-                    cat.id);
-                    %>
+            <div class="col-md-6">
+              <label class="form-label">Tags</label>
+              <input type="text" name="tags" class="form-control" value="<%= destination && destination.tags ? destination.tags.join(', ') : '' %>" placeholder="popular, luxury">
+              <small class="text-muted">Comma separated</small>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Categories</label>
+              <div class="category-container">
+                <div class="category-grid">
+                  <% categories.forEach(cat=> { %>
+                    <% const isChecked=destination && destination.categories && destination.categories.some(c=> c.id === cat.id); %>
                     <label class="category-checkbox <%= isChecked ? 'selected' : '' %>">
-                      <input type="checkbox" name="categories[]" value="<%= cat.id %>" <%=isChecked ? 'checked' : '' %>
-                      onchange="updateTagStyle(this)">
-                      <span>
-                        <%= cat.name %>
-                      </span>
+                      <input type="checkbox" name="categories[]" value="<%= cat.id %>" <%=isChecked ? 'checked' : '' %> onchange="updateTagStyle(this)">
+                      <span><%= cat.name %></span>
                     </label>
-                    <% }) %>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-12 mt-4">
-            <h5 class="mb-3 text-dark font-weight-bold">SEO Settings</h5>
-            <div class="row g-3">
-              <div class="col-12">
-                <label class="form-label">Meta Title</label>
-                <div class="input-icon">
-                  <i class="bi bi-fonts"></i>
-                  <input type="text" name="meta_title" class="form-control"
-                    value="<%= destination ? destination.meta_title : '' %>"
-                    placeholder="SEO Title (e.g. Best Beaches in Santorini)">
+                  <% }) %>
                 </div>
               </div>
-              <div class="col-12">
-                <label class="form-label">Meta Description</label>
-                <textarea name="meta_description" class="form-control" rows="3"
-                  placeholder="A short summary of the destination for search results..."><%= destination ? destination.meta_description : '' %></textarea>
-              </div>
-              <div class="col-12">
-                <label class="form-label">Meta Keyword</label>
-                <textarea name="meta_keyword" class="form-control" rows="3"
-                  placeholder="Keywords separated by comma..."><%= destination ? destination.meta_keyword : '' %></textarea>
-              </div>
-
-              <div class="col-12">
-                <label class="form-label">Schema</label>
-                <textarea name="schema" class="form-control" rows="3"
-                  placeholder="JSON-LD Schema Markup..."><%= destination ? destination.schema : '' %></textarea>
+            </div>
+            <div class="col-12">
+              <div class="d-flex gap-3 flex-wrap p-3 bg-light rounded-4">
+                <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="is_trending" id="isTrending" <%= destination && destination.is_trending ? 'checked' : '' %>><label class="form-check-label" for="isTrending">🔥 Trending</label></div>
+                <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="is_visa_free" id="isVisaFree" <%= destination && destination.is_visa_free ? 'checked' : '' %>><label class="form-check-label" for="isVisaFree">🛂 Visa Free</label></div>
+                <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="is_customizable" id="customize" <%= destination && (destination.is_customizable || destination.customize) ? 'checked' : '' %>><label class="form-check-label" for="customize">🛠️ Customizable</label></div>
               </div>
             </div>
           </div>
+        </div>
 
-          <div class="col-12 mt-5">
-            <div class="d-flex justify-content-between align-items-center">
-              <a href="/travel/destinations" class="btn-cancel">Cancel</a>
-              <button type="submit" class="btn-submit">
-                <i class="bi bi-check2-circle me-1"></i>
-                <%= destination ? 'Update Destination' : 'Save Destination' %>
-              </button>
+        <!-- STEP 2 - Media & Amount Settings -->
+        <div class="step-pane" id="step1">
+          <div class="row g-4">
+            <div class="col-md-6">
+              <label class="form-label">Feature Image</label>
+              <input type="file" name="feature_image_file" class="form-control" accept="image/*">
+              <% if (destination && destination.feature_image) { %>
+                <div class="mt-2"><img src="<%= destination.feature_image %>" style="max-height: 60px;"><input type="hidden" name="existing_feature_image" value="<%= destination.feature_image %>"></div>
+              <% } %>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Image Alt Text</label>
+              <input type="text" name="feature_image_alt" class="form-control" value="<%= destination ? destination.feature_image_alt : '' %>" placeholder="SEO alt text">
+            </div>
+            <div class="col-12 mt-2">
+              <h6 class="fw-bold">Destination Amount</h6>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">Destination Amount (₹)</label>
+                  <input type="number" step="0.01" min="0" name="destination_amount" class="form-control" placeholder="0.00" value="<%= destination && destination.gst_amount !== undefined ? destination.gst_amount : '0.00' %>">
+                </div>
+              </div>
+            </div>
+
+
+          </div>
+        </div>
+
+        <!-- STEP 3 - Day-wise Activities (Itinerary) -->
+        <div class="step-pane" id="step2">
+          <div class="activities-section">
+            <div class="activities-header">
+              <h6 class="mb-0 fw-bold"><i class="bi bi-calendar-week"></i> Day-wise Activities</h6>
+              <button type="button" class="add-day-btn" id="addNewDayBtn">+ Add Day</button>
+            </div>
+            <div class="day-accordion p-3" id="dayActivitiesContainer"></div>
+            <small class="text-muted d-block px-3 pb-2">Add time, activity description & location per day.</small>
+          </div>
+        </div>
+
+        <!-- STEP 4 - Crowd Calendar & SEO -->
+        <div class="step-pane" id="step3">
+          <div class="row g-4">
+            <div class="col-12">
+              <label class="form-label">Crowd Level Calendar (future dates)</label>
+              <div class="booking-calendar-wrapper">
+                <div class="bc-header"><button type="button" class="bc-nav-btn" id="bc-prev"><i class="bi bi-chevron-left"></i></button><div class="bc-months-container" id="bc-container"></div><button type="button" class="bc-nav-btn" id="bc-next"><i class="bi bi-chevron-right"></i></button></div>
+                <div class="bc-legend"><div class="bc-legend-item"><div class="bc-legend-dot low"></div> Low crowd</div><div class="bc-legend-item"><div class="bc-legend-dot high"></div> High Crowd</div></div>
+              </div>
+            </div>
+            <div class="col-12 mt-3">
+              <h6 class="fw-bold">SEO Settings</h6>
+              <div class="mb-2"><label>Meta Title</label><input type="text" name="meta_title" class="form-control" value="<%= destination ? destination.meta_title : '' %>"></div>
+              <div class="mb-2"><label>Meta Description</label><textarea name="meta_description" class="form-control" rows="2"><%= destination ? destination.meta_description : '' %></textarea></div>
+              <div class="mb-2"><label>Meta Keywords</label><textarea name="meta_keyword" class="form-control" rows="2"><%= destination ? destination.meta_keyword : '' %></textarea></div>
+              <div><label>Schema JSON-LD</label><textarea name="schema" class="form-control" rows="2"><%= destination ? destination.schema : '' %></textarea></div>
             </div>
           </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="step-buttons">
+          <button type="button" class="btn-prev" id="prevBtn" style="visibility: hidden;">← Previous</button>
+          <button type="button" class="btn-next" id="nextBtn">Next →</button>
+          <button type="submit" class="btn-submit" id="submitBtn" style="display: none;"><i class="bi bi-check2-circle"></i> <%= destination ? 'Update' : 'Save' %></button>
+        </div>
+        <div class="mt-3 text-center">
+          <a href="/travel/destinations" class="btn-cancel text-decoration-none">Cancel & Go Back</a>
         </div>
       </form>
     </div>
   </div>
 </div>
 
+<!-- Crowd Modal -->
+<div id="crowdModal">
+  <div class="crowd-modal-content">
+    <h5 class="text-center">Set Crowd Level</h5>
+    <p id="crowdModalDate" class="text-center text-muted"></p>
+    <div class="crowd-option high" onclick="setCrowdLevel('high')"><div class="circle"></div> High Crowd</div>
+    <div class="crowd-option low" onclick="setCrowdLevel('low')"><div class="circle"></div> Low Crowd (Best)</div>
+    <div class="crowd-option normal" onclick="setCrowdLevel('normal')"><div class="circle"></div> Normal</div>
+    <button class="btn btn-light w-100 mt-2" onclick="closeCrowdModal()">Cancel</button>
+  </div>
+</div>
+
 <script>
+  let currentStep = 0;
+  const totalSteps = 4;
+  let activitiesArray = [];
+
   function updateTagStyle(cb) {
     if (cb.checked) cb.closest('.category-checkbox').classList.add('selected');
     else cb.closest('.category-checkbox').classList.remove('selected');
   }
 
+  function syncActivitiesToHiddenField() {
+    document.getElementById('activitiesDataInput').value = JSON.stringify(activitiesArray);
+  }
+
+  function renderAllDays() {
+    const container = document.getElementById('dayActivitiesContainer');
+    if (!container) return;
+    if (activitiesArray.length === 0) {
+      container.innerHTML = `<div class="text-center text-muted py-3">No days added. Click "+ Add Day" to build itinerary.</div>`;
+      return;
+    }
+    let html = '';
+    activitiesArray.forEach((dayObj, idx) => {
+      const dayNumber = dayObj.dayNumber;
+      const activities = dayObj.activities || [];
+      html += `<div class="day-card" data-day-index="${idx}">
+          <div class="day-card-header" onclick="toggleDayContent(this)">
+            <span class="day-number-badge">Day ${dayNumber}</span>
+            <button type="button" class="day-remove-btn" onclick="event.stopPropagation(); removeDay(${idx})"><i class="bi bi-trash"></i></button>
+          </div>
+          <div class="activity-items-container" style="display: block;">
+            <div class="activities-list-${idx}">`;
+      if (activities.length === 0) html += `<div class="empty-activities-msg">✨ No activities yet.</div>`;
+      else {
+        activities.forEach((act, actIdx) => {
+          html += `<div class="single-activity-row">
+              <input type="text" class="activity-time-input" placeholder="Time" value="${escapeHtml(act.time || '')}" onchange="updateActivity(${idx}, ${actIdx}, 'time', this.value)">
+              <input type="text" class="activity-desc-input" placeholder="Description*" value="${escapeHtml(act.description || '')}" onchange="updateActivity(${idx}, ${actIdx}, 'description', this.value)">
+              <input type="text" class="activity-location-input" placeholder="Location" value="${escapeHtml(act.location || '')}" onchange="updateActivity(${idx}, ${actIdx}, 'location', this.value)">
+              <button type="button" class="remove-activity-btn" onclick="removeActivity(${idx}, ${actIdx})"><i class="bi bi-x"></i></button>
+            </div>`;
+        });
+      }
+      html += `</div><button type="button" class="add-activity-btn-sm" onclick="addNewActivity(${idx})">+ Add Activity</button></div></div>`;
+    });
+    container.innerHTML = html;
+    syncActivitiesToHiddenField();
+  }
+
+  function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){ return m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;'; }); }
+  function toggleDayContent(header) { const cont = header.nextElementSibling; if(cont) cont.style.display = cont.style.display === 'none' ? 'block' : 'none'; }
+  function addNewDay() { const nextNum = activitiesArray.length > 0 ? Math.max(...activitiesArray.map(d => d.dayNumber)) + 1 : 1; activitiesArray.push({ dayNumber: nextNum, activities: [] }); renderAllDays(); }
+  function removeDay(idx) { if(confirm('Remove day?')) { activitiesArray.splice(idx,1); activitiesArray.forEach((d,i)=> d.dayNumber = i+1); renderAllDays(); } }
+  function addNewActivity(dayIdx) { activitiesArray[dayIdx].activities.push({ time: '', description: '', location: '' }); renderAllDays(); }
+  function removeActivity(dayIdx, actIdx) { activitiesArray[dayIdx].activities.splice(actIdx,1); renderAllDays(); }
+  function updateActivity(dayIdx, actIdx, field, val) { if(activitiesArray[dayIdx]?.activities[actIdx]) { activitiesArray[dayIdx].activities[actIdx][field] = val; syncActivitiesToHiddenField(); } }
+  function loadExistingActivities() { const inp = document.getElementById('activitiesDataInput'); if(inp.value) { try { const p = JSON.parse(inp.value); if(Array.isArray(p)) activitiesArray = p; activitiesArray.forEach(d => { if(!d.activities) d.activities = []; }); renderAllDays(); } catch(e){} } else { activitiesArray = []; renderAllDays(); } }
+
+
+
+  // STEPPER LOGIC
+  function showStep(step) {
+    document.querySelectorAll('.step-pane').forEach((pane, i) => { pane.classList.toggle('active-pane', i === step); });
+    document.querySelectorAll('.step-item').forEach((item, i) => {
+      item.classList.toggle('active', i === step);
+      if (i < step) item.classList.add('completed'); else item.classList.remove('completed');
+    });
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    prevBtn.style.visibility = step === 0 ? 'hidden' : 'visible';
+    if (step === totalSteps - 1) { nextBtn.style.display = 'none'; submitBtn.style.display = 'inline-flex'; }
+    else { nextBtn.style.display = 'inline-flex'; submitBtn.style.display = 'none'; }
+    currentStep = step;
+  }
+  function nextStep() { if (currentStep < totalSteps-1) showStep(currentStep+1); }
+  function prevStep() { if (currentStep > 0) showStep(currentStep-1); }
+  document.getElementById('nextBtn').addEventListener('click', nextStep);
+  document.getElementById('prevBtn').addEventListener('click', prevStep);
+  document.querySelectorAll('.step-item').forEach((item, idx) => { item.addEventListener('click', () => { if(idx <= currentStep+1) showStep(idx); }); });
+
+  // FORM SAVE
   async function handleSave(e) {
     e.preventDefault();
-    const btn = e.target.querySelector('button[type="submit"]');
-    const originalContent = btn.innerHTML;
-
-    // Prepare data
+    syncActivitiesToHiddenField();
+    const btn = document.getElementById('submitBtn');
+    const origHtml = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
     const formData = new FormData(e.target);
-    const data = {
-      id: formData.get('id'),
-      name: formData.get('name'),
-      type: formData.get('type'),
-      meta_title: formData.get('meta_title'),
-      meta_description: formData.get('meta_description'),
-      meta_keyword: formData.get('meta_keyword'),
-      schema: formData.get('schema'),
-      is_trending: formData.get('is_trending') === 'on',
-      is_visa_free: formData.get('is_visa_free') === 'on',
-      categories: [...formData.getAll('categories[]')]
-    };
-
     try {
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
-
-      const response = await fetch('/travel/destinations/save', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        window.location.href = '/travel/destinations';
-      } else {
-        alert('Error: ' + (result.message || 'Failed to save destination'));
-        btn.disabled = false;
-        btn.innerHTML = originalContent;
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Network error occurred');
-      btn.disabled = false;
-      btn.innerHTML = originalContent;
-    }
+      const res = await fetch('/travel/destinations/save', { method: 'POST', body: formData });
+      const result = await res.json();
+      if(result.success) window.location.href = '/travel/destinations';
+      else { alert('Error: ' + (result.message || 'Failed')); btn.disabled = false; btn.innerHTML = origHtml; }
+    } catch(err) { alert('Network error'); btn.disabled = false; btn.innerHTML = origHtml; }
   }
+
+  // CROWD CALENDAR (unchanged)
+  let bcCrowdData = JSON.parse(document.getElementById('crowdLevelsInput').value || '{}');
+  let bcCurrentDate = typeof dayjs !== 'undefined' ? dayjs().startOf('month') : dayjs();
+  let activeDateForModal = null;
+  function renderMonth(offset) {
+    const target = bcCurrentDate.add(offset, 'month');
+    const days = target.daysInMonth(), start = target.startOf('month').day();
+    let html = `<div class="bc-month"><div class="bc-month-title">${target.format('MMMM')} <span>${target.format('YYYY')}</span></div><div class="bc-days-header"><div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div></div><div class="bc-days-grid">`;
+    for(let i=0;i<start;i++) html+=`<div class="bc-day bc-day-empty"></div>`;
+    const today = dayjs().startOf('day');
+    for(let d=1;d<=days;d++) {
+      const cur = target.date(d), ds = cur.format('YYYY-MM-DD'), past = cur.isBefore(today);
+      let cls = 'bc-day'; if(past) cls+=' past'; if(!past && bcCrowdData[ds]) cls+=` crowd-${bcCrowdData[ds]}`;
+      html+=`<div class="${cls}" data-date="${ds}">${d}</div>`;
+    }
+    html+=`</div></div>`;
+    return html;
+  }
+  function renderCalendar() {
+    const cont = document.getElementById('bc-container'); if(!cont) return;
+    cont.innerHTML = renderMonth(0) + renderMonth(1) + renderMonth(2);
+    cont.querySelectorAll('.bc-day:not(.past):not(.bc-day-empty)').forEach(el=>{ el.addEventListener('click',(e)=>{ activeDateForModal = e.target.getAttribute('data-date'); document.getElementById('crowdModalDate').innerText = dayjs(activeDateForModal).format('MMMM D, YYYY'); document.getElementById('crowdModal').style.display = 'flex'; }); });
+  }
+  function closeCrowdModal() { document.getElementById('crowdModal').style.display = 'none'; activeDateForModal=null; }
+  function setCrowdLevel(level) { if(level === 'normal') delete bcCrowdData[activeDateForModal]; else bcCrowdData[activeDateForModal]=level; document.getElementById('crowdLevelsInput').value = JSON.stringify(bcCrowdData); closeCrowdModal(); renderCalendar(); }
+  document.getElementById('bc-prev')?.addEventListener('click',()=>{ bcCurrentDate = bcCurrentDate.subtract(1,'month'); renderCalendar(); });
+  document.getElementById('bc-next')?.addEventListener('click',()=>{ bcCurrentDate = bcCurrentDate.add(1,'month'); renderCalendar(); });
+  document.getElementById('addNewDayBtn')?.addEventListener('click', addNewDay);
+  if(typeof dayjs !== 'undefined') { renderCalendar(); loadExistingActivities(); showStep(0); }
+  else setTimeout(()=>{ if(typeof dayjs !== 'undefined'){ renderCalendar(); loadExistingActivities(); showStep(0); } }, 100);
 </script>

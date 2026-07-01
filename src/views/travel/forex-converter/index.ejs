@@ -1,0 +1,477 @@
+<%
+const rates = Array.isArray(forexRates) ? forexRates : [];
+const preferredCodes = ['USD', 'EUR', 'GBP', 'AED', 'AUD', 'SGD', 'THB', 'JPY', 'CHF', 'CAD'];
+const preferredCountryByCode = {
+  USD: 'United States',
+  EUR: 'France',
+  GBP: 'United Kingdom',
+  AED: 'United Arab Emirates',
+  AUD: 'Australia',
+  SGD: 'Singapore',
+  THB: 'Thailand',
+  JPY: 'Japan',
+  CHF: 'Switzerland',
+  CAD: 'Canada'
+};
+const byCode = new Map();
+
+rates.forEach(rate => {
+  if (!rate || !rate.code) return;
+  const code = String(rate.code).toUpperCase();
+  const preferredCountry = preferredCountryByCode[code];
+  if (!byCode.has(code)) byCode.set(code, rate);
+  if (preferredCountry && rate.country && rate.country.name === preferredCountry) byCode.set(code, rate);
+});
+
+const currencyOptions = Array.from(byCode.values())
+  .sort((a, b) => {
+    const ai = preferredCodes.indexOf(a.code);
+    const bi = preferredCodes.indexOf(b.code);
+    if (ai !== -1 || bi !== -1) return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+    return String(a.code).localeCompare(String(b.code));
+  });
+
+const clientRates = currencyOptions.map(rate => ({
+  code: rate.code,
+  country: rate.country ? rate.country.name : rate.code,
+  rate: Number(rate.conversion_rate || 0)
+}));
+const configuredServiceChargeType = typeof serviceChargeType !== 'undefined' && serviceChargeType === 'fixed' ? 'fixed' : 'percent';
+const configuredServiceChargeValue = Math.max(Number(typeof serviceChargeValue !== 'undefined' ? serviceChargeValue : 0), 0);
+%>
+
+<style>
+  .fx-converter-page {
+    min-height: calc(100vh - 90px);
+    background: #f5f7fb;
+    padding: 1rem;
+  }
+
+  .fx-shell {
+    max-width: 1040px;
+    margin: 0 auto;
+  }
+
+  .fx-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .fx-title {
+    color: #0f172a;
+    font-size: 1.45rem;
+    font-weight: 800;
+    margin: 0;
+  }
+
+  .fx-sub {
+    color: #64748b;
+    font-size: 0.86rem;
+    margin: 0.2rem 0 0;
+  }
+
+  .fx-panel {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
+    overflow: hidden;
+  }
+
+  .fx-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fbfdff;
+  }
+
+  .fx-panel-title {
+    color: #111827;
+    font-size: 0.95rem;
+    font-weight: 800;
+    margin: 0;
+  }
+
+  .fx-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: #0369a1;
+    background: #e0f2fe;
+    border: 1px solid #bae6fd;
+    border-radius: 999px;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.74rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .fx-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem;
+    padding: 1rem;
+  }
+
+  .fx-field {
+    min-width: 0;
+  }
+
+  .fx-field.full {
+    grid-column: 1 / -1;
+  }
+
+  .fx-label {
+    display: block;
+    color: #475569;
+    font-size: 0.74rem;
+    font-weight: 800;
+    margin-bottom: 0.28rem;
+    text-transform: uppercase;
+  }
+
+  .fx-input,
+  .fx-select {
+    width: 100%;
+    height: 42px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #0f172a;
+    font-size: 0.9rem;
+    font-weight: 700;
+    padding: 0 0.75rem;
+    outline: none;
+  }
+
+  .fx-input:focus,
+  .fx-select:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+  }
+
+  .fx-result {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    grid-column: 1 / -1;
+    min-height: 78px;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    background: #eff6ff;
+    padding: 0.85rem 1rem;
+  }
+
+  .fx-result-label {
+    color: #1e40af;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .fx-result-value {
+    color: #0f172a;
+    font-size: 1.6rem;
+    font-weight: 900;
+    line-height: 1.1;
+    text-align: right;
+    word-break: break-word;
+  }
+
+  .fx-result-breakdown {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+    grid-column: 1 / -1;
+  }
+
+  .fx-breakdown-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #ffffff;
+    padding: 0.65rem 0.75rem;
+  }
+
+  .fx-breakdown-label {
+    color: #64748b;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .fx-breakdown-value {
+    color: #0f172a;
+    font-size: 1rem;
+    font-weight: 900;
+    margin-top: 0.15rem;
+  }
+
+  .fx-breakdown-value.total {
+    color: #0f766e;
+  }
+
+  .fx-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    grid-column: 1 / -1;
+  }
+
+  .fx-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: 40px;
+    border: 0;
+    border-radius: 6px;
+    padding: 0 0.95rem;
+    background: #4f46e5;
+    color: #ffffff;
+    font-size: 0.86rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .fx-btn.secondary {
+    background: #eef2ff;
+    color: #4338ca;
+    border: 1px solid #c7d2fe;
+  }
+
+  .fx-meta {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+    padding: 0 1rem 1rem;
+  }
+
+  .fx-meta-item {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f8fafc;
+    padding: 0.65rem 0.75rem;
+  }
+
+  .fx-meta-label {
+    color: #64748b;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .fx-meta-value {
+    color: #111827;
+    font-size: 0.88rem;
+    font-weight: 800;
+    margin-top: 0.15rem;
+  }
+
+  @media (max-width: 760px) {
+    .fx-form,
+    .fx-result-breakdown,
+    .fx-meta {
+      grid-template-columns: 1fr;
+    }
+
+    .fx-result {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .fx-result-value {
+      text-align: left;
+      font-size: 1.35rem;
+    }
+  }
+</style>
+
+<div class="fx-converter-page">
+  <div class="fx-shell">
+    <div class="fx-header">
+      <div>
+        <h1 class="fx-title">Forex Converter</h1>
+        <p class="fx-sub">Reference conversion using active INR forex rates.</p>
+      </div>
+      <a class="fx-pill" href="/travel/forex-rates"><i class="bi bi-cash-coin"></i> Rates</a>
+    </div>
+
+    <div class="fx-panel">
+      <div class="fx-panel-head">
+        <h2 class="fx-panel-title">Currency Conversion</h2>
+        <span class="fx-pill"><i class="bi bi-arrow-left-right"></i> INR Base</span>
+      </div>
+
+      <form class="fx-form" id="forexConverterForm">
+        <div class="fx-field">
+          <label class="fx-label" for="fxAmount">Amount</label>
+          <input class="fx-input" id="fxAmount" type="number" min="0" step="0.01" value="1">
+        </div>
+
+        <div class="fx-field">
+          <label class="fx-label" for="fxFrom">From</label>
+          <select class="fx-select" id="fxFrom">
+            <% currencyOptions.forEach(option => { %>
+              <option value="<%= option.code %>" <%= option.code === 'USD' ? 'selected' : '' %>><%= option.code %> - <%= option.country ? option.country.name : option.code %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="fx-field">
+          <label class="fx-label" for="fxTo">To</label>
+          <select class="fx-select" id="fxTo">
+            <% currencyOptions.forEach(option => { %>
+              <option value="<%= option.code %>" <%= option.code === 'INR' ? 'selected' : '' %>><%= option.code %> - <%= option.country ? option.country.name : option.code %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="fx-field">
+          <label class="fx-label" for="fxRate">Rate</label>
+          <input class="fx-input" id="fxRate" type="text" readonly>
+        </div>
+
+        <div class="fx-result">
+          <div>
+            <div class="fx-result-label">Converted Amount</div>
+            <div class="fx-sub" id="fxFormula"></div>
+          </div>
+          <div class="fx-result-value" id="fxResult">-</div>
+        </div>
+
+        <div class="fx-result-breakdown">
+          <div class="fx-breakdown-card">
+            <div class="fx-breakdown-label">Service Charge</div>
+            <div class="fx-breakdown-value" id="fxServiceCharge">-</div>
+          </div>
+          <div class="fx-breakdown-card">
+            <div class="fx-breakdown-label">Total Payable</div>
+            <div class="fx-breakdown-value total" id="fxTotalPayable">-</div>
+          </div>
+        </div>
+
+        <div class="fx-actions">
+          <button class="fx-btn secondary" type="button" id="fxSwap"><i class="bi bi-arrow-down-up"></i> Swap</button>
+          <button class="fx-btn" type="submit"><i class="bi bi-calculator"></i> Convert</button>
+        </div>
+      </form>
+
+      <div class="fx-meta">
+        <div class="fx-meta-item">
+          <div class="fx-meta-label">From Rate</div>
+          <div class="fx-meta-value" id="fxFromRate">-</div>
+        </div>
+        <div class="fx-meta-item">
+          <div class="fx-meta-label">To Rate</div>
+          <div class="fx-meta-value" id="fxToRate">-</div>
+        </div>
+        <div class="fx-meta-item">
+          <div class="fx-meta-label">Available Codes</div>
+          <div class="fx-meta-value"><%= currencyOptions.length %></div>
+        </div>
+        <div class="fx-meta-item">
+          <div class="fx-meta-label">Charge Setting</div>
+          <div class="fx-meta-value"><%= configuredServiceChargeType === 'fixed' ? `₹${configuredServiceChargeValue.toFixed(2)}` : `${configuredServiceChargeValue.toFixed(2)}%` %></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const rates = <%- JSON.stringify(clientRates) %>;
+    const serviceCharge = {
+      type: '<%= configuredServiceChargeType %>',
+      value: <%= configuredServiceChargeValue %>
+    };
+    const rateByCode = new Map(rates.map(rate => [rate.code, rate]));
+    const amountEl = document.getElementById('fxAmount');
+    const fromEl = document.getElementById('fxFrom');
+    const toEl = document.getElementById('fxTo');
+    const rateEl = document.getElementById('fxRate');
+    const resultEl = document.getElementById('fxResult');
+    const serviceChargeEl = document.getElementById('fxServiceCharge');
+    const totalPayableEl = document.getElementById('fxTotalPayable');
+    const formulaEl = document.getElementById('fxFormula');
+    const fromRateEl = document.getElementById('fxFromRate');
+    const toRateEl = document.getElementById('fxToRate');
+    const formEl = document.getElementById('forexConverterForm');
+    const swapEl = document.getElementById('fxSwap');
+
+    const money = (value, code) => {
+      try {
+        return Number(value || 0).toLocaleString('en-IN', {
+          style: 'currency',
+          currency: code,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+      } catch (error) {
+        return `${code} ${plain(value)}`;
+      }
+    };
+
+    const plain = (value) => Number(value || 0).toLocaleString('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 6
+    });
+
+    function convert() {
+      const amount = Number(amountEl.value || 0);
+      const from = rateByCode.get(fromEl.value);
+      const to = rateByCode.get(toEl.value);
+
+      if (!from || !to || !from.rate || !to.rate) {
+        resultEl.textContent = '-';
+        rateEl.value = '';
+        formulaEl.textContent = '';
+        fromRateEl.textContent = '-';
+        toRateEl.textContent = '-';
+        serviceChargeEl.textContent = '-';
+        totalPayableEl.textContent = '-';
+        return;
+      }
+
+      const pairRate = from.rate / to.rate;
+      const converted = amount * pairRate;
+      const charge = serviceCharge.type === 'fixed'
+        ? serviceCharge.value / to.rate
+        : converted * (serviceCharge.value / 100);
+      const totalPayable = Math.max(converted - charge, 0);
+      rateEl.value = `1 ${from.code} = ${plain(pairRate)} ${to.code}`;
+      resultEl.textContent = money(converted, to.code);
+      serviceChargeEl.textContent = '-' + money(charge, to.code);
+      totalPayableEl.textContent = money(totalPayable, to.code);
+      formulaEl.textContent = `${plain(amount)} ${from.code} to ${to.code}`;
+      fromRateEl.textContent = `1 ${from.code} = ${money(from.rate, 'INR')}`;
+      toRateEl.textContent = `1 ${to.code} = ${money(to.rate, 'INR')}`;
+    }
+
+    formEl.addEventListener('submit', event => {
+      event.preventDefault();
+      convert();
+    });
+
+    [amountEl, fromEl, toEl].forEach(element => {
+      element.addEventListener('input', convert);
+      element.addEventListener('change', convert);
+    });
+
+    swapEl.addEventListener('click', () => {
+      const from = fromEl.value;
+      fromEl.value = toEl.value;
+      toEl.value = from;
+      convert();
+    });
+
+    convert();
+  })();
+</script>

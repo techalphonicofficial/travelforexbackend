@@ -1,0 +1,183 @@
+<%- contentFor('body') %>
+<%
+    const hotelGallery = Array.isArray(gallery) ? gallery : [];
+    const hotelAmenities = hotel && Array.isArray(hotel.amenities) ? hotel.amenities : [];
+    const amenityOptions = [
+        'Restaurant',
+        'Wi-Fi',
+        'Smoke Detector',
+        'Laundry Service',
+        'Room Service',
+        'Air Conditioning',
+        'Parking',
+        'Swimming Pool',
+        'Fitness Center',
+        'Airport Transfer',
+        'Breakfast',
+        'Spa'
+    ];
+%>
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row align-items-center mb-4 mt-2">
+            <div class="col-sm-6">
+                <h1 class="m-0 text-dark" style="font-weight: 800;"><%= title %></h1>
+            </div>
+            <div class="col-sm-6 text-right">
+                <a href="/travel/hotels" class="btn btn-secondary">Back to List</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <form action="/travel/hotels/<%= hotel ? hotel.id : 'save' %>" method="POST" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label>Hotel Name</label>
+                            <input type="text" name="name" class="form-control" value="<%= hotel ? hotel.name : '' %>" required>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>Destination</label>
+                            <select name="destination_id" class="form-control select2" required>
+                                <option value="">Select Destination...</option>
+                                <% destinations.forEach(d => { %>
+                                    <option value="<%= d.id %>" <%= hotel && hotel.destination_id == d.id ? 'selected' : '' %>><%= d.name %></option>
+                                <% }) %>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 form-group">
+                            <label>Source Type</label>
+                            <select name="source_type" id="source_type" class="form-control">
+                                <option value="manual" <%= hotel && hotel.source_type === 'manual' ? 'selected' : '' %>>Manual</option>
+                                <option value="third_party" <%= hotel && hotel.source_type === 'third_party' ? 'selected' : '' %>>3rd Party Provider</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8 form-group" id="provider_name_group" style="display: none;">
+                            <label>Provider Name</label>
+                            <input type="text" name="provider_name" class="form-control" value="<%= hotel ? hotel.provider_name : '' %>" placeholder="e.g. MakeMyTrip, Agoda, Expedia...">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-3 form-group">
+                            <label>Star Rating (1-5)</label>
+                            <input type="number" name="star_rating" class="form-control" min="1" max="5" value="<%= hotel ? hotel.star_rating : 3 %>" required>
+                        </div>
+                        <div class="col-md-3 form-group">
+                            <label>Guest Rating (0-5)</label>
+                            <input type="number" step="0.1" name="guest_rating" class="form-control" min="0" max="5" value="<%= hotel ? hotel.guest_rating : 4.0 %>" required>
+                        </div>
+                        <div class="col-md-3 form-group">
+                            <label>Total Rooms</label>
+                            <input type="number" name="total_rooms" class="form-control" min="0" value="<%= hotel ? hotel.total_rooms : 0 %>" required>
+                        </div>
+                        <div class="col-md-3 form-group">
+                            <label>Price Per Night (INR)</label>
+                            <input type="number" step="0.01" name="price_per_night" class="form-control" value="<%= hotel ? hotel.price_per_night : '' %>" required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-3 form-group">
+                            <label>Discount (%)</label>
+                            <input type="number" step="0.01" name="discount_percent" class="form-control" min="0" max="100" value="<%= hotel ? hotel.discount_percent : 0 %>">
+                        </div>
+                        <div class="col-md-3 form-group">
+                            <label>Commission (%)</label>
+                            <input type="number" step="0.01" name="commission_percent" class="form-control" min="0" max="100" value="<%= hotel ? hotel.commission_percent : 0 %>">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold">Amenities</label>
+                        <div class="row">
+                            <% amenityOptions.forEach(amenity => { %>
+                                <div class="col-md-3 col-sm-6 mb-2">
+                                    <label class="border rounded px-3 py-2 w-100 mb-0" style="background:#f8fafc; cursor:pointer;">
+                                        <input type="checkbox" name="amenities" value="<%= amenity %>" <%= hotelAmenities.includes(amenity) ? 'checked' : '' %>>
+                                        <%= amenity %>
+                                    </label>
+                                </div>
+                            <% }) %>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea name="description" class="form-control" rows="4"><%= hotel ? hotel.description : '' %></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold">Hotel Gallery</label>
+                        <div class="text-muted small mb-2">Upload multiple images or paste multiple image/video URLs. The primary item is used as the hotel cover image.</div>
+
+                        <% if (hotelGallery.length) { %>
+                            <div class="row mb-3">
+                                <% hotelGallery.forEach(item => { %>
+                                    <div class="col-md-3 mb-3">
+                                        <div class="border rounded p-2 h-100" style="background:#f8fafc;">
+                                            <div style="aspect-ratio: 16 / 10; background:#e5e7eb; border-radius:8px; overflow:hidden; display:flex; align-items:center; justify-content:center;">
+                                                <% if (item.media_type === 'video') { %>
+                                                    <video src="<%= item.url %>" style="width:100%; height:100%; object-fit:cover;" muted></video>
+                                                <% } else { %>
+                                                    <img src="<%= item.url %>" alt="<%= item.alt_text || hotel.name %>" style="width:100%; height:100%; object-fit:cover;">
+                                                <% } %>
+                                            </div>
+                                            <div class="mt-2 d-flex justify-content-between align-items-center">
+                                                <label class="mb-0 small">
+                                                    <input type="radio" name="primary_media_id" value="<%= item.id %>" <%= item.is_primary ? 'checked' : '' %>>
+                                                    Primary
+                                                </label>
+                                                <label class="mb-0 small text-danger">
+                                                    <input type="checkbox" name="remove_media_ids" value="<%= item.id %>">
+                                                    Remove
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <% }) %>
+                            </div>
+                        <% } %>
+
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label>Upload Gallery Media</label>
+                                <input type="file" name="gallery_files" class="form-control" multiple accept="image/*,video/mp4,video/quicktime,video/webm">
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label>Gallery URLs</label>
+                                <textarea name="gallery_urls" class="form-control" rows="3" placeholder="Paste one URL per line"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success mt-3"><i class="fas fa-save mr-2"></i> Save Hotel</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    function toggleProviderField() {
+        if ($('#source_type').val() === 'third_party') {
+            $('#provider_name_group').show();
+        } else {
+            $('#provider_name_group').hide();
+        }
+    }
+
+    $(function() {
+        $('#source_type').on('change', toggleProviderField);
+        toggleProviderField();
+        $('.select2').select2({ theme: 'bootstrap4' });
+    });
+</script>

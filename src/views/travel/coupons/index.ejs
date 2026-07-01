@@ -1,0 +1,214 @@
+<%
+const couponRows = coupons || [];
+const packageRows = packages || [];
+const activeCount = couponRows.filter(coupon => coupon.is_active !== false).length;
+const totalRedemptions = couponRows.reduce((sum, coupon) => sum + Number(coupon.redemption_count || 0), 0);
+const packageSpecificCount = couponRows.filter(coupon => coupon.applicable_scope === 'package_specific').length;
+const money = value => Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const dateLabel = value => value ? new Date(value).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Open';
+const discountLabel = coupon => coupon.discount_type === 'percent'
+  ? `${Number(coupon.discount_value || 0).toFixed(2).replace(/\.00$/, '')}%`
+  : `INR ${money(coupon.discount_value)}`;
+const packageNameMap = packageRows.reduce((acc, pkg) => {
+  acc[Number(pkg.id)] = pkg.name;
+  return acc;
+}, {});
+%>
+
+<style>
+  .coupon-page{display:flex;flex-direction:column;gap:1rem;color:#111827;}
+  .coupon-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.75rem;}
+  .coupon-chip{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:.9rem 1rem;box-shadow:0 2px 10px rgba(15,23,42,.04);}
+  .coupon-chip-label{font-size:.72rem;font-weight:800;text-transform:uppercase;color:#6b7280;letter-spacing:0;}
+  .coupon-chip-value{font-size:1.35rem;font-weight:900;color:#111827;margin-top:.25rem;}
+  .coupon-panel{background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 2px 10px rgba(15,23,42,.04);overflow:hidden;}
+  .coupon-header{padding:1.25rem;border-bottom:1px solid #e5e7eb;}
+  .coupon-toolbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+  .coupon-title{font-size:1.35rem;font-weight:900;margin:0;color:#111827;}
+  .coupon-sub{font-size:.86rem;color:#6b7280;margin:.18rem 0 0;}
+  .coupon-filters{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-top:1rem;}
+  .coupon-search{position:relative;min-width:min(300px,100%);}
+  .coupon-search i{position:absolute;left:.75rem;top:50%;transform:translateY(-50%);color:#9ca3af;}
+  .coupon-search input{padding-left:2.2rem;}
+  .coupon-table-wrap{overflow-x:auto;}
+  .coupon-table{min-width:1080px;margin-bottom:0;}
+  .coupon-table th{background:#f8fafc;color:#374151;border-bottom:1px solid #e5e7eb;font-size:.74rem;text-transform:uppercase;letter-spacing:0;padding:.85rem 1rem;white-space:nowrap;}
+  .coupon-table td{padding:.9rem 1rem;border-color:#eef2f7;vertical-align:middle;font-size:.86rem;}
+  .coupon-code{display:inline-flex;align-items:center;border-radius:999px;background:#eff6ff;color:#1d4ed8;font-size:.78rem;font-weight:900;padding:.28rem .65rem;}
+  .coupon-pill{display:inline-flex;align-items:center;gap:.35rem;border-radius:999px;padding:.28rem .62rem;font-size:.76rem;font-weight:800;white-space:nowrap;}
+  .coupon-pill.active{background:#dcfce7;color:#166534;}
+  .coupon-pill.inactive{background:#f3f4f6;color:#6b7280;}
+  .coupon-pill.scope{background:#f8fafc;color:#475569;border:1px solid #e2e8f0;}
+  .coupon-muted{color:#6b7280;font-size:.78rem;line-height:1.35;margin-top:.2rem;}
+  .coupon-actions{display:inline-flex;align-items:center;gap:.35rem;justify-content:flex-end;}
+  .coupon-icon-btn{width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;}
+  .coupon-empty{padding:2.5rem 1rem;text-align:center;color:#6b7280;}
+  .coupon-empty i{font-size:2rem;display:block;margin-bottom:.45rem;color:#93c5fd;}
+</style>
+
+<div class="coupon-page">
+  <div class="coupon-summary">
+    <div class="coupon-chip">
+      <div class="coupon-chip-label">Total Coupons</div>
+      <div class="coupon-chip-value"><%= couponRows.length %></div>
+    </div>
+    <div class="coupon-chip">
+      <div class="coupon-chip-label">Active</div>
+      <div class="coupon-chip-value"><%= activeCount %></div>
+    </div>
+    <div class="coupon-chip">
+      <div class="coupon-chip-label">Redemptions</div>
+      <div class="coupon-chip-value"><%= totalRedemptions %></div>
+    </div>
+    <div class="coupon-chip">
+      <div class="coupon-chip-label">Package Specific</div>
+      <div class="coupon-chip-value"><%= packageSpecificCount %></div>
+    </div>
+  </div>
+
+  <div class="coupon-panel">
+    <div class="coupon-header">
+      <div class="coupon-toolbar">
+        <div>
+          <h3 class="coupon-title">Coupons</h3>
+          <p class="coupon-sub">Discount codes for package bookings.</p>
+        </div>
+        <a href="/travel/coupons/create" class="btn btn-primary d-inline-flex align-items-center gap-2">
+          <i class="bi bi-plus-lg"></i>
+          Add Coupon
+        </a>
+      </div>
+      <div class="coupon-filters">
+        <div class="coupon-search">
+          <i class="bi bi-search"></i>
+          <input id="couponSearch" class="form-control" type="search" placeholder="Search code or name" oninput="filterCoupons()">
+        </div>
+        <select id="couponStatusFilter" class="form-select" style="max-width:180px;" onchange="filterCoupons()">
+          <option value="">All Statuses</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+        <select id="couponScopeFilter" class="form-select" style="max-width:210px;" onchange="filterCoupons()">
+          <option value="">All Scopes</option>
+          <option value="all">All Packages</option>
+          <option value="package_specific">Package Specific</option>
+        </select>
+        <span class="text-muted fw-semibold" id="couponCountLabel" style="font-size:.84rem;"></span>
+      </div>
+    </div>
+
+    <div class="coupon-table-wrap">
+      <table class="table coupon-table" id="couponTable">
+        <thead>
+          <tr>
+            <th>Coupon</th>
+            <th>Discount</th>
+            <th>Eligibility</th>
+            <th>Validity</th>
+            <th>Usage</th>
+            <th>Status</th>
+            <th class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (!couponRows.length) { %>
+            <tr>
+              <td colspan="7">
+                <div class="coupon-empty">
+                  <i class="bi bi-ticket-perforated"></i>
+                  <div class="fw-bold">No coupons created yet.</div>
+                </div>
+              </td>
+            </tr>
+          <% } %>
+          <% couponRows.forEach(coupon => { %>
+            <%
+              const selectedPackages = Array.isArray(coupon.applicable_package_ids) ? coupon.applicable_package_ids.map(Number) : [];
+              const scopeLabel = coupon.applicable_scope === 'package_specific' ? 'Package specific' : 'All packages';
+              const selectedPackageNames = selectedPackages.map(id => packageNameMap[id]).filter(Boolean);
+            %>
+            <tr class="coupon-row"
+              data-status="<%= coupon.is_active === false ? 'inactive' : 'active' %>"
+              data-scope="<%= coupon.applicable_scope || 'all' %>"
+              data-search="<%= [coupon.code, coupon.name, coupon.description, scopeLabel, selectedPackageNames.join(' ')].filter(Boolean).join(' ').toLowerCase() %>">
+              <td>
+                <span class="coupon-code"><%= coupon.code %></span>
+                <div class="fw-bold mt-2"><%= coupon.name %></div>
+                <% if (coupon.description) { %>
+                  <div class="coupon-muted"><%= coupon.description %></div>
+                <% } %>
+              </td>
+              <td>
+                <div class="fw-bold"><%= discountLabel(coupon) %></div>
+                <% if (coupon.discount_type === 'percent' && coupon.max_discount_amount !== null) { %>
+                  <div class="coupon-muted">Cap INR <%= money(coupon.max_discount_amount) %></div>
+                <% } %>
+              </td>
+              <td>
+                <span class="coupon-pill scope"><i class="bi bi-box-seam"></i> <%= scopeLabel %></span>
+                <div class="coupon-muted">Min booking INR <%= money(coupon.minimum_booking_amount) %></div>
+                <% if (selectedPackageNames.length) { %>
+                  <div class="coupon-muted"><%= selectedPackageNames.slice(0, 3).join(', ') %><%= selectedPackageNames.length > 3 ? ` +${selectedPackageNames.length - 3} more` : '' %></div>
+                <% } %>
+              </td>
+              <td>
+                <div class="fw-semibold"><%= dateLabel(coupon.valid_from) %> - <%= dateLabel(coupon.valid_until) %></div>
+              </td>
+              <td>
+                <div class="fw-bold"><%= coupon.redemption_count || 0 %><%= coupon.usage_limit ? ` / ${coupon.usage_limit}` : '' %></div>
+                <div class="coupon-muted">Per customer <%= coupon.usage_limit_per_customer || 'No limit' %></div>
+              </td>
+              <td>
+                <span class="coupon-pill <%= coupon.is_active === false ? 'inactive' : 'active' %>">
+                  <i class="bi <%= coupon.is_active === false ? 'bi-circle' : 'bi-check-circle-fill' %>"></i>
+                  <%= coupon.is_active === false ? 'Inactive' : 'Active' %>
+                </span>
+              </td>
+              <td class="text-end">
+                <div class="coupon-actions">
+                  <a href="/travel/coupons/<%= coupon.id %>/edit" class="btn btn-outline-primary btn-sm coupon-icon-btn" title="Edit coupon">
+                    <i class="bi bi-pencil-square"></i>
+                  </a>
+                  <form action="/travel/coupons/<%= coupon.id %>/toggle" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-outline-secondary btn-sm coupon-icon-btn" title="<%= coupon.is_active === false ? 'Activate coupon' : 'Deactivate coupon' %>">
+                      <i class="bi <%= coupon.is_active === false ? 'bi-toggle-off' : 'bi-toggle-on' %>"></i>
+                    </button>
+                  </form>
+                  <form action="/travel/coupons/<%= coupon.id %>/delete" method="POST" class="d-inline" onsubmit="return confirm('Delete this coupon?')">
+                    <button type="submit" class="btn btn-outline-danger btn-sm coupon-icon-btn" title="Delete coupon">
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  function filterCoupons() {
+    const search = document.getElementById('couponSearch').value.trim().toLowerCase();
+    const status = document.getElementById('couponStatusFilter').value;
+    const scope = document.getElementById('couponScopeFilter').value;
+    const rows = Array.from(document.querySelectorAll('.coupon-row'));
+    let visible = 0;
+
+    rows.forEach(row => {
+      const matchesSearch = !search || row.dataset.search.includes(search);
+      const matchesStatus = !status || row.dataset.status === status;
+      const matchesScope = !scope || row.dataset.scope === scope;
+      const show = matchesSearch && matchesStatus && matchesScope;
+      row.style.display = show ? '' : 'none';
+      if (show) visible += 1;
+    });
+
+    const label = document.getElementById('couponCountLabel');
+    if (label) label.textContent = rows.length ? visible + ' of ' + rows.length + ' shown' : '';
+  }
+
+  filterCoupons();
+</script>

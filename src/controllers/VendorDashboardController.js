@@ -8,11 +8,13 @@ class VendorDashboardController {
         try {
             const vendorId = req.session.user.id;
             const stats = await this.vendorService.getVendorStats(vendorId);
+            const recentBookings = await this.vendorService.getVendorRecentBookings(vendorId, 5);
             const recentTransactions = await this.walletService.getTransactions(vendorId);
 
             res.render('vendor/dashboard', {
                 title: 'Vendor Dashboard',
                 stats,
+                recentBookings,
                 recentTransactions: recentTransactions.slice(0, 5),
                 user: req.session.user,
                 layout: 'layouts/vendor_layout'

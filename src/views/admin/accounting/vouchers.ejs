@@ -1,0 +1,165 @@
+<%
+  const money = value => Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const typeLabel = value => {
+    const match = (voucherTypes || []).find(item => item.value === value);
+    return match ? match.label : String(value || '').replace(/_/g, ' ');
+  };
+  const statusStyle = status => {
+    if (status === 'posted') return 'background:#dcfce7;color:#166534;';
+    if (status === 'draft') return 'background:#eef2ff;color:#3730a3;';
+    if (status === 'cancelled') return 'background:#fee2e2;color:#991b1b;';
+    return 'background:#f1f5f9;color:#334155;';
+  };
+  const pageHref = page => {
+    const params = new URLSearchParams();
+    params.set('page', page);
+    if (filters.voucher_type) params.set('voucher_type', filters.voucher_type);
+    if (filters.status) params.set('status', filters.status);
+    if (filters.dateFrom) params.set('dateFrom', filters.dateFrom);
+    if (filters.dateTo) params.set('dateTo', filters.dateTo);
+    if (filters.search) params.set('search', filters.search);
+    return `/accounting/vouchers?${params.toString()}`;
+  };
+%>
+
+<style>
+  .acc-nav{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.6rem;}
+  .acc-nav a{display:inline-flex;align-items:center;gap:.4rem;padding:.42rem 1rem;border-radius:10px;font-size:.82rem;font-weight:600;text-decoration:none;background:#fff;color:#4f46e5;border:1.5px solid rgba(79,70,229,.2);box-shadow:0 2px 8px rgba(79,70,229,.07);transition:all .15s;}
+  .acc-nav a:hover,.acc-nav a.active{background:#4f46e5;color:#fff;border-color:#4f46e5;box-shadow:0 4px 14px rgba(79,70,229,.3);}
+  .acc-page-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.4rem;}
+  .acc-page-title{font-size:1.3rem;font-weight:800;color:#1e1b4b;display:flex;align-items:center;gap:.5rem;}
+  .acc-page-title i{color:#4f46e5;}
+  .acc-panel{background:#fff;border-radius:16px;box-shadow:0 4px 20px rgba(79,70,229,.07);overflow:hidden;}
+  .acc-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:.55rem;margin-bottom:1rem;}
+  .acc-input,.acc-select{border-radius:10px;border:1.5px solid #e5e7f0;background:#fafafa;font-size:.85rem;padding:.46rem .8rem;color:#1f2937;}
+  .acc-input{min-width:250px;}
+  .acc-input:focus,.acc-select:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1);outline:none;background:#fff;}
+  .acc-table{width:100%;border-collapse:collapse;}
+  .acc-table thead tr{background:linear-gradient(90deg,#f0f0fa,#e8e8f5);}
+  .acc-table thead th{padding:.75rem 1rem;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#5555aa;border:0;}
+  .acc-table tbody tr{border-bottom:1px solid #f4f4fb;transition:background .12s;}
+  .acc-table tbody tr:hover{background:#fafafe;}
+  .acc-table tbody td{padding:.75rem 1rem;font-size:.85rem;color:#334155;vertical-align:top;}
+  .acc-badge{display:inline-flex;align-items:center;gap:.35rem;border-radius:999px;padding:.18rem .62rem;font-size:.72rem;font-weight:700;text-transform:capitalize;}
+  .acc-vno{font-weight:800;color:#1e1b4b;}
+  .acc-muted{font-size:.74rem;color:#64748b;margin-top:.15rem;}
+  .acc-ref{background:#eef2ff;color:#4f46e5;border-radius:7px;padding:.18rem .5rem;font-size:.72rem;font-weight:700;}
+</style>
+
+<div class="acc-nav">
+  <a href="/accounting/dashboard"><i class="bi bi-grid-1x2-fill"></i> Dashboard</a>
+  <a href="/accounting/vouchers" class="active"><i class="bi bi-receipt-cutoff"></i> Vouchers</a>
+  <a href="/accounting/ledger"><i class="bi bi-journal-text"></i> General Ledger</a>
+  <a href="/accounting/accounts"><i class="bi bi-list-columns-reverse"></i> Chart of Accounts</a>
+  <a href="/accounting/trial-balance"><i class="bi bi-scale"></i> Trial Balance</a>
+  <a href="/accounting/pnl"><i class="bi bi-graph-up-arrow"></i> P&amp;L Statement</a>
+  <a href="/accounting/vouchers/new"><i class="bi bi-pencil-square"></i> New Voucher</a>
+</div>
+
+<div class="acc-page-hdr">
+  <div class="acc-page-title"><i class="bi bi-receipt-cutoff"></i> Accounting Vouchers</div>
+  <a href="/accounting/vouchers/new" class="btn-add-primary"><i class="bi bi-plus-lg"></i> New Voucher</a>
+</div>
+
+<% if(success) { %>
+  <div style="background:#ecfdf5;border:1.5px solid #6ee7b7;color:#065f46;border-radius:10px;padding:.75rem 1.1rem;margin-bottom:1rem;font-size:.85rem;font-weight:600;display:flex;align-items:center;gap:.5rem;">
+    <i class="bi bi-check-circle-fill"></i> Voucher posted successfully.
+  </div>
+<% } %>
+
+<form method="GET" action="/accounting/vouchers">
+  <div class="acc-toolbar">
+    <input class="acc-input" type="text" name="search" placeholder="Search voucher, reference, narration..." value="<%= filters.search || '' %>">
+    <select class="acc-select" name="voucher_type">
+      <option value="">All Voucher Types</option>
+      <% (voucherTypes || []).forEach(type => { %>
+        <option value="<%= type.value %>" <%= filters.voucher_type === type.value ? 'selected' : '' %>><%= type.label %></option>
+      <% }) %>
+    </select>
+    <select class="acc-select" name="status">
+      <option value="">All Statuses</option>
+      <option value="posted" <%= filters.status === 'posted' ? 'selected' : '' %>>Posted</option>
+      <option value="draft" <%= filters.status === 'draft' ? 'selected' : '' %>>Draft</option>
+      <option value="cancelled" <%= filters.status === 'cancelled' ? 'selected' : '' %>>Cancelled</option>
+    </select>
+    <input class="acc-select" type="date" name="dateFrom" value="<%= filters.dateFrom || '' %>" title="Date From">
+    <input class="acc-select" type="date" name="dateTo" value="<%= filters.dateTo || '' %>" title="Date To">
+    <button type="submit" style="background:#4f46e5;color:#fff;border:none;border-radius:10px;padding:.46rem 1rem;font-size:.85rem;font-weight:700;cursor:pointer;">
+      <i class="bi bi-funnel-fill"></i> Filter
+    </button>
+    <a href="/accounting/vouchers" style="background:#f0f0fa;color:#8888bb;border-radius:10px;padding:.46rem .9rem;font-size:.85rem;font-weight:700;text-decoration:none;">
+      <i class="bi bi-x-lg"></i> Clear
+    </a>
+    <span style="margin-left:auto;font-size:.78rem;color:#8888bb;font-weight:600;"><%= totalCount %> voucher<%= totalCount === 1 ? '' : 's' %></span>
+  </div>
+</form>
+
+<div class="acc-panel">
+  <div style="overflow-x:auto;">
+    <table class="acc-table">
+      <thead>
+        <tr>
+          <th>Voucher</th>
+          <th>Type / Status</th>
+          <th>Reference</th>
+          <th>Narration</th>
+          <th class="text-end">Amount</th>
+          <th style="width:130px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if(vouchers && vouchers.length) { %>
+          <% vouchers.forEach(voucher => { %>
+            <tr>
+              <td>
+                <div class="acc-vno"><%= voucher.voucher_no %></div>
+                <div class="acc-muted"><%= new Date(voucher.voucher_date).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) %></div>
+                <div class="acc-muted">FY <%= voucher.financial_year %></div>
+              </td>
+              <td>
+                <div><span class="acc-badge" style="background:#eef2ff;color:#3730a3;"><%= typeLabel(voucher.voucher_type) %></span></div>
+                <div style="margin-top:.35rem;"><span class="acc-badge" style="<%= statusStyle(voucher.status) %>"><%= voucher.status %></span></div>
+              </td>
+              <td>
+                <% if(voucher.reference_type) { %><span class="acc-ref"><%= voucher.reference_type %></span><% } %>
+                <% if(voucher.reference_id) { %><div class="acc-muted"><%= voucher.reference_id %></div><% } %>
+              </td>
+              <td>
+                <div style="font-weight:600;color:#1f2937;"><%= voucher.narration || '-' %></div>
+                <% if(voucher.journalEntry) { %>
+                  <div class="acc-muted">Journal <%= String(voucher.journalEntry.id).slice(0, 8).toUpperCase() %></div>
+                <% } %>
+              </td>
+              <td class="text-end" style="font-weight:800;color:#111827;">INR <%= money(voucher.total_amount) %></td>
+              <td>
+                <a href="/accounting/vouchers/<%= voucher.id %>" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-eye"></i> View
+                </a>
+              </td>
+            </tr>
+          <% }) %>
+        <% } else { %>
+          <tr>
+            <td colspan="6" style="text-align:center;padding:3.5rem 1rem;color:#8888bb;">
+              <i class="bi bi-receipt" style="font-size:2.5rem;display:block;margin-bottom:.6rem;opacity:.35;"></i>
+              No vouchers found.
+            </td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <% if(totalPages > 1) { %>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.9rem 1.1rem;border-top:1px solid #f0f0fa;flex-wrap:wrap;gap:.5rem;">
+      <span style="font-size:.78rem;color:#8888bb;">Page <%= currentPage %> of <%= totalPages %></span>
+      <div style="display:flex;gap:.3rem;">
+        <% for(let p = 1; p <= totalPages; p++) { %>
+          <a href="<%= pageHref(p) %>" style="width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;text-decoration:none;background:<%= p === currentPage ? '#4f46e5' : '#fff' %>;color:<%= p === currentPage ? '#fff' : '#4444aa' %>;border:1.5px solid <%= p === currentPage ? '#4f46e5' : '#e5e7f0' %>;">
+            <%= p %>
+          </a>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+</div>

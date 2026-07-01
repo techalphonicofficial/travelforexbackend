@@ -43,8 +43,14 @@
                             <div class="text-muted text-center"><%- content.body %></div>
                         </div>
                         <div class="col-lg-6 text-center">
-                            <img src="<%= content.image_url %>" class="img-fluid rounded-4 shadow-lg" alt="<%= section.title %>">
+                            <% const isVideo = content.media_url && content.media_url.match(/\.(mp4|webm|ogg|mov|avi)$/i); %>
+                            <% if (isVideo) { %>
+                                <video src="<%= content.media_url %>" class="img-fluid rounded-4 shadow-lg w-100" controls autoplay muted loop></video>
+                            <% } else { %>
+                                <img src="<%= content.media_url %>" class="img-fluid rounded-4 shadow-lg" alt="<%= section.title %>">
+                            <% } %>
                         </div>
+
                     </div>
                 </div>
             </section>

@@ -1,0 +1,816 @@
+<%- contentFor('body') %>
+
+<%
+    const activeFilters = typeof filters !== 'undefined' ? filters : {};
+    const pager = typeof pagination !== 'undefined' ? pagination : {};
+    const selectedLimit = pager.limit || 10;
+    const totalHotels = pager.totalHotels || 0;
+    const currentPage = pager.currentPage || 1;
+    const totalPages = Math.max(1, pager.totalPages || 1);
+    const startItem = pager.startItem || 0;
+    const endItem = pager.endItem || 0;
+    const limitOptionsList = pager.limitOptions || [10, 25, 50, 100];
+    const hasFilters = Boolean(activeFilters.search || activeFilters.country || activeFilters.city);
+    const pageItems = [];
+
+    for (let pageNo = 1; pageNo <= totalPages; pageNo++) {
+        if (pageNo === 1 || pageNo === totalPages || Math.abs(pageNo - currentPage) <= 1) {
+            pageItems.push(pageNo);
+        } else if (pageItems[pageItems.length - 1] !== '...') {
+            pageItems.push('...');
+        }
+    }
+
+    const pageUrl = (pageNo) => {
+        const params = new URLSearchParams();
+        if (activeFilters.search) params.set('search', activeFilters.search);
+        if (activeFilters.country) params.set('country', activeFilters.country);
+        if (activeFilters.city) params.set('city', activeFilters.city);
+        params.set('limit', selectedLimit);
+        params.set('page', pageNo);
+        return `/travel/hotels?${params.toString()}`;
+    };
+%>
+
+<style>
+    .hotel-list-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    }
+
+    .hotel-list-card .card-body {
+        padding: 0;
+    }
+
+    .hotel-toolbar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+        padding: 1rem;
+        background: #fff;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .hotel-toolbar-title {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        margin-bottom: 0.75rem;
+        color: #0f172a;
+        font-size: 0.95rem;
+        font-weight: 800;
+    }
+
+    .hotel-toolbar-title i {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: #eef2ff;
+        color: #4f46e5;
+    }
+
+    .hotel-filter-form {
+        display: grid;
+        grid-template-columns: minmax(260px, 1.3fr) repeat(3, minmax(145px, 0.75fr)) auto auto;
+        align-items: end;
+        gap: 0.6rem;
+        margin: 0;
+        width: 100%;
+    }
+
+    .hotel-filter-stack {
+        flex: 1 1 900px;
+        min-width: 0;
+    }
+
+    .hotel-filter-field {
+        min-width: 0;
+    }
+
+    .hotel-filter-label {
+        display: block;
+        margin-bottom: 0.3rem;
+        color: #64748b;
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .hotel-filter-search {
+        position: relative;
+        width: 100%;
+    }
+
+    .hotel-filter-search i {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        pointer-events: none;
+    }
+
+    .hotel-filter-search input,
+    .hotel-filter-select {
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background: #fff;
+        color: #1e293b;
+        font-size: 0.88rem;
+        min-height: 40px;
+        width: 100%;
+    }
+
+    .hotel-filter-search input {
+        padding: 0.48rem 0.75rem 0.48rem 2.2rem;
+    }
+
+    .hotel-filter-select {
+        padding: 0.48rem 0.75rem;
+    }
+
+    .hotel-filter-search input:focus,
+    .hotel-filter-select:focus {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+        outline: none;
+    }
+
+    .hotel-filter-btn,
+    .hotel-clear-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        border-radius: 8px;
+        min-height: 40px;
+        padding: 0.48rem 0.9rem;
+        font-size: 0.88rem;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .hotel-filter-btn {
+        border: 0;
+        background: #4f46e5;
+        color: #fff;
+    }
+
+    .hotel-clear-btn {
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        color: #475569;
+    }
+
+    .hotel-clear-btn:hover {
+        background: #eef2f7;
+        color: #334155;
+    }
+
+    .hotel-toolbar-summary {
+        display: flex;
+        flex: 0 0 auto;
+        align-items: flex-end;
+        justify-content: flex-end;
+        min-height: 72px;
+    }
+
+    .hotel-results-count {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        border: 1px solid #dbeafe;
+        border-radius: 999px;
+        background: #eff6ff;
+        color: #1d4ed8;
+        font-size: 0.84rem;
+        font-weight: 800;
+        padding: 0.45rem 0.75rem;
+        white-space: nowrap;
+    }
+
+    .hotel-table-wrap {
+        overflow-x: auto;
+    }
+
+    .hotel-table {
+        min-width: 1250px;
+        margin-bottom: 0;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .hotel-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: #f8fafc;
+        border-top: 0;
+        border-bottom: 1px solid #dbe3ef;
+        color: #475569;
+        font-size: 0.74rem;
+        font-weight: 800;
+        letter-spacing: 0;
+        text-transform: uppercase;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .hotel-table tbody td {
+        border-color: #edf2f7;
+        color: #0f172a;
+        font-size: 0.9rem;
+        vertical-align: top;
+    }
+
+    .hotel-table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    .hotel-table .hotel-id {
+        color: #64748b;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .hotel-media-thumb {
+        width: 58px;
+        height: 42px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid #dbe3ef;
+        background: #f8fafc;
+    }
+
+    .hotel-video-thumb {
+        width: 58px;
+        height: 42px;
+        border-radius: 8px;
+        border: 1px solid #dbe3ef;
+        background: #0f172a;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .hotel-name {
+        color: #0f172a;
+        font-weight: 800;
+        line-height: 1.35;
+    }
+
+    .hotel-destination {
+        color: #0f172a;
+        font-weight: 700;
+        line-height: 1.35;
+    }
+
+    .hotel-subtext {
+        color: #64748b;
+        font-size: 0.78rem;
+        line-height: 1.35;
+        margin-top: 0.18rem;
+    }
+
+    .hotel-source-pill,
+    .hotel-amenity,
+    .hotel-more-pill {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 800;
+        line-height: 1;
+        white-space: nowrap;
+    }
+
+    .hotel-source-pill {
+        padding: 0.35rem 0.6rem;
+    }
+
+    .hotel-source-pill.manual {
+        background: #ecfdf5;
+        color: #047857;
+        border: 1px solid #a7f3d0;
+    }
+
+    .hotel-source-pill.third-party {
+        background: #e0f2fe;
+        color: #0369a1;
+        border: 1px solid #bae6fd;
+    }
+
+    .hotel-amenities {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.28rem;
+        max-width: 240px;
+    }
+
+    .hotel-amenity {
+        background: #f1f5f9;
+        border: 1px solid #dbe3ef;
+        color: #475569;
+        padding: 0.34rem 0.5rem;
+    }
+
+    .hotel-more-pill {
+        background: #eef2ff;
+        border: 1px solid #c7d2fe;
+        color: #4f46e5;
+        padding: 0.34rem 0.5rem;
+    }
+
+    .hotel-rating {
+        color: #0f172a;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .hotel-money,
+    .hotel-discount {
+        white-space: nowrap;
+        font-weight: 800;
+    }
+
+    .hotel-money {
+        color: #0f172a;
+    }
+
+    .hotel-discount {
+        color: #047857;
+    }
+
+    .hotel-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        white-space: nowrap;
+    }
+
+    .hotel-action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border: 0;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .hotel-action-btn:hover {
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .hotel-action-btn.edit {
+        background: #e0f2fe;
+        color: #0369a1;
+    }
+
+    .hotel-action-btn.delete {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .hotel-action-btn:disabled {
+        cursor: not-allowed;
+        opacity: 0.45;
+    }
+
+    .hotel-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        border-top: 1px solid #e2e8f0;
+        padding: 0.9rem 1rem;
+        background: #fff;
+    }
+
+    .hotel-page-links {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+
+    .hotel-page-links a,
+    .hotel-page-links span {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        color: #4f46e5;
+        font-size: 0.84rem;
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    .hotel-page-links span.active {
+        background: #4f46e5;
+        border-color: #4f46e5;
+        color: #fff;
+    }
+
+    .hotel-page-links span.disabled {
+        background: #f8fafc;
+        color: #94a3b8;
+    }
+
+    @media (max-width: 1200px) {
+        .hotel-filter-form {
+            grid-template-columns: minmax(240px, 1fr) repeat(2, minmax(150px, 1fr)) auto;
+        }
+
+        .hotel-filter-form .hotel-filter-field.limit-field,
+        .hotel-filter-form .hotel-clear-btn {
+            grid-column: auto;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .hotel-toolbar {
+            align-items: stretch;
+        }
+
+        .hotel-filter-form {
+            grid-template-columns: 1fr;
+        }
+
+        .hotel-toolbar-summary,
+        .hotel-filter-btn,
+        .hotel-clear-btn {
+            width: 100%;
+        }
+
+        .hotel-toolbar-summary {
+            justify-content: flex-start;
+            min-height: auto;
+        }
+    }
+</style>
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row align-items-center mb-4 mt-2">
+            <div class="col-sm-6">
+                <h1 class="m-0 text-dark" style="font-weight: 800;">Manage Hotels</h1>
+            </div>
+            <div class="col-sm-6 text-right">
+                <% if (hotelSourceMode !== 'third_party') { %>
+                    <a href="/travel/hotels/create" class="btn btn-primary" style="font-weight: 600; padding: 10px 20px; border-radius: 8px;">
+                        <i class="fas fa-plus-circle mr-2"></i> Add Hotel
+                    </a>
+                <% } else { %>
+                    <button class="btn btn-secondary" style="font-weight: 600; padding: 10px 20px; border-radius: 8px; cursor: not-allowed;" title="Manual hotel creation is disabled when 3rd Party API is active.">
+                        <i class="fas fa-lock mr-2"></i> Add Hotel (Disabled)
+                    </button>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <% if (blocked) { %>
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <strong>Action Blocked:</strong> Manual hotel creation/editing is disabled while 3rd Party API mode is active.
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        <% } %>
+
+        <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; background: #f8fafc; border: 1px solid #e2e8f0 !important;">
+            <div class="card-body">
+                <h5 style="font-weight: 700; color: #1e293b; margin-bottom: 1rem;">
+                    <i class="fas fa-plug text-primary mr-2"></i> Hotel Source API Settings
+                </h5>
+
+                <form id="hotelSourceForm" onsubmit="saveHotelSettings(event)">
+                    <div class="row align-items-center">
+                        <div class="col-md-3">
+                            <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: #475569;">Data Source</label>
+                            <select class="form-control" name="hotel_source_mode" id="hotelSourceMode" onchange="toggleApiFields()" style="border-radius: 8px; border: 1px solid #cbd5e1;">
+                                <option value="manual" <%= hotelSourceMode === 'manual' ? 'selected' : '' %>>Manual Entry (PickTrails)</option>
+                                <option value="third_party" <%= hotelSourceMode === 'third_party' ? 'selected' : '' %>>3rd Party API Integration</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3 api-fields" style="<%= hotelSourceMode === 'manual' ? 'display: none;' : '' %>">
+                            <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: #475569;">API Provider</label>
+                            <select class="form-control" name="hotel_api_provider" style="border-radius: 8px; border: 1px solid #cbd5e1;">
+                                <option value="">Select Provider...</option>
+                                <option value="amadeus" <%= hotelApiProvider === 'amadeus' ? 'selected' : '' %>>Amadeus</option>
+                                <option value="sabre" <%= hotelApiProvider === 'sabre' ? 'selected' : '' %>>Sabre</option>
+                                <option value="travelport" <%= hotelApiProvider === 'travelport' ? 'selected' : '' %>>Travelport</option>
+                                <option value="custom" <%= hotelApiProvider === 'custom' ? 'selected' : '' %>>Custom API</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-4 api-fields" style="<%= hotelSourceMode === 'manual' ? 'display: none;' : '' %>">
+                            <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: #475569;">API Key</label>
+                            <input type="text" class="form-control" name="hotel_api_key" value="<%= hotelApiKey %>" placeholder="Enter API Key here..." style="border-radius: 8px; border: 1px solid #cbd5e1;">
+                        </div>
+
+                        <div class="col-md-2 text-right mt-4 pt-1">
+                            <button type="submit" class="btn btn-dark w-100" id="saveSettingsBtn" style="font-weight: 600; border-radius: 8px;">
+                                <i class="fas fa-save mr-1"></i> Save
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card border-0 hotel-list-card">
+            <div class="card-body">
+                <div class="hotel-toolbar">
+                    <div class="hotel-filter-stack">
+                        <div class="hotel-toolbar-title">
+                            <i class="fas fa-sliders-h"></i>
+                            Hotel Filters
+                        </div>
+
+                        <form method="GET" action="/travel/hotels" class="hotel-filter-form">
+                            <div class="hotel-filter-field">
+                                <label class="hotel-filter-label" for="hotelSearch">Search</label>
+                                <div class="hotel-filter-search">
+                                    <i class="fas fa-search"></i>
+                                    <input id="hotelSearch" type="text" name="search" value="<%= activeFilters.search || '' %>" placeholder="Hotel, destination, provider">
+                                </div>
+                            </div>
+
+                            <div class="hotel-filter-field">
+                                <label class="hotel-filter-label" for="hotelCountry">Country</label>
+                                <select id="hotelCountry" name="country" class="hotel-filter-select">
+                                    <option value="">All Countries</option>
+                                    <% countryOptions.forEach(country => { %>
+                                        <option value="<%= country %>" <%= activeFilters.country === country ? 'selected' : '' %>><%= country %></option>
+                                    <% }) %>
+                                </select>
+                            </div>
+
+                            <div class="hotel-filter-field">
+                                <label class="hotel-filter-label" for="hotelCity">City</label>
+                                <select id="hotelCity" name="city" class="hotel-filter-select">
+                                    <option value="">All Cities</option>
+                                    <% cityOptions.forEach(city => { %>
+                                        <option value="<%= city %>" <%= activeFilters.city === city ? 'selected' : '' %>><%= city %></option>
+                                    <% }) %>
+                                </select>
+                            </div>
+
+                            <div class="hotel-filter-field limit-field">
+                                <label class="hotel-filter-label" for="hotelLimit">Rows</label>
+                                <select id="hotelLimit" name="limit" class="hotel-filter-select">
+                                    <% limitOptionsList.forEach(option => { %>
+                                        <option value="<%= option %>" <%= selectedLimit === option ? 'selected' : '' %>><%= option %> / page</option>
+                                    <% }) %>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="hotel-filter-btn">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+
+                            <% if (hasFilters) { %>
+                                <a href="/travel/hotels" class="hotel-clear-btn">
+                                    <i class="fas fa-times"></i> Clear
+                                </a>
+                            <% } %>
+                        </form>
+                    </div>
+
+                    <div class="hotel-toolbar-summary">
+                        <div class="hotel-results-count">
+                            <i class="fas fa-hotel"></i>
+                            <%= totalHotels %> hotel<%= totalHotels === 1 ? '' : 's' %> found
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hotel-table-wrap">
+                    <table id="dataTable" class="table hotel-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Media</th>
+                                <th>Name</th>
+                                <th>Destination</th>
+                                <th>Source</th>
+                                <th>Provider</th>
+                                <th>Stars</th>
+                                <th>Guest Rating</th>
+                                <th>Rooms</th>
+                                <th>Amenities</th>
+                                <th>Price (INR)</th>
+                                <th>Discount</th>
+                                <th>Commission</th>
+                                <th width="120">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (hotels.length) { %>
+                                <% hotels.forEach(hotel => { %>
+                                    <tr>
+                                        <td class="hotel-id">#<%= hotel.id %></td>
+                                        <td>
+                                            <%
+                                                const coverMedia = hotel.gallery && hotel.gallery[0] ? hotel.gallery[0] : null;
+                                                const cover = hotel.image_url || (coverMedia ? coverMedia.url : null);
+                                                const isVideoCover = coverMedia && coverMedia.media_type === 'video';
+                                            %>
+                                            <% if (cover) { %>
+                                                <% if (isVideoCover) { %>
+                                                    <div class="hotel-video-thumb">
+                                                        <i class="fas fa-video"></i>
+                                                    </div>
+                                                <% } else { %>
+                                                    <img src="<%= cover %>" alt="<%= hotel.name %>" class="hotel-media-thumb">
+                                                <% } %>
+                                            <% } else { %>
+                                                <span class="text-muted small">No media</span>
+                                            <% } %>
+                                            <% if (hotel.gallery && hotel.gallery.length) { %>
+                                                <div class="hotel-subtext"><%= hotel.gallery.length %> item<%= hotel.gallery.length === 1 ? '' : 's' %></div>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <div class="hotel-name"><%= hotel.name %></div>
+                                        </td>
+                                        <td>
+                                            <div class="hotel-destination"><%= hotel.destination ? hotel.destination.name : 'N/A' %></div>
+                                            <% if (hotel.location && (hotel.location.city || hotel.location.country)) { %>
+                                                <div class="hotel-subtext">
+                                                    <%= [hotel.location.city, hotel.location.country].filter(Boolean).join(', ') %>
+                                                </div>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <% if (hotel.source_type === 'third_party') { %>
+                                                <span class="hotel-source-pill third-party">3rd Party</span>
+                                            <% } else { %>
+                                                <span class="hotel-source-pill manual">Manual</span>
+                                            <% } %>
+                                        </td>
+                                        <td><%= hotel.provider_name || '-' %></td>
+                                        <td><span class="hotel-rating"><%= hotel.star_rating %> <i class="fas fa-star text-warning"></i></span></td>
+                                        <td><span class="hotel-rating"><%= hotel.guest_rating || 0 %>/5</span></td>
+                                        <td><%= hotel.total_rooms || 0 %></td>
+                                        <td>
+                                            <%
+                                                const amenities = Array.isArray(hotel.amenities) ? hotel.amenities : [];
+                                                const visibleAmenities = amenities.slice(0, 3);
+                                            %>
+                                            <% if (visibleAmenities.length) { %>
+                                                <div class="hotel-amenities">
+                                                    <% visibleAmenities.forEach(amenity => { %>
+                                                        <span class="hotel-amenity"><%= amenity %></span>
+                                                    <% }) %>
+                                                    <% if (amenities.length > visibleAmenities.length) { %>
+                                                        <span class="hotel-more-pill">+<%= amenities.length - visibleAmenities.length %></span>
+                                                    <% } %>
+                                                </div>
+                                            <% } else { %>
+                                                <span class="text-muted small">No amenities</span>
+                                            <% } %>
+                                        </td>
+                                        <td><span class="hotel-money">INR <%= hotel.price_per_night %></span></td>
+                                        <td><span class="hotel-discount"><%= hotel.discount_percent || 0 %>%</span></td>
+                                        <td><span class="hotel-discount"><%= hotel.commission_percent || 0 %>%</span></td>
+                                        <td>
+                                            <div class="hotel-actions">
+                                                <a href="/travel/hotels/<%= hotel.id %>/edit" class="hotel-action-btn edit" title="Edit hotel" <%= hotelSourceMode === 'third_party' ? 'style="pointer-events: none; opacity: 0.5;"' : '' %>>
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button type="button" class="hotel-action-btn delete" title="Delete hotel" onclick="deleteHotel(<%= hotel.id %>)" <%= hotelSourceMode === 'third_party' ? 'disabled' : '' %>>
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="14" class="text-center text-muted py-5">
+                                        <i class="fas fa-hotel mb-2" style="font-size: 2rem; opacity: 0.35;"></i>
+                                        <div class="font-weight-bold">No hotels found.</div>
+                                    </td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+
+                <% if (totalHotels > 0) { %>
+                    <div class="hotel-pagination">
+                        <div class="text-muted small">
+                            Showing <%= startItem %>-<%= endItem %> of <%= totalHotels %>
+                        </div>
+
+                        <div class="hotel-page-links">
+                            <% if (currentPage > 1) { %>
+                                <a href="<%= pageUrl(currentPage - 1) %>" title="Previous"><i class="fas fa-chevron-left"></i></a>
+                            <% } else { %>
+                                <span class="disabled"><i class="fas fa-chevron-left"></i></span>
+                            <% } %>
+
+                            <% pageItems.forEach(item => { %>
+                                <% if (item === '...') { %>
+                                    <span class="disabled">...</span>
+                                <% } else if (item === currentPage) { %>
+                                    <span class="active"><%= item %></span>
+                                <% } else { %>
+                                    <a href="<%= pageUrl(item) %>"><%= item %></a>
+                                <% } %>
+                            <% }) %>
+
+                            <% if (currentPage < totalPages) { %>
+                                <a href="<%= pageUrl(currentPage + 1) %>" title="Next"><i class="fas fa-chevron-right"></i></a>
+                            <% } else { %>
+                                <span class="disabled"><i class="fas fa-chevron-right"></i></span>
+                            <% } %>
+                        </div>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    function toggleApiFields() {
+        const mode = document.getElementById('hotelSourceMode').value;
+        const fields = document.querySelectorAll('.api-fields');
+        fields.forEach(field => {
+            field.style.display = mode === 'third_party' ? 'block' : 'none';
+        });
+    }
+
+    async function saveHotelSettings(e) {
+        e.preventDefault();
+        const btn = document.getElementById('saveSettingsBtn');
+        const form = e.target;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+        try {
+            const formData = new FormData(form);
+            const body = Object.fromEntries(formData.entries());
+
+            const res = await fetch('/travel/hotels/settings/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                window.location.href = '/travel/hotels';
+                return;
+            }
+
+            alert('Error saving settings: ' + data.message);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save mr-1"></i> Save';
+        } catch (err) {
+            alert('Network error.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save mr-1"></i> Save';
+        }
+    }
+
+    async function deleteHotel(id) {
+        if (!confirm('Are you sure you want to delete this hotel?')) return;
+
+        try {
+            const res = await fetch(`/travel/hotels/${id}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting hotel.');
+            }
+        } catch (e) {
+            alert('Error deleting hotel.');
+        }
+    }
+</script>

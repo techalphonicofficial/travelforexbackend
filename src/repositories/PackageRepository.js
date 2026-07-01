@@ -2,7 +2,7 @@ const BaseRepository = require('./BaseRepository');
 const { Op } = require('sequelize');
 
 class PackageRepository extends BaseRepository {
-    constructor(model, destinationModel, activityModel, mediaModel, inclusionModel, exclusionModel, packageDestinationModel) {
+    constructor(model, destinationModel, activityModel, mediaModel, inclusionModel, exclusionModel, packageDestinationModel, reviewModel = null) {
         super(model);
         this.destinationModel = destinationModel;
         this.activityModel = activityModel;
@@ -10,6 +10,30 @@ class PackageRepository extends BaseRepository {
         this.inclusionModel = inclusionModel;
         this.exclusionModel = exclusionModel;
         this.packageDestinationModel = packageDestinationModel;
+        this.reviewModel = reviewModel;
+    }
+
+    reviewInclude() {
+        if (!this.reviewModel) return [];
+
+        return [{
+            model: this.reviewModel,
+            as: 'reviews',
+            required: false,
+            separate: true,
+            where: { status: 'approved' },
+            include: [{
+                model: this.mediaModel,
+                as: 'media',
+                required: false,
+                separate: true,
+                order: [
+                    ['is_primary', 'DESC'],
+                    ['id', 'ASC']
+                ]
+            }],
+            order: [['created_at', 'DESC']]
+        }];
     }
 
     async findAll() {
@@ -25,6 +49,403 @@ class PackageRepository extends BaseRepository {
         });
     }
 
+    async filterPackages({ city, country, continent, destination, category, minPrice, maxPrice, duration }) {
+        const where = {};
+        if (minPrice || maxPrice) {
+            where.price = {};
+            if (minPrice) where.price[Op.gte] = minPrice;
+            if (maxPrice) where.price[Op.lte] = maxPrice;
+        }
+        if (duration) {
+            where.duration_days = duration;
+        }
+
+        const destIncludeOptions = {
+            model: this.destinationModel, 
+            as: 'destination',
+            required: false
+        };
+
+        if (destination) {
+            destIncludeOptions.where = {
+                [Op.or]: [
+                    { id: isNaN(destination) ? -1 : destination },
+                    { slug: destination }
+                ]
+            };
+            destIncludeOptions.required = true;
+        }
+
+        const nestedIncludes = [];
+        
+        let cityInclude = {
+            association: 'city',
+            required: true
+        };
+
+        if (city) {
+            cityInclude.where = {
+                [Op.or]: [
+                    { id: isNaN(city) ? -1 : city },
+                    { name: { [Op.iLike]: `%${city}%` } }
+                ]
+            };
+        }
+
+        let countryInclude = null;
+        if (country || continent) {
+            countryInclude = {
+                association: 'country',
+                required: true
+            };
+            if (country) {
+                countryInclude.where = {
+                    [Op.or]: [
+                        { id: isNaN(country) ? -1 : country },
+                        { name: { [Op.iLike]: `%${country}%` } }
+                    ]
+                };
+            }
+            if (continent) {
+                countryInclude.include = [{
+                    association: 'continent',
+                    required: true,
+                    where: {
+                        [Op.or]: [
+                            { id: isNaN(continent) ? -1 : continent },
+                            { name: { [Op.iLike]: `%${continent}%` } }
+                        ]
+                    }
+                }];
+            }
+            cityInclude.include = [countryInclude];
+        }
+
+        if (city || country || continent) {
+            nestedIncludes.push({
+                association: 'mappings',
+                required: true,
+                include: [cityInclude]
+            });
+            destIncludeOptions.required = true;
+        }
+
+        if (category) {
+            nestedIncludes.push({
+                association: 'categories',
+                required: true,
+                where: {
+                    [Op.or]: [
+                        { id: isNaN(category) ? -1 : category },
+                        { slug: category },
+                        { name: { [Op.iLike]: `%${category}%` } }
+                    ]
+                }
+            });
+            destIncludeOptions.required = true;
+        }
+
+        if (nestedIncludes.length > 0) {
+            destIncludeOptions.include = nestedIncludes;
+        }
+
+        const pkgDestInclude = {
+            model: this.packageDestinationModel, as: 'destinations',
+            include: [destIncludeOptions],
+            required: destIncludeOptions.required
+        };
+
+        return this.model.findAll({
+            where,
+            include: [
+                pkgDestInclude,
+                { model: this.mediaModel, as: 'gallery' }
+            ],
+            order: [['created_at', 'DESC']]
+        });
+    }
+
+    normalizeFilter(value) {
+        return String(value || '').trim().toLowerCase();
+    }
+
+    parseAmount(value, fallback = null) {
+        const parsed = parseFloat(value);
+        return Number.isFinite(parsed) ? parsed : fallback;
+    }
+
+    durationBuckets() {
+        return [
+            { key: '1-3', label: '1-3 days', min: 1, max: 3 },
+            { key: '4-7', label: '4-7 days', min: 4, max: 7 },
+            { key: '8-14', label: '8-14 days', min: 8, max: 14 },
+            { key: '15-plus', label: '15+ days', min: 15, max: null }
+        ];
+    }
+
+    packageText(row = {}) {
+        const parts = [row.name, row.slug];
+        (row.destinations || []).forEach(packageDestination => {
+            const destination = packageDestination.destination || {};
+            parts.push(destination.name, destination.slug, destination.country, destination.state);
+            (destination.categories || []).forEach(category => parts.push(category.name, category.slug));
+            (destination.mappings || []).forEach(mapping => {
+                const city = mapping.city || {};
+                const country = city.country || {};
+                const continent = country.continent || {};
+                parts.push(city.name, country.name, continent.name);
+            });
+        });
+        return parts.filter(Boolean).join(' ').toLowerCase();
+    }
+
+    packageTourTypes(row = {}) {
+        const byId = new Map();
+        (row.destinations || []).forEach(packageDestination => {
+            const destination = packageDestination.destination || {};
+            (destination.categories || []).forEach(category => {
+                if (!category.is_tour_type) return;
+                byId.set(category.id, category);
+            });
+        });
+        return [...byId.values()];
+    }
+
+    packageMatchesDuration(row = {}, duration = '') {
+        const normalized = this.normalizeFilter(duration);
+        if (!normalized || normalized === 'any') return true;
+        const days = parseInt(row.duration_days, 10) || 0;
+        const bucket = this.durationBuckets().find(item => item.key === normalized);
+        if (bucket) {
+            return days >= bucket.min && (bucket.max === null || days <= bucket.max);
+        }
+        const exactDays = parseInt(duration, 10);
+        return Number.isInteger(exactDays) && exactDays > 0 ? days === exactDays : true;
+    }
+
+    packageMatchesTourType(row = {}, category = '') {
+        const normalized = this.normalizeFilter(category);
+        if (!normalized || normalized === 'all') return true;
+        return this.packageTourTypes(row).some(tourType => (
+            String(tourType.id) === normalized ||
+            this.normalizeFilter(tourType.slug) === normalized ||
+            this.normalizeFilter(tourType.name) === normalized
+        ));
+    }
+
+    packageMatchesFilters(row = {}, filters = {}, exclude = '') {
+        const search = this.normalizeFilter(filters.search || filters.q);
+        const city = this.normalizeFilter(filters.city);
+        const country = this.normalizeFilter(filters.country);
+        const continent = this.normalizeFilter(filters.continent);
+        const destination = this.normalizeFilter(filters.destination);
+        const tourType = filters.tour_type || filters.tourType || filters.category;
+        const minPrice = this.parseAmount(filters.minPrice !== undefined ? filters.minPrice : filters.min_price);
+        const maxPrice = this.parseAmount(filters.maxPrice !== undefined ? filters.maxPrice : filters.max_price);
+        const price = this.parseAmount(row.price, 0);
+        const text = this.packageText(row);
+
+        if (exclude !== 'search' && search && !text.includes(search)) return false;
+        if (exclude !== 'city' && city && !text.includes(city)) return false;
+        if (exclude !== 'country' && country && !text.includes(country)) return false;
+        if (exclude !== 'continent' && continent && !text.includes(continent)) return false;
+        if (exclude !== 'destination' && destination && !text.includes(destination)) return false;
+        if (exclude !== 'tour_type' && !this.packageMatchesTourType(row, tourType)) return false;
+        if (exclude !== 'price') {
+            if (minPrice !== null && price < minPrice) return false;
+            if (maxPrice !== null && price > maxPrice) return false;
+        }
+        if (exclude !== 'duration' && !this.packageMatchesDuration(row, filters.duration)) return false;
+
+        return true;
+    }
+
+    async getDynamicFilters(filters = {}) {
+        const Category = this.model.sequelize.models.Category;
+        const Country = this.model.sequelize.models.Country;
+
+        const rows = await this.model.findAll({
+            where: { status: true },
+            attributes: ['id', 'name', 'slug', 'price', 'duration_days'],
+            include: [{
+                model: this.packageDestinationModel,
+                as: 'destinations',
+                attributes: ['destination_id'],
+                required: false,
+                include: [{
+                    model: this.destinationModel,
+                    as: 'destination',
+                    attributes: ['id', 'name', 'slug', 'country', 'state'],
+                    required: false,
+                    include: [
+                        {
+                            association: 'categories',
+                            attributes: ['id', 'name', 'slug', 'is_tour_type', 'sort_order'],
+                            through: { attributes: [] },
+                            required: false
+                        },
+                        {
+                            association: 'mappings',
+                            attributes: ['city_id'],
+                            required: false,
+                            include: [{
+                                association: 'city',
+                                attributes: ['id', 'name', 'country_id'],
+                                required: false,
+                                include: Country ? [{
+                                    model: Country,
+                                    as: 'country',
+                                    attributes: ['id', 'name'],
+                                    required: false,
+                                    include: [{ association: 'continent', attributes: ['id', 'name'], required: false }]
+                                }] : []
+                            }]
+                        }
+                    ]
+                }]
+            }]
+        });
+
+        const packages = rows.map(row => row.get ? row.get({ plain: true }) : row);
+        const current = packages.filter(row => this.packageMatchesFilters(row, filters));
+        const withoutTourType = packages.filter(row => this.packageMatchesFilters(row, filters, 'tour_type'));
+        const withoutPrice = packages.filter(row => this.packageMatchesFilters(row, filters, 'price'));
+        const withoutDuration = packages.filter(row => this.packageMatchesFilters(row, filters, 'duration'));
+
+        const rawSelectedTourType = this.normalizeFilter(filters.tour_type || filters.tourType || filters.category);
+        const selectedTourType = rawSelectedTourType === 'all' ? '' : rawSelectedTourType;
+        const tourTypeCountMap = new Map();
+        withoutTourType.forEach(row => {
+            this.packageTourTypes(row).forEach(tourType => {
+                const countRow = tourTypeCountMap.get(tourType.id) || { ...tourType, count: 0 };
+                countRow.count += 1;
+                tourTypeCountMap.set(tourType.id, countRow);
+            });
+        });
+
+        let tourTypes = [...tourTypeCountMap.values()];
+        if (Category) {
+            const categoryOrder = await Category.findAll({
+                where: { is_tour_type: true },
+                attributes: ['id', 'name', 'slug', 'sort_order'],
+                order: [['sort_order', 'ASC'], ['name', 'ASC']]
+            });
+            const orderedIds = categoryOrder.map(category => category.id);
+            const missing = categoryOrder
+                .filter(category => !tourTypeCountMap.has(category.id))
+                .map(category => ({ ...(category.get ? category.get({ plain: true }) : category), count: 0 }));
+            tourTypes = [...tourTypes, ...missing].sort((a, b) => {
+                const aIndex = orderedIds.indexOf(a.id);
+                const bIndex = orderedIds.indexOf(b.id);
+                if (aIndex !== -1 || bIndex !== -1) return (aIndex === -1 ? 9999 : aIndex) - (bIndex === -1 ? 9999 : bIndex);
+                return String(a.name).localeCompare(String(b.name));
+            });
+        } else {
+            tourTypes.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+        }
+
+        const prices = withoutPrice
+            .map(row => this.parseAmount(row.price, 0))
+            .filter(value => value !== null && value >= 0);
+        const minAvailablePrice = prices.length ? Math.min(...prices) : 0;
+        const maxAvailablePrice = prices.length ? Math.max(...prices) : 0;
+        const selectedMin = this.parseAmount(filters.minPrice !== undefined ? filters.minPrice : filters.min_price, minAvailablePrice);
+        const selectedMax = this.parseAmount(filters.maxPrice !== undefined ? filters.maxPrice : filters.max_price, maxAvailablePrice);
+
+        const selectedDuration = this.normalizeFilter(filters.duration);
+        const durationOptions = this.durationBuckets().map(bucket => ({
+            ...bucket,
+            count: withoutDuration.filter(row => {
+                const days = parseInt(row.duration_days, 10) || 0;
+                return days >= bucket.min && (bucket.max === null || days <= bucket.max);
+            }).length,
+            selected: selectedDuration === bucket.key
+        }));
+
+        return {
+            search: {
+                query: filters.search || filters.q || '',
+                placeholder: 'Destination, country...'
+            },
+            total: current.length,
+            tour_types: [
+                {
+                    key: 'all',
+                    label: 'All',
+                    count: withoutTourType.length,
+                    selected: !selectedTourType
+                },
+                ...tourTypes.map(tourType => ({
+                    id: tourType.id,
+                    name: tourType.name,
+                    slug: tourType.slug,
+                    label: tourType.name,
+                    count: tourType.count || 0,
+                    selected: Boolean(selectedTourType && (
+                        selectedTourType === String(tourType.id) ||
+                        selectedTourType === this.normalizeFilter(tourType.slug) ||
+                        selectedTourType === this.normalizeFilter(tourType.name)
+                    ))
+                }))
+            ],
+            price_range: {
+                min: minAvailablePrice,
+                max: maxAvailablePrice,
+                selected_min: selectedMin,
+                selected_max: selectedMax
+            },
+            durations: [
+                {
+                    key: 'any',
+                    label: 'Any',
+                    min: null,
+                    max: null,
+                    count: withoutDuration.length,
+                    selected: !selectedDuration || selectedDuration === 'any'
+                },
+                ...durationOptions
+            ]
+        };
+    }
+async findBySlug(slug) {
+    return this.model.findOne({
+        where: { slug },
+
+        include: [
+            {
+                model: this.packageDestinationModel,
+                as: 'destinations',
+                include: [
+                    {
+                        model: this.destinationModel,
+                        as: 'destination'
+                    }
+                ]
+            },
+            {
+                model: this.inclusionModel,
+                as: 'inclusions'
+            },
+            {
+                model: this.exclusionModel,
+                as: 'exclusions'
+            },
+            {
+                model: this.mediaModel,
+                as: 'gallery'
+            },
+            ...this.reviewInclude()
+        ],
+
+        order: [
+            [
+                { model: this.packageDestinationModel, as: 'destinations' },
+                'order',
+                'ASC'
+            ]
+        ]
+    });
+}
     async findById(id) {
         return this.model.findByPk(id, {
             include: [
@@ -36,7 +457,8 @@ class PackageRepository extends BaseRepository {
                 },
                 { model: this.inclusionModel, as: 'inclusions' },
                 { model: this.exclusionModel, as: 'exclusions' },
-                { model: this.mediaModel, as: 'gallery' }
+                { model: this.mediaModel, as: 'gallery' },
+                ...this.reviewInclude()
             ],
             order: [
                 [{ model: this.packageDestinationModel, as: 'destinations' }, 'order', 'ASC']

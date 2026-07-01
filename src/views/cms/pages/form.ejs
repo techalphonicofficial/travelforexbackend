@@ -64,24 +64,30 @@
                   <button type="button" class="btn-icon btn-icon-del position-absolute" style="top:1rem;right:1rem"
                     onclick="removeSection(this)"><i class="bi bi-trash3"></i></button>
 
+                  <% let content={}; try { content = typeof detail.json_data === 'string' ? JSON.parse(detail.json_data) : (detail.json_data || {}); } catch(e) {} %>
                   <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                       <label class="small fw-bold text-muted mb-1 uppercase">Block ID (Key)</label>
                       <input type="text" name="sections[<%= index %>][key]" class="form-control form-control-sm"
                         placeholder="e.g. hero-section" value="<%= detail.key %>">
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                       <label class="small fw-bold text-muted mb-1 uppercase">Block Heading</label>
                       <input type="text" name="sections[<%= index %>][title]" class="form-control form-control-sm"
                         placeholder="Display Title" value="<%= detail.title %>">
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                      <label class="small fw-bold text-muted mb-1 uppercase">Heading Content</label>
+                      <input type="text" class="form-control form-control-sm item-heading-content"
+                        placeholder="Heading Content" value="<%= content.heading_content || '' %>">
+                    </div>
+                    <div class="col-md-3">
                       <label class="small fw-bold text-muted mb-1 uppercase">Block Layout</label>
                       <select name="sections[<%= index %>][section]" class="form-select form-select-sm"
                         onchange="toggleSectionType(this)">
                         <option value="standard" <%=detail.section==='standard' ? 'selected' : '' %>>Standard (Text +
                           Desc)</option>
-                        <option value="image_text" <%=detail.section==='image_text' ? 'selected' : '' %>>Image + Text
+                        <option value="image_text" <%=detail.section==='image_text' ? 'selected' : '' %>>Media + Text
                         </option>
                         <option value="rich_text" <%=detail.section==='rich_text' ? 'selected' : '' %>>Rich Text Block
                         </option>
@@ -98,13 +104,13 @@
                           >Testimonials</option>
                         <option value="gallery" <%=detail.section==='gallery' ? 'selected' : '' %>>Gallery (Photos)
                         </option>
-                        <option value="why_choose_us" <%=detail.section==='why_choose_us' ? 'selected' : '' %>>Why Choose Us
-                        </option>
+                        <option value="why_choose_us" <%=detail.section==='why_choose_us' ? 'selected' : '' %>>Why Choose Us</option>
+                        <option value="story_grid" <%=detail.section==='story_grid' ? 'selected' : '' %>>Story (Text + Stats + Images)</option>
+                        <option value="team_grid" <%=detail.section==='team_grid' ? 'selected' : '' %>>Team Grid</option>
                       </select>
                     </div>
 
                     <div class="col-12 mt-3 content-area">
-                      <% let content={}; try { content=JSON.parse(detail.json_data || '{}' ); } catch(e) {} %>
 
                         <!-- Standard -->
                         <div class="type-standard section-content"
@@ -113,7 +119,7 @@
                             placeholder="Enter content description here..."><%= detail.description %></textarea>
                         </div>
 
-                        <!-- Image Text -->
+                        <!-- Media Text (Formerly Image Text) -->
                         <div class="type-image_text section-content"
                           style="display: <%= detail.section === 'image_text' ? 'block' : 'none' %>">
                           <div class="row g-2">
@@ -121,23 +127,26 @@
                                 placeholder="Body Content"><%= content.body || '' %></textarea></div>
                             <div class="col-md-4">
                               <div class="media-selector-wrap bg-white border rounded-3 p-2 text-center mb-1">
-                                <img src="<%= content.image_url || '/assets/img/placeholder.png' %>"
+                                <% const isVideo = content.media_url && content.media_url.match(/\.(mp4|webm|ogg|mov|avi)$/i); %>
+                                <img src="<%= !isVideo ? (content.media_url || '/assets/img/placeholder.png') : '' %>"
                                   class="img-preview mb-2 rounded"
-                                  style="max-height: 80px; display: <%= content.image_url ? 'block' : 'none' %>; margin: 0 auto;">
+                                  style="max-height: 80px; display: <%= content.media_url && !isVideo ? 'block' : 'none' %>; margin: 0 auto;">
+                                <video class="video-preview mb-2 rounded" src="<%= isVideo ? content.media_url : '' %>"
+                                  style="max-height: 80px; display: <%= isVideo ? 'block' : 'none' %>; margin: 0 auto;" controls autoplay muted loop></video>
                                 <div class="placeholder-icon mb-2 text-muted"
-                                  style="display: <%= content.image_url ? 'none' : 'block' %>"><i
-                                    class="bi bi-image fs-4"></i></div>
+                                  style="display: <%= content.media_url ? 'none' : 'block' %>"><i
+                                    class="bi bi-camera-video fs-4"></i></div>
                                 <input type="text" class="form-control form-control-sm item-img mb-1"
-                                  placeholder="Image URL" value="<%= content.image_url || '' %>"
+                                  placeholder="Media URL" value="<%= content.media_url || '' %>"
                                   onchange="updatePreview(this)">
                                 <button type="button" class="btn btn-xs btn-outline-primary w-100 py-1"
                                   onclick="openMediaLibrary(this)" style="font-size: 0.7rem;">Select Media</button>
                               </div>
                               <select class="form-select form-select-sm item-side">
-                                <option value="right" <%=content.side==='right' ? 'selected' : '' %>>Image Right
+                                <option value="right" <%=content.side==='right' ? 'selected' : '' %>>Media Right
                                 </option>
-                                <option value="left" <%=content.side==='left' ? 'selected' : '' %>>Image Left</option>
-                                <option value="center" <%=content.side==='center' ? 'selected' : '' %>>Image Center
+                                <option value="left" <%=content.side==='left' ? 'selected' : '' %>>Media Left</option>
+                                <option value="center" <%=content.side==='center' ? 'selected' : '' %>>Media Center
                                 </option>
                               </select>
                             </div>
@@ -147,7 +156,7 @@
                         <!-- Rich Text -->
                         <div class="type-rich_text section-content"
                           style="display: <%= detail.section === 'rich_text' ? 'block' : 'none' %>">
-                          <textarea class="form-control item-body" rows="5"
+                          <textarea class="form-control item-body rich-editor" rows="5"
                             placeholder="HTML / Rich Text Content"><%= content.body || '' %></textarea>
                         </div>
 
@@ -162,12 +171,16 @@
                           </div>
                         </div>
 
-                        <!-- FAQ / Stats / Timeline / Features / Testimonials / Gallery (List Based) -->
+                        <!-- FAQ / Stats / Timeline / Features / Testimonials / Gallery / Team (List Based) -->
                         <div class="type-list-based section-content"
-                          style="display: <%= ['faq_accordion', 'stats_bar', 'timeline', 'feature_grid', 'testimonial_grid', 'gallery'].includes(detail.section) ? 'block' : 'none' %>">
+                          style="display: <%= ['faq_accordion', 'stats_bar', 'timeline', 'feature_grid', 'testimonial_grid', 'gallery', 'team_grid'].includes(detail.section) ? 'block' : 'none' %>">
+                          <div class="mb-3">
+                            <label class="small fw-bold text-muted mb-1">Block Description (Optional)</label>
+                            <textarea class="form-control form-control-sm item-block-desc" rows="2" placeholder="Brief text under heading..."><%= content.block_desc || '' %></textarea>
+                          </div>
                           <div class="items-list d-flex flex-column gap-2 mb-3">
                             <% const listKey={ 'faq_accordion' : 'faqs' , 'stats_bar' : 'stats' , 'timeline' : 'items'
-                              , 'feature_grid' : 'features' , 'testimonial_grid' : 'testimonials' , 'gallery' : 'images'
+                              , 'feature_grid' : 'features' , 'testimonial_grid' : 'testimonials' , 'gallery' : 'images' , 'team_grid': 'team'
                               }[detail.section] || 'items' ; const items=Array.isArray(content[listKey]) ?
                               content[listKey] : []; items.forEach((item, i)=> { %>
                               <div class="item-row d-flex gap-2 align-items-center bg-white p-2 rounded-3 border">
@@ -177,10 +190,11 @@
                                   <input type="text" class="form-control form-control-sm f2" placeholder="Answer"
                                     value="<%= item.a %>">
                                   <% } else if (detail.section==='stats_bar' ) { %>
-                                    <input type="text" class="form-control form-control-sm f1" placeholder="Value"
-                                      value="<%= item.value %>">
-                                    <input type="text" class="form-control form-control-sm f2" placeholder="Label"
-                                      value="<%= item.label %>">
+                                    <div class="d-flex flex-column gap-2 flex-grow-1">
+                                      <input type="text" class="form-control form-control-sm f1" placeholder="Value"
+                                        value="<%= item.value %>">
+                                      <textarea class="form-control form-control-sm f2 rich-editor" placeholder="Label"><%= item.label %></textarea>
+                                    </div>
                                     <% } else if (detail.section==='timeline' ) { %>
                                       <input type="text" class="form-control form-control-sm f1" placeholder="Year"
                                         value="<%= item.year %>" style="width:100px">
@@ -207,7 +221,20 @@
                                               placeholder="Image URL" value="<%= item.img %>">
                                             <input type="text" class="form-control form-control-sm f2"
                                               placeholder="Label" value="<%= item.lbl %>">
-                                            <% } %>
+                                          <% } else if (detail.section==='team_grid' ) { %>
+                                            <div class="d-flex flex-column flex-grow-1 gap-2 align-items-start">
+                                              <div class="d-flex gap-2 align-items-center mb-1 media-selector-wrap">
+                                                <img src="<%= item.img || '/assets/img/placeholder.png' %>" class="img-preview rounded" style="width: 40px; height: 40px; object-fit: cover; display: <%= item.img ? 'block' : 'none' %>;">
+                                                <input type="text" class="form-control form-control-sm f1" placeholder="Image URL" value="<%= item.img %>" onchange="updatePreview(this)">
+                                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="openMediaLibrary(this)"><i class="bi bi-folder2-open"></i></button>
+                                              </div>
+                                              <div class="row g-2 w-100 m-0">
+                                                <div class="col-md-6 p-0 pe-1"><input type="text" class="form-control form-control-sm f2" placeholder="Name" value="<%= item.name %>"></div>
+                                                <div class="col-md-6 p-0 ps-1"><input type="text" class="form-control form-control-sm f3" placeholder="Role/Designation" value="<%= item.role %>"></div>
+                                              </div>
+                                              <textarea class="form-control form-control-sm f4" placeholder="Short Bio" rows="2"><%= item.bio %></textarea>
+                                            </div>
+                                          <% } %>
                                               <button type="button" class="btn btn-sm btn-light text-danger border"
                                                 onclick="this.parentElement.remove()"><i
                                                   class="bi bi-x-lg"></i></button>
@@ -271,6 +298,52 @@
                                 <% }) %>
                               </div>
                               <button type="button" class="btn btn-xs btn-outline-indigo" onclick="addItem(<%= index %>, 'gallery')">+ Add Image</button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Story Grid (Text + Stats + Images) -->
+                        <div class="type-story_grid section-content"
+                          style="display: <%= detail.section === 'story_grid' ? 'block' : 'none' %>">
+                          <div class="row g-3">
+                            <!-- Story Description -->
+                            <div class="col-12">
+                              <label class="small fw-bold text-indigo mb-2 d-block">1. Story Description</label>
+                              <textarea class="form-control item-story-desc rich-editor" rows="4" placeholder="Detailed story text goes here..."><%= content.story_desc || '' %></textarea>
+                            </div>
+                            <!-- Stats List -->
+                            <div class="col-12">
+                              <label class="small fw-bold text-indigo mb-2 d-block">2. Labels / Stats (Array)</label>
+                              <div class="story-stats-list d-flex flex-column gap-2 mb-2">
+                                <% (content.stats || []).forEach(st => { %>
+                                  <div class="item-row d-flex gap-2 align-items-center bg-white p-2 rounded-3 border">
+                                    <input type="text" class="form-control form-control-sm f1" placeholder="Label/Value (e.g. 50K+)" value="<%= st.value %>">
+                                    <input type="text" class="form-control form-control-sm f2" placeholder="Description (e.g. Happy Travelers)" value="<%= st.desc %>">
+                                    <button type="button" class="btn btn-sm btn-light text-danger border" onclick="this.parentElement.remove()"><i class="bi bi-x-lg"></i></button>
+                                  </div>
+                                <% }) %>
+                              </div>
+                              <button type="button" class="btn btn-xs btn-outline-indigo" onclick="addItem(<%= index %>, 'story_stat')">+ Add Label</button>
+                            </div>
+                            <!-- Gallery List with Alt -->
+                            <div class="col-12">
+                              <label class="small fw-bold text-indigo mb-2 d-block">3. Images (Array)</label>
+                              <div class="story-gallery-list d-flex flex-column gap-2 mb-2">
+                                <% (content.gallery || []).forEach(gl => { %>
+                                  <div class="item-row d-flex gap-2 align-items-center bg-white p-2 rounded-3 border">
+                                    <div class="d-flex flex-column flex-grow-1">
+                                      <div class="d-flex gap-2 align-items-center mb-1 media-selector-wrap">
+                                        <img src="<%= gl.img || '/assets/img/placeholder.png' %>" class="img-preview rounded" style="width: 40px; height: 40px; object-fit: cover; display: <%= gl.img ? 'block' : 'none' %>;">
+                                        <input type="text" class="form-control form-control-sm f1" placeholder="Image URL" value="<%= gl.img %>" onchange="updatePreview(this)">
+                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="openMediaLibrary(this)"><i class="bi bi-folder2-open"></i></button>
+                                      </div>
+                                      <input type="text" class="form-control form-control-sm f2" placeholder="Image Alt Text" value="<%= gl.alt %>">
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-light text-danger border" onclick="this.parentElement.remove()"><i class="bi bi-x-lg"></i></button>
+                                  </div>
+                                <% }) %>
+                              </div>
+                              <button type="button" class="btn btn-xs btn-outline-indigo" onclick="addItem(<%= index %>, 'story_gallery')">+ Add Image</button>
                             </div>
                           </div>
                         </div>
@@ -345,17 +418,31 @@
 </form>
 
 <script>
-  // Update image preview from URL input
+  // Update media preview from URL input
   function updatePreview(input) {
     const wrap = input.closest('.media-selector-wrap') || input.parentElement;
     const img = wrap.querySelector('.img-preview');
+    const vid = wrap.querySelector('.video-preview');
     const placeholder = wrap.querySelector('.placeholder-icon');
     if (input.value) {
-      img.src = input.value;
-      img.style.display = 'block';
+      const isVideo = input.value.match(/\.(mp4|webm|ogg|mov|avi)$/i);
+      if (isVideo) {
+        if (img) img.style.display = 'none';
+        if (vid) {
+          vid.src = input.value;
+          vid.style.display = 'block';
+        }
+      } else {
+        if (vid) vid.style.display = 'none';
+        if (img) {
+          img.src = input.value;
+          img.style.display = 'block';
+        }
+      }
       if (placeholder) placeholder.style.display = 'none';
     } else {
-      img.style.display = 'none';
+      if (img) img.style.display = 'none';
+      if (vid) vid.style.display = 'none';
       if (placeholder) placeholder.style.display = 'block';
     }
   }
@@ -375,14 +462,18 @@
       const res = await fetch('/cms/media/all');
       const result = await res.json();
       if (result.success) {
-        container.innerHTML = result.data.map(m => `
+        container.innerHTML = result.data.map(m => {
+          const isVideo = m.url && m.url.match(/\.(mp4|webm|ogg|mov|avi)$/i);
+          return `
           <div class="col-md-3 col-6 mb-3">
             <div class="media-item border rounded-3 p-1 position-relative" style="cursor:pointer" onclick="selectMedia('${m.url}')">
-              <img src="${m.url}" class="img-fluid rounded-2" style="height:100px; width:100%; object-fit:cover;">
+              ${isVideo 
+                ? `<video src="${m.url}" style="height:100px; width:100%; object-fit:cover; background:#000;" class="rounded-2" muted></video><div style="position:absolute; top:5px; right:5px; background:rgba(0,0,0,0.5); color:#fff; border-radius:4px; padding:2px 5px; font-size:10px;"><i class="bi bi-camera-video"></i></div>` 
+                : `<img src="${m.url}" class="img-fluid rounded-2" style="height:100px; width:100%; object-fit:cover;">`}
               <div class="media-info small text-truncate mt-1 px-1">${m.label || 'Unnamed'}</div>
             </div>
           </div>
-        `).join('');
+        `}).join('');
       }
     } catch (e) {
       container.innerHTML = '<div class="alert alert-danger">Failed to load media</div>';
@@ -439,10 +530,12 @@
     contentArea.querySelectorAll('.section-content').forEach(el => el.style.display = 'none');
 
     // Show selected
-    if (['faq_accordion', 'stats_bar', 'timeline', 'feature_grid', 'testimonial_grid', 'gallery'].includes(type)) {
+    if (['faq_accordion', 'stats_bar', 'timeline', 'feature_grid', 'testimonial_grid', 'gallery', 'team_grid'].includes(type)) {
       contentArea.querySelector('.type-list-based').style.display = 'block';
     } else if (type === 'why_choose_us') {
       contentArea.querySelector('.type-why_choose_us').style.display = 'block';
+    } else if (type === 'story_grid') {
+      contentArea.querySelector('.type-story_grid').style.display = 'block';
     } else {
       const target = contentArea.querySelector(`.type-${type}`);
       if (target) target.style.display = 'block';
@@ -457,6 +550,9 @@
     if (type === 'why_choose_us') {
       const listMap = { 'stat': 'stats-list', 'feature': 'features-list', 'gallery': 'gallery-list' };
       list = section.querySelector(`.${listMap[subType]}`);
+    } else if (type === 'story_grid') {
+      const listMap = { 'story_stat': 'story-stats-list', 'story_gallery': 'story-gallery-list' };
+      list = section.querySelector(`.${listMap[subType]}`);
     }
 
     let html = '';
@@ -470,17 +566,38 @@
                 <div class="d-flex flex-column flex-grow-1">
                   <div class="d-flex gap-2 align-items-center mb-1 media-selector-wrap">
                     <img src="/assets/img/placeholder.png" class="img-preview rounded" style="width: 40px; height: 40px; object-fit: cover; display: none;">
-                    <input type="text" class="form-control form-control-sm f1" placeholder="Image URL" onchange="updatePreview(this)">
+                    <video class="video-preview rounded" style="width: 40px; height: 40px; object-fit: cover; display: none;" muted></video>
+                    <input type="text" class="form-control form-control-sm f1" placeholder="Media URL" onchange="updatePreview(this)">
                     <button type="button" class="btn btn-sm btn-outline-primary" onclick="openMediaLibrary(this)"><i class="bi bi-folder2-open"></i></button>
                   </div>
                   <input type="text" class="form-control form-control-sm f2" placeholder="Label">
                 </div>
                 ${delBtn}
               </div>`;
+    } else if (type === 'story_grid') {
+      if (subType === 'story_stat') html = `<div class="${rowClass}"><input type="text" class="form-control form-control-sm f1" placeholder="Label/Value (e.g. 50K+)"><input type="text" class="form-control form-control-sm f2" placeholder="Description (e.g. Happy Travelers)">${delBtn}</div>`;
+      if (subType === 'story_gallery') html = `<div class="${rowClass}">
+                <div class="d-flex flex-column flex-grow-1">
+                  <div class="d-flex gap-2 align-items-center mb-1 media-selector-wrap">
+                    <img src="/assets/img/placeholder.png" class="img-preview rounded" style="width: 40px; height: 40px; object-fit: cover; display: none;">
+                    <video class="video-preview rounded" style="width: 40px; height: 40px; object-fit: cover; display: none;" muted></video>
+                    <input type="text" class="form-control form-control-sm f1" placeholder="Media URL" onchange="updatePreview(this)">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="openMediaLibrary(this)"><i class="bi bi-folder2-open"></i></button>
+                  </div>
+                  <input type="text" class="form-control form-control-sm f2" placeholder="Image Alt Text">
+                </div>
+                ${delBtn}
+              </div>`;
     } else if (type === 'faq_accordion') {
       html = `<div class="${rowClass}"><input type="text" class="form-control form-control-sm f1" placeholder="Question"><input type="text" class="form-control form-control-sm f2" placeholder="Answer">${delBtn}</div>`;
     } else if (type === 'stats_bar') {
-      html = `<div class="${rowClass}"><input type="text" class="form-control form-control-sm f1" placeholder="Value"><input type="text" class="form-control form-control-sm f2" placeholder="Label">${delBtn}</div>`;
+      html = `<div class="${rowClass} align-items-start">
+                <div class="d-flex flex-column gap-2 flex-grow-1">
+                  <input type="text" class="form-control form-control-sm f1" placeholder="Value">
+                  <textarea class="form-control form-control-sm f2 rich-editor" placeholder="Label"></textarea>
+                </div>
+                ${delBtn}
+              </div>`;
     } else if (type === 'timeline' || type === 'feature_grid' || type === 'testimonial_grid') {
       const p1 = type === 'timeline' ? 'Year' : (type === 'feature_grid' ? 'Icon Class' : 'Name');
       const p2 = 'Title';
@@ -489,17 +606,45 @@
     } else if (type === 'gallery') {
       html = `<div class="${rowClass}">
                 <div class="d-flex flex-column flex-grow-1">
-                  <div class="d-flex gap-2 align-items-center mb-1">
+                  <div class="d-flex gap-2 align-items-center mb-1 media-selector-wrap">
                     <img src="/assets/img/placeholder.png" class="img-preview rounded" style="width: 40px; height: 40px; object-fit: cover; display: none;">
-                    <input type="text" class="form-control form-control-sm f1" placeholder="Image URL" onchange="updatePreview(this)">
+                    <video class="video-preview rounded" style="width: 40px; height: 40px; object-fit: cover; display: none;" muted></video>
+                    <input type="text" class="form-control form-control-sm f1" placeholder="Media URL" onchange="updatePreview(this)">
                     <button type="button" class="btn btn-sm btn-outline-primary" onclick="openMediaLibrary(this)"><i class="bi bi-folder2-open"></i></button>
                   </div>
                   <input type="text" class="form-control form-control-sm f2" placeholder="Label">
                 </div>
                 ${delBtn}
               </div>`;
+    } else if (type === 'team_grid') {
+      html = `<div class="${rowClass} align-items-start">
+                <div class="d-flex flex-column flex-grow-1 gap-2">
+                  <div class="d-flex gap-2 align-items-center mb-1 media-selector-wrap">
+                    <img src="/assets/img/placeholder.png" class="img-preview rounded" style="width: 40px; height: 40px; object-fit: cover; display: none;">
+                    <input type="text" class="form-control form-control-sm f1" placeholder="Image URL" onchange="updatePreview(this)">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="openMediaLibrary(this)"><i class="bi bi-folder2-open"></i></button>
+                  </div>
+                  <div class="row g-2 w-100 m-0">
+                    <div class="col-md-6 p-0 pe-1"><input type="text" class="form-control form-control-sm f2" placeholder="Name"></div>
+                    <div class="col-md-6 p-0 ps-1"><input type="text" class="form-control form-control-sm f3" placeholder="Role/Designation"></div>
+                  </div>
+                  <textarea class="form-control form-control-sm f4" placeholder="Short Bio" rows="2"></textarea>
+                </div>
+                ${delBtn}
+              </div>`;
     }
     list.insertAdjacentHTML('beforeend', html);
+    
+    // Initialize CKEditor on newly added rich-editors in the item row
+    setTimeout(() => {
+        if (list.lastElementChild) {
+            list.lastElementChild.querySelectorAll('.rich-editor').forEach(textarea => {
+                ClassicEditor.create(textarea).then(editor => {
+                    textarea.ckeditorInstance = editor;
+                }).catch(err => console.error(err));
+            });
+        }
+    }, 100);
   }
 
   function addSection() {
@@ -510,12 +655,13 @@
       <div class="section-item p-4 rounded-4 border position-relative" data-index="${sectionCount}" style="background:#fcfdff; border-style: dashed !important;">
         <button type="button" class="btn-icon btn-icon-del position-absolute" style="top:1rem;right:1rem" onclick="removeSection(this)"><i class="bi bi-trash3"></i></button>
         <div class="row g-3">
-          <div class="col-md-4"><label class="small fw-bold text-muted mb-1 uppercase">Block ID (Key)</label><input type="text" name="sections[${sectionCount}][key]" class="form-control form-control-sm" placeholder="e.g. hero-section"></div>
-          <div class="col-md-4"><label class="small fw-bold text-muted mb-1 uppercase">Block Heading</label><input type="text" name="sections[${sectionCount}][title]" class="form-control form-control-sm" placeholder="Display Title"></div>
-          <div class="col-md-4"><label class="small fw-bold text-muted mb-1 uppercase">Block Layout</label>
+          <div class="col-md-3"><label class="small fw-bold text-muted mb-1 uppercase">Block ID (Key)</label><input type="text" name="sections[${sectionCount}][key]" class="form-control form-control-sm" placeholder="e.g. hero-section"></div>
+          <div class="col-md-3"><label class="small fw-bold text-muted mb-1 uppercase">Block Heading</label><input type="text" name="sections[${sectionCount}][title]" class="form-control form-control-sm" placeholder="Display Title"></div>
+          <div class="col-md-3"><label class="small fw-bold text-muted mb-1 uppercase">Heading Content</label><input type="text" class="form-control form-control-sm item-heading-content" placeholder="Heading Content"></div>
+          <div class="col-md-3"><label class="small fw-bold text-muted mb-1 uppercase">Block Layout</label>
             <select name="sections[${sectionCount}][section]" class="form-select form-select-sm" onchange="toggleSectionType(this)">
               <option value="standard">Standard</option>
-              <option value="image_text">Image + Text</option>
+              <option value="image_text">Media + Text</option>
               <option value="rich_text">Rich Text</option>
               <option value="cta_banner">CTA Banner</option>
               <option value="faq_accordion">FAQ Accordion</option>
@@ -525,6 +671,8 @@
               <option value="testimonial_grid">Testimonials</option>
               <option value="gallery">Gallery</option>
               <option value="why_choose_us">Why Choose Us</option>
+              <option value="story_grid">Story (Text + Stats + Images)</option>
+              <option value="team_grid">Team Grid</option>
             </select>
           </div>
           <div class="col-12 mt-3 content-area">
@@ -535,17 +683,25 @@
                 <div class="col-md-4">
                   <div class="media-selector-wrap bg-white border rounded-3 p-2 text-center mb-1">
                     <img src="/assets/img/placeholder.png" class="img-preview mb-2 rounded" style="max-height: 80px; display: none; margin: 0 auto;">
-                    <div class="placeholder-icon mb-2 text-muted"><i class="bi bi-image fs-4"></i></div>
-                    <input type="text" class="form-control form-control-sm item-img mb-1" placeholder="Image URL" onchange="updatePreview(this)">
+                    <video class="video-preview mb-2 rounded" style="max-height: 80px; display: none; margin: 0 auto;" controls autoplay muted></video>
+                    <div class="placeholder-icon mb-2 text-muted"><i class="bi bi-camera-video fs-4"></i></div>
+                    <input type="text" class="form-control form-control-sm item-img mb-1" placeholder="Media URL" onchange="updatePreview(this)">
                     <button type="button" class="btn btn-xs btn-outline-primary w-100 py-1" onclick="openMediaLibrary(this)" style="font-size: 0.7rem;">Select Media</button>
                   </div>
-                  <select class="form-select form-select-sm item-side"><option value="right">Right</option><option value="left">Left</option></select>
+                  <select class="form-select form-select-sm item-side"><option value="right">Media Right</option><option value="left">Media Left</option><option value="center">Media Center</option></select>
                 </div>
               </div>
             </div>
-            <div class="type-rich_text section-content" style="display:none"><textarea class="form-control item-body" rows="5" placeholder="Rich Text"></textarea></div>
+            <div class="type-rich_text section-content" style="display:none"><textarea class="form-control item-body rich-editor" rows="5" placeholder="Rich Text"></textarea></div>
             <div class="type-cta_banner section-content" style="display:none"><div class="row g-2"><div class="col-md-6"><input type="text" class="form-control item-btn_text" placeholder="Btn Text"></div><div class="col-md-6"><input type="text" class="form-control item-btn_link" placeholder="Btn Link"></div></div></div>
-            <div class="type-list-based section-content" style="display:none"><div class="items-list d-flex flex-column gap-2 mb-3"></div><button type="button" class="btn btn-sm btn-light border fw-bold text-primary" onclick="addItem(${sectionCount})">+ Add Item</button></div>
+            <div class="type-list-based section-content" style="display:none">
+              <div class="mb-3">
+                <label class="small fw-bold text-muted mb-1">Block Description (Optional)</label>
+                <textarea class="form-control form-control-sm item-block-desc" rows="2" placeholder="Brief text under heading..."></textarea>
+              </div>
+              <div class="items-list d-flex flex-column gap-2 mb-3"></div>
+              <button type="button" class="btn btn-sm btn-light border fw-bold text-primary" onclick="addItem(${sectionCount})">+ Add Item</button>
+            </div>
             <div class="type-why_choose_us section-content" style="display:none">
               <div class="row g-3">
                 <div class="col-12"><label class="small fw-bold text-indigo mb-2 d-block">1. Stats</label><div class="stats-list d-flex flex-column gap-2 mb-2"></div><button type="button" class="btn btn-xs btn-outline-indigo" onclick="addItem(${sectionCount}, 'stat')">+ Add Stat</button></div>
@@ -553,12 +709,31 @@
                 <div class="col-12"><label class="small fw-bold text-indigo mb-2 d-block">3. Gallery</label><div class="gallery-list d-flex flex-column gap-2 mb-2"></div><button type="button" class="btn btn-xs btn-outline-indigo" onclick="addItem(${sectionCount}, 'gallery')">+ Add Image</button></div>
               </div>
             </div>
+            <div class="type-story_grid section-content" style="display:none">
+              <div class="row g-3">
+                <div class="col-12"><label class="small fw-bold text-indigo mb-2 d-block">1. Story Description</label><textarea class="form-control item-story-desc rich-editor" rows="4" placeholder="Detailed story text..."></textarea></div>
+                <div class="col-12"><label class="small fw-bold text-indigo mb-2 d-block">2. Labels / Stats</label><div class="story-stats-list d-flex flex-column gap-2 mb-2"></div><button type="button" class="btn btn-xs btn-outline-indigo" onclick="addItem(${sectionCount}, 'story_stat')">+ Add Label</button></div>
+                <div class="col-12"><label class="small fw-bold text-indigo mb-2 d-block">3. Images</label><div class="story-gallery-list d-flex flex-column gap-2 mb-2"></div><button type="button" class="btn btn-xs btn-outline-indigo" onclick="addItem(${sectionCount}, 'story_gallery')">+ Add Image</button></div>
+              </div>
+            </div>
             <input type="hidden" name="sections[${sectionCount}][json_data]" value="{}" class="json-data-input">
           </div>
         </div>
       </div>`;
     container.insertAdjacentHTML('beforeend', html);
-    sectionCount++;
+    
+    // Initialize CKEditor on newly added rich-editors
+    setTimeout(() => {
+        const newSection = document.querySelector(`.section-item[data-index="${sectionCount}"]`);
+        if (newSection) {
+            newSection.querySelectorAll('.rich-editor').forEach(textarea => {
+                ClassicEditor.create(textarea).then(editor => {
+                    textarea.ckeditorInstance = editor;
+                }).catch(err => console.error(err));
+            });
+        }
+        sectionCount++;
+    }, 100);
   }
 
   function removeSection(btn) {
@@ -570,33 +745,57 @@
 
   document.getElementById('pageForm').addEventListener('submit', async e => {
     e.preventDefault();
+    
+    // Update all textarea values from CKEditor instances before saving
+    document.querySelectorAll('.rich-editor').forEach(textarea => {
+        if (textarea.ckeditorInstance) {
+            textarea.value = textarea.ckeditorInstance.getData();
+        }
+    });
+
     document.querySelectorAll('.section-item').forEach(section => {
       const idx = section.getAttribute('data-index');
       const type = section.querySelector('select[name*="[section]"]').value;
-      let data = {};
+      const headingContent = section.querySelector('.item-heading-content') ? section.querySelector('.item-heading-content').value : '';
+      let data = { heading_content: headingContent };
 
       if (type === 'image_text') {
-        data = { body: section.querySelector('.item-body').value, image_url: section.querySelector('.item-img').value, side: section.querySelector('.item-side').value };
+        data = { ...data, body: section.querySelector('.type-image_text .item-body').value, media_url: section.querySelector('.item-img').value, side: section.querySelector('.item-side').value };
       } else if (type === 'rich_text') {
-        data = { body: section.querySelector('.item-body').value };
+        data = { ...data, body: section.querySelector('.type-rich_text .item-body').value };
       } else if (type === 'cta_banner') {
-        data = { btn_text: section.querySelector('.item-btn_text').value, btn_link: section.querySelector('.item-btn_link').value };
+        data = { ...data, btn_text: section.querySelector('.item-btn_text').value, btn_link: section.querySelector('.item-btn_link').value };
       } else if (type === 'why_choose_us') {
         const stats = Array.from(section.querySelectorAll('.stats-list .item-row')).map(r => ({ value: r.querySelector('.f1').value, label: r.querySelector('.f2').value }));
         const features = Array.from(section.querySelectorAll('.features-list .item-row')).map(r => ({ title: r.querySelector('.f1').value, desc: r.querySelector('.f2').value }));
         const gallery = Array.from(section.querySelectorAll('.gallery-list .item-row')).map(r => ({ img: r.querySelector('.f1').value, lbl: r.querySelector('.f2').value }));
-        data = { stats, features, gallery };
-      } else if (['faq_accordion', 'stats_bar', 'timeline', 'feature_grid', 'testimonial_grid', 'gallery'].includes(type)) {
-        const rows = section.querySelectorAll('.item-row');
-        const listKey = { 'faq_accordion': 'faqs', 'stats_bar': 'stats', 'timeline': 'items', 'feature_grid': 'features', 'testimonial_grid': 'testimonials', 'gallery': 'images' }[type];
+        data = { ...data, stats, features, gallery };
+      } else if (type === 'story_grid') {
+        const story_desc = section.querySelector('.item-story-desc') ? section.querySelector('.item-story-desc').value : '';
+        const stats = Array.from(section.querySelectorAll('.story-stats-list .item-row')).map(r => ({ value: r.querySelector('.f1').value, desc: r.querySelector('.f2').value }));
+        const gallery = Array.from(section.querySelectorAll('.story-gallery-list .item-row')).map(r => ({ img: r.querySelector('.f1').value, alt: r.querySelector('.f2').value }));
+        data = { ...data, story_desc, stats, gallery };
+      } else if (['faq_accordion', 'stats_bar', 'timeline', 'feature_grid', 'testimonial_grid', 'gallery', 'team_grid'].includes(type)) {
+        const rows = section.querySelectorAll('.type-list-based .items-list .item-row');
+        const listKey = { 'faq_accordion': 'faqs', 'stats_bar': 'stats', 'timeline': 'items', 'feature_grid': 'features', 'testimonial_grid': 'testimonials', 'gallery': 'images', 'team_grid': 'team' }[type];
+        
+        // Capture block description if present
+        const blockDesc = section.querySelector('.type-list-based .item-block-desc') ? section.querySelector('.type-list-based .item-block-desc').value : '';
+        if (blockDesc) data.block_desc = blockDesc;
+
         data[listKey] = Array.from(rows).map(row => {
-          const f1 = row.querySelector('.f1').value, f2 = row.querySelector('.f2').value, f3 = row.querySelector('.f3') ? row.querySelector('.f3').value : null;
+          const f1 = row.querySelector('.f1') ? row.querySelector('.f1').value : null;
+          const f2 = row.querySelector('.f2') ? row.querySelector('.f2').value : null;
+          const f3 = row.querySelector('.f3') ? row.querySelector('.f3').value : null;
+          const f4 = row.querySelector('.f4') ? row.querySelector('.f4').value : null;
+          
           if (type === 'faq_accordion') return { q: f1, a: f2 };
           if (type === 'stats_bar') return { value: f1, label: f2 };
           if (type === 'timeline') return { year: f1, title: f2, desc: f3 };
           if (type === 'feature_grid') return { icon: f1, title: f2, desc: f3 };
           if (type === 'testimonial_grid') return { name: f1, title: f2, text: f3 };
           if (type === 'gallery') return { img: f1, lbl: f2 };
+          if (type === 'team_grid') return { img: f1, name: f2, role: f3, bio: f4 };
         });
       }
       section.querySelector('.json-data-input').value = JSON.stringify(data);
@@ -611,6 +810,24 @@
   });
 </script>
 
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.rich-editor').forEach(textarea => {
+            ClassicEditor.create(textarea).then(editor => {
+                // Store instance on the element for easy access on submit
+                textarea.ckeditorInstance = editor;
+            }).catch(error => console.error(error));
+        });
+    });
+</script>
+
+<style>
+  .ck-editor__editable_inline {
+    min-height: 150px;
+  }
+</style>
+
 <!-- Media Library Modal -->
 <div class="modal fade" id="mediaLibraryModal" tabindex="-1">
   <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -618,7 +835,7 @@
       <div class="modal-header bg-light border-bottom d-flex justify-content-between">
         <h5 class="modal-title fw-bold"><i class="bi bi-images text-primary me-2"></i> Media Library</h5>
         <div class="d-flex gap-2">
-          <input type="file" id="modalUploadInput" class="d-none" accept="image/*" onchange="uploadFromModal(this)">
+          <input type="file" id="modalUploadInput" class="d-none" accept="image/*,video/*" onchange="uploadFromModal(this)">
           <button type="button" class="btn btn-sm btn-primary"
             onclick="document.getElementById('modalUploadInput').click()">
             <i class="bi bi-upload me-1"></i> Upload New

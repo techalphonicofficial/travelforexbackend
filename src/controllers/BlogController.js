@@ -1,3 +1,6 @@
+const User = require('../models/User');
+const Role = require('../models/Role');
+
 class BlogController {
     constructor(blogRepo, mediaRepo) {
         this.blogRepo = blogRepo;
@@ -36,7 +39,10 @@ class BlogController {
     async create(req, res) {
         try {
             const categories = await this.blogRepo.findAllCategories();
-            res.render('cms/blog/posts/form', { title: 'New Blog Post', post: null, categories });
+            const employees = await User.findAll({
+                include: [{ model: Role, as: 'role', where: { name: 'Employee' } }]
+            });
+            res.render('cms/blog/posts/form', { title: 'New Blog Post', post: null, categories, employees });
         } catch (err) {
             res.status(500).send(err.message);
         }
@@ -46,8 +52,11 @@ class BlogController {
         try {
             const post = await this.blogRepo.findPostById(req.params.id);
             const categories = await this.blogRepo.findAllCategories();
+            const employees = await User.findAll({
+                include: [{ model: Role, as: 'role', where: { name: 'Employee' } }]
+            });
             if (!post) return res.status(404).send('Post not found');
-            res.render('cms/blog/posts/form', { title: 'Edit Blog Post', post, categories });
+            res.render('cms/blog/posts/form', { title: 'Edit Blog Post', post, categories, employees });
         } catch (err) {
             res.status(500).send(err.message);
         }
@@ -62,6 +71,14 @@ class BlogController {
                 data.featured_image = imagePath;
             }
             if (!data.slug) data.slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            let details = [];
+            if (data.parsed_details) {
+                try {
+                    details = JSON.parse(data.parsed_details);
+                } catch(e) {}
+                delete data.parsed_details;
+            }
+
             const post = await this.blogRepo.createPost(data);
 
             if (imagePath) {
@@ -71,6 +88,17 @@ class BlogController {
                     url: imagePath,
                     is_primary: true
                 });
+            }
+
+            if (details && details.length > 0) {
+                for (const d of details) {
+                    await this.blogRepo.BlogDetail.create({
+                        blog_id: post.id,
+                        image: d.image,
+                        alt_text: d.alt_text,
+                        content: d.content
+                    });
+                }
             }
             res.redirect('/cms/blog/posts');
         } catch (err) {
@@ -86,6 +114,14 @@ class BlogController {
                 imagePath = `/uploads/blog/${req.file.filename}`;
                 data.featured_image = imagePath;
             }
+            let details = [];
+            if (data.parsed_details) {
+                try {
+                    details = JSON.parse(data.parsed_details);
+                } catch(e) {}
+                delete data.parsed_details;
+            }
+
             await this.blogRepo.updatePost(req.params.id, data);
 
             if (imagePath) {
@@ -96,6 +132,19 @@ class BlogController {
                     url: imagePath,
                     is_primary: true
                 });
+            }
+
+            // Update details
+            await this.blogRepo.BlogDetail.destroy({ where: { blog_id: req.params.id } });
+            if (details && details.length > 0) {
+                for (const d of details) {
+                    await this.blogRepo.BlogDetail.create({
+                        blog_id: req.params.id,
+                        image: d.image,
+                        alt_text: d.alt_text,
+                        content: d.content
+                    });
+                }
             }
             res.redirect('/cms/blog/posts');
         } catch (err) {

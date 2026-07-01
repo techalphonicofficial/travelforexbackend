@@ -5,8 +5,27 @@ class UserController {
 
   async index(req, res) {
     try {
-      const users = await this.userService.getAllUsers();
-      res.render('users/index', { users, title: 'User Management' });
+      const allowedTypes = ['employee', 'customer', 'vendor', 'all'];
+      const filters = {
+        type: allowedTypes.includes(req.query.type) ? req.query.type : 'employee',
+        search: String(req.query.search || '').trim(),
+        role_id: req.query.role_id || '',
+        status: req.query.status || ''
+      };
+
+      const [users, roles, typeCounts] = await Promise.all([
+        this.userService.getAllUsers(filters),
+        this.userService.getAllRoles(),
+        this.userService.getUserCountsByType()
+      ]);
+
+      res.render('users/index', {
+        users,
+        roles,
+        filters,
+        typeCounts,
+        title: 'User Management'
+      });
     } catch (error) {
       res.status(500).send(error.message);
     }

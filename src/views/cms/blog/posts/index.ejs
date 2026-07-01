@@ -41,7 +41,13 @@
             <span class="badge bg-light text-dark border"><%= post.category ? post.category.name : 'Uncategorized' %></span>
           </td>
           <td>
-            <% let statusClass = post.status === 'published' ? 'bg-success-subtle text-success' : (post.status === 'draft' ? 'bg-warning-subtle text-warning' : 'bg-info-subtle text-info'); %>
+            <% const statusClassMap = {
+              published: 'bg-success-subtle text-success',
+              active: 'bg-success-subtle text-success',
+              inactive: 'bg-danger-subtle text-danger',
+              draft: 'bg-warning-subtle text-warning'
+            }; %>
+            <% let statusClass = statusClassMap[post.status] || 'bg-info-subtle text-info'; %>
             <span class="tf-badge <%= statusClass %>">
               <%= post.status.toUpperCase() %>
             </span>

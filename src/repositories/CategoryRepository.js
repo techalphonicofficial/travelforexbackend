@@ -28,6 +28,20 @@ class CategoryRepository extends BaseRepository {
         ]
     });
 }
+
+    async findTourTypes() {
+        return this.model.findAll({
+            where: {
+                is_tour_type: {
+                    [Op.eq]: true
+                }
+            },
+            order: [
+                ['sort_order', 'ASC'],
+                ['name', 'ASC']
+            ]
+        });
+    }
 }
 
 module.exports = CategoryRepository;

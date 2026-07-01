@@ -59,7 +59,7 @@ module.exports = {
       meta_description: { type: Sequelize.TEXT, allowNull: true },
       meta_keywords: { type: Sequelize.STRING, allowNull: true },
       schema_markup: { type: Sequelize.TEXT, allowNull: true },
-      status: { type: Sequelize.ENUM('draft', 'published', 'scheduled'), defaultValue: 'draft' },
+      status: { type: Sequelize.ENUM('draft', 'published', 'active', 'inactive', 'scheduled'), defaultValue: 'draft' },
       published_at: { type: Sequelize.DATE, allowNull: true },
       is_featured: { type: Sequelize.SMALLINT, defaultValue: 0 },
       created_at: { type: Sequelize.DATE, allowNull: false },

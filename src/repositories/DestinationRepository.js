@@ -113,6 +113,65 @@ class DestinationRepository extends BaseRepository {
             ]
         });
     }
+
+    async findTrending() {
+        return this.model.findAll({
+            where: { is_trending: true },
+            include: [
+                { model: this.mediaModel, as: 'gallery', separate: true, limit: 1 },
+                {
+                    model: this.mappingModel, as: 'mappings',
+                    include: [
+                        {
+                            model: this.cityModel, as: 'city',
+                            include: [{ 
+                                model: this.countryModel, as: 'country',
+                                include: [{ model: this.continentModel, as: 'continent' }]
+                            }]
+                        }
+                    ]
+                }
+            ]
+        });
+    }
+
+    async findVisaFree() {
+        return this.model.findAll({
+            where: { is_visa_free: true },
+            include: [
+                { model: this.mediaModel, as: 'gallery', separate: true, limit: 1 },
+                {
+                    model: this.mappingModel, as: 'mappings',
+                    include: [
+                        {
+                            model: this.cityModel, as: 'city',
+                            include: [{ 
+                                model: this.countryModel, as: 'country',
+                                include: [{ model: this.continentModel, as: 'continent' }]
+                            }]
+                        }
+                    ]
+                }
+            ]
+        });
+    }
+
+    async findCustomizable() {
+        const { Op } = require('sequelize');
+        return this.model.findAll({
+            where: {
+                [Op.or]: [
+                    { is_customizable: true },
+                    { customize: true }
+                ]
+            },
+            order: [['name', 'ASC']],
+            include: [
+                { model: this.mediaModel, as: 'gallery', separate: true, limit: 1 },
+                { model: this.categoryModel, as: 'categories', through: { attributes: [] } }
+            ]
+        });
+    }
 }
 
 module.exports = DestinationRepository;

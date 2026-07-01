@@ -1,0 +1,181 @@
+<%
+const current = coupon || {};
+const packageRows = packages || [];
+const selectedPackageIds = new Set((Array.isArray(current.applicable_package_ids) ? current.applicable_package_ids : []).map(Number));
+const isPackageSpecific = current.applicable_scope === 'package_specific';
+const isActive = current.is_active !== false;
+const formTitle = current.id ? 'Edit Coupon' : 'Add Coupon';
+%>
+
+<style>
+  .coupon-form-page{display:flex;flex-direction:column;gap:1rem;color:#111827;}
+  .coupon-form-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+  .coupon-form-title{font-size:1.45rem;font-weight:900;margin:0;color:#111827;}
+  .coupon-form-sub{font-size:.86rem;color:#6b7280;margin:.2rem 0 0;}
+  .coupon-form-panel{background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 2px 10px rgba(15,23,42,.04);padding:1.2rem;}
+  .coupon-form-section{border-top:1px solid #eef2f7;margin-top:1.2rem;padding-top:1.2rem;}
+  .coupon-form-section:first-of-type{border-top:0;margin-top:0;padding-top:0;}
+  .coupon-section-title{font-size:.85rem;font-weight:900;text-transform:uppercase;color:#374151;margin:0 0 .9rem;letter-spacing:0;}
+  .coupon-form-label{font-size:.82rem;font-weight:800;color:#374151;margin-bottom:.35rem;}
+  .coupon-form-help{font-size:.76rem;color:#6b7280;margin-top:.25rem;}
+  .coupon-actions-row{display:flex;align-items:center;justify-content:flex-end;gap:.65rem;flex-wrap:wrap;border-top:1px solid #eef2f7;margin-top:1.2rem;padding-top:1rem;}
+  .coupon-package-select{min-height:190px;}
+  .coupon-switch-wrap{min-height:38px;display:flex;align-items:center;}
+</style>
+
+<div class="coupon-form-page">
+  <div class="coupon-form-header">
+    <div>
+      <h1 class="coupon-form-title"><%= formTitle %></h1>
+      <p class="coupon-form-sub"><%= current.id ? current.code : 'Create a package booking discount code.' %></p>
+    </div>
+    <a href="/travel/coupons" class="btn btn-light d-inline-flex align-items-center gap-2">
+      <i class="bi bi-arrow-left"></i>
+      Back
+    </a>
+  </div>
+
+  <form class="coupon-form-panel" action="/travel/coupons/save" method="POST">
+    <input type="hidden" name="id" value="<%= current.id || '' %>">
+
+    <div class="coupon-form-section">
+      <h2 class="coupon-section-title">Coupon Details</h2>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label coupon-form-label">Code</label>
+          <input class="form-control text-uppercase" name="code" id="couponCode" maxlength="40" value="<%= current.code || '' %>" placeholder="SUMMER500" required>
+        </div>
+        <div class="col-md-8">
+          <label class="form-label coupon-form-label">Name</label>
+          <input class="form-control" name="name" maxlength="120" value="<%= current.name || '' %>" placeholder="Summer package offer" required>
+        </div>
+        <div class="col-12">
+          <label class="form-label coupon-form-label">Description</label>
+          <textarea class="form-control" name="description" rows="3" placeholder="Internal note shown in admin only"><%= current.description || '' %></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="coupon-form-section">
+      <h2 class="coupon-section-title">Discount Rules</h2>
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label coupon-form-label">Discount Type</label>
+          <select class="form-select" name="discount_type" id="discountType" onchange="syncDiscountFields()">
+            <option value="fixed" <%= current.discount_type !== 'percent' ? 'selected' : '' %>>Fixed</option>
+            <option value="percent" <%= current.discount_type === 'percent' ? 'selected' : '' %>>Percent</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label coupon-form-label">Discount Value</label>
+          <input class="form-control" type="number" name="discount_value" min="0.01" step="0.01" value="<%= current.discount_value || '' %>" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label coupon-form-label">Max Discount</label>
+          <input class="form-control" type="number" name="max_discount_amount" id="maxDiscountAmount" min="0" step="0.01" value="<%= current.max_discount_amount === null || current.max_discount_amount === undefined ? '' : current.max_discount_amount %>">
+          <div class="coupon-form-help">Used for percent coupons.</div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label coupon-form-label">Minimum Booking</label>
+          <input class="form-control" type="number" name="minimum_booking_amount" min="0" step="0.01" value="<%= current.minimum_booking_amount || 0 %>">
+        </div>
+      </div>
+    </div>
+
+    <div class="coupon-form-section">
+      <h2 class="coupon-section-title">Availability</h2>
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label coupon-form-label">Valid From</label>
+          <input class="form-control" type="date" name="valid_from" value="<%= current.valid_from || '' %>">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label coupon-form-label">Valid Until</label>
+          <input class="form-control" type="date" name="valid_until" value="<%= current.valid_until || '' %>">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label coupon-form-label">Usage Limit</label>
+          <input class="form-control" type="number" name="usage_limit" min="1" step="1" value="<%= current.usage_limit || '' %>">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label coupon-form-label">Per Customer</label>
+          <input class="form-control" type="number" name="usage_limit_per_customer" min="1" step="1" value="<%= current.usage_limit_per_customer || '' %>">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label coupon-form-label">Status</label>
+          <div class="coupon-switch-wrap">
+            <input type="hidden" name="is_active" id="couponActiveValue" value="<%= isActive ? '1' : '0' %>">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" role="switch" id="couponActive" <%= isActive ? 'checked' : '' %>>
+              <label class="form-check-label fw-semibold" for="couponActive">Active</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="coupon-form-section">
+      <h2 class="coupon-section-title">Package Scope</h2>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label coupon-form-label">Applies To</label>
+          <select class="form-select" name="applicable_scope" id="couponScope" onchange="syncPackageScope()">
+            <option value="all" <%= !isPackageSpecific ? 'selected' : '' %>>All packages</option>
+            <option value="package_specific" <%= isPackageSpecific ? 'selected' : '' %>>Selected packages</option>
+          </select>
+        </div>
+        <div class="col-md-8" id="packageSelectWrap">
+          <label class="form-label coupon-form-label">Packages</label>
+          <select class="form-select coupon-package-select" name="applicable_package_ids" multiple>
+            <% packageRows.forEach(pkg => { %>
+              <option value="<%= pkg.id %>" <%= selectedPackageIds.has(Number(pkg.id)) ? 'selected' : '' %>>
+                <%= pkg.name %><%= pkg.slug ? ` (${pkg.slug})` : '' %>
+              </option>
+            <% }) %>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="coupon-actions-row">
+      <a href="/travel/coupons" class="btn btn-light">Cancel</a>
+      <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-2">
+        <i class="bi bi-save"></i>
+        Save Coupon
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  const couponCodeInput = document.getElementById('couponCode');
+  const couponActive = document.getElementById('couponActive');
+
+  if (couponCodeInput) {
+    couponCodeInput.addEventListener('input', () => {
+      couponCodeInput.value = couponCodeInput.value.toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+    });
+  }
+
+  function syncActiveValue() {
+    document.getElementById('couponActiveValue').value = couponActive.checked ? '1' : '0';
+  }
+
+  function syncPackageScope() {
+    const scope = document.getElementById('couponScope').value;
+    const packageWrap = document.getElementById('packageSelectWrap');
+    packageWrap.style.display = scope === 'package_specific' ? '' : 'none';
+  }
+
+  function syncDiscountFields() {
+    const discountType = document.getElementById('discountType').value;
+    const maxDiscount = document.getElementById('maxDiscountAmount');
+    maxDiscount.disabled = discountType !== 'percent';
+    if (discountType !== 'percent') maxDiscount.value = '';
+  }
+
+  couponActive.addEventListener('change', syncActiveValue);
+  syncActiveValue();
+  syncPackageScope();
+  syncDiscountFields();
+</script>

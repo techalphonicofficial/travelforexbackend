@@ -8,7 +8,7 @@ const Media = sequelize.define('Media', {
         primaryKey: true
     },
     entity_type: {
-        type: DataTypes.ENUM('destination', 'package', 'hotel', 'category', 'package_day', 'page', 'banner'),
+        type: DataTypes.ENUM('destination', 'package', 'hotel', 'category', 'package_day', 'page', 'banner', 'review'),
         allowNull: false
     },
     entity_id: {

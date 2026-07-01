@@ -24,6 +24,16 @@ class CategoryController {
         }
     }
 
+    async getTourTypes(req, res) {
+        try {
+            const data = await this.categoryRepo.findTourTypes();
+
+            res.json({ success: true, data });
+        } catch (err) {
+            res.status(500).json({ success: false, message: err.message });
+        }
+    }
+
     async getById(req, res) {
         try {
             const data = await this.categoryRepo.findById(req.params.id);
@@ -40,7 +50,13 @@ class CategoryController {
             if (body.show_in_menu !== undefined) body.show_in_menu = body.show_in_menu === true || body.show_in_menu === 'true' || body.show_in_menu === 1 || body.show_in_menu === '1';
             if (body.show_in_sidebar !== undefined) body.show_in_sidebar = body.show_in_sidebar === true || body.show_in_sidebar === 'true' || body.show_in_sidebar === 1 || body.show_in_sidebar === '1';
             if (body.show_in_home !== undefined) body.show_in_home = body.show_in_home === true || body.show_in_home === 'true' || body.show_in_home === 1 || body.show_in_home === '1';
+            if (body.is_customizable !== undefined) body.is_customizable = body.is_customizable === true || body.is_customizable === 'true' || body.is_customizable === 1 || body.is_customizable === '1';
+            if (body.is_tour_type !== undefined) body.is_tour_type = body.is_tour_type === true || body.is_tour_type === 'true' || body.is_tour_type === 1 || body.is_tour_type === '1';
             
+            if (req.file) {
+                body.feature_image = `/uploads/categories/${req.file.filename}`;
+            }
+
             const data = await this.categoryRepo.create(body);
             res.status(201).json({ success: true, data });
         } catch (err) {
@@ -54,6 +70,14 @@ class CategoryController {
             if (body.show_in_menu !== undefined) body.show_in_menu = body.show_in_menu === true || body.show_in_menu === 'true' || body.show_in_menu === 1 || body.show_in_menu === '1';
             if (body.show_in_sidebar !== undefined) body.show_in_sidebar = body.show_in_sidebar === true || body.show_in_sidebar === 'true' || body.show_in_sidebar === 1 || body.show_in_sidebar === '1';
             if (body.show_in_home !== undefined) body.show_in_home = body.show_in_home === true || body.show_in_home === 'true' || body.show_in_home === 1 || body.show_in_home === '1';
+            if (body.is_customizable !== undefined) body.is_customizable = body.is_customizable === true || body.is_customizable === 'true' || body.is_customizable === 1 || body.is_customizable === '1';
+            if (body.is_tour_type !== undefined) body.is_tour_type = body.is_tour_type === true || body.is_tour_type === 'true' || body.is_tour_type === 1 || body.is_tour_type === '1';
+
+            if (req.file) {
+                body.feature_image = `/uploads/categories/${req.file.filename}`;
+            } else if (body.remove_feature_image === 'true' || body.remove_feature_image === true) {
+                body.feature_image = null;
+            }
 
             const data = await this.categoryRepo.update(req.params.id, body);
             if (!data) return res.status(404).json({ success: false, message: 'Not found' });

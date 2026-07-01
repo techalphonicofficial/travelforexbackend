@@ -1,0 +1,220 @@
+<%
+  const rows = Array.isArray(subscribers) ? subscribers : [];
+  const currentPage = Number(page || 1);
+  const pages = Number(totalPages || 1);
+  const total = Number(totalCount || 0);
+  const perPage = Number(limit || 20);
+  const startItem = total ? ((currentPage - 1) * perPage) + 1 : 0;
+  const endItem = Math.min(currentPage * perPage, total);
+  const q = search || '';
+  const makeUrl = (targetPage) => {
+    const params = new URLSearchParams();
+    if (q) params.set('search', q);
+    params.set('page', targetPage);
+    return `/newsletter-subscribers?${params.toString()}`;
+  };
+  const formatDate = (value) => {
+    if (!value) return 'N/A';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString('en-IN');
+  };
+%>
+
+<style>
+  .newsletter-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .newsletter-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .newsletter-search {
+    position: relative;
+    width: min(360px, 100%);
+  }
+
+  .newsletter-search input {
+    width: 100%;
+    padding: .58rem .85rem .58rem 2.25rem;
+    border: 1.5px solid #e5e7f0;
+    border-radius: 10px;
+    background: #fff;
+    color: #1e1e4a;
+    font-size: .9rem;
+  }
+
+  .newsletter-search i {
+    position: absolute;
+    left: .75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #8888bb;
+  }
+
+  .newsletter-status {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .22rem .65rem;
+    border-radius: 999px;
+    background: #ecfdf5;
+    color: #059669;
+    font-size: .76rem;
+    font-weight: 700;
+    text-transform: capitalize;
+  }
+
+  .newsletter-empty {
+    padding: 2.5rem 1rem;
+    text-align: center;
+    color: #8888bb;
+  }
+
+  .newsletter-empty i {
+    display: block;
+    font-size: 2rem;
+    color: #4f46e5;
+    margin-bottom: .5rem;
+  }
+
+  .newsletter-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: .45rem;
+    flex-wrap: wrap;
+  }
+
+  .newsletter-pagination-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .newsletter-page-summary {
+    color: #8888bb;
+    font-size: .84rem;
+    font-weight: 600;
+  }
+
+  .newsletter-page-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    height: 34px;
+    padding: 0 .7rem;
+    border-radius: 9px;
+    background: #fff;
+    border: 1px solid #e5e7f0;
+    color: #2d2d6e;
+    text-decoration: none;
+    font-size: .84rem;
+    font-weight: 600;
+  }
+
+  .newsletter-page-link.active,
+  .newsletter-page-link:hover {
+    background: #4f46e5;
+    border-color: #4f46e5;
+    color: #fff;
+  }
+
+  .newsletter-page-link.disabled {
+    background: #f4f5fb;
+    color: #b0b0d0;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+</style>
+
+<div class="newsletter-page">
+  <div class="tf-page-header">
+    <div>
+      <h1 class="tf-page-title">Newsletter Subscribers</h1>
+      <p class="tf-page-sub">Email-only subscribers collected from the newsletter API.</p>
+    </div>
+    <div class="tf-stat-card" style="background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;min-width:180px;">
+      <div class="tf-stat-icon"><i class="bi bi-envelope-paper"></i></div>
+      <div>
+        <div class="tf-stat-num"><%= total %></div>
+        <div class="tf-stat-lbl">Subscribers</div>
+      </div>
+    </div>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-danger"><%= error %></div>
+  <% } %>
+
+  <div class="newsletter-toolbar">
+    <form method="GET" action="/newsletter-subscribers" class="newsletter-search">
+      <i class="bi bi-search"></i>
+      <input type="search" name="search" value="<%= q %>" placeholder="Search email">
+    </form>
+    <% if (q) { %>
+      <a href="/newsletter-subscribers" class="btn btn-light border">Clear</a>
+    <% } %>
+  </div>
+
+  <div class="tf-table-wrap">
+    <table class="tf-table">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Status</th>
+          <th>Subscribed Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!rows.length) { %>
+          <tr>
+            <td colspan="3">
+              <div class="newsletter-empty">
+                <i class="bi bi-envelope-paper"></i>
+                No newsletter subscribers found.
+              </div>
+            </td>
+          </tr>
+        <% } %>
+        <% rows.forEach(row => { %>
+          <tr>
+            <td style="font-weight:700;color:#1e1e4a;"><%= row.email %></td>
+            <td><span class="newsletter-status"><i class="bi bi-check-circle"></i><%= row.status || 'subscribed' %></span></td>
+            <td><%= formatDate(row.subscribed_at || row.created_at) %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="newsletter-pagination-wrap">
+    <div class="newsletter-page-summary">
+      Showing <%= startItem %>-<%= endItem %> of <%= total %> subscribers
+    </div>
+    <div class="newsletter-pagination">
+      <% if (currentPage > 1) { %>
+        <a class="newsletter-page-link" href="<%= makeUrl(currentPage - 1) %>">Prev</a>
+      <% } else { %>
+        <span class="newsletter-page-link disabled">Prev</span>
+      <% } %>
+      <% for (let p = 1; p <= pages; p++) { %>
+        <a class="newsletter-page-link <%= p === currentPage ? 'active' : '' %>" href="<%= makeUrl(p) %>"><%= p %></a>
+      <% } %>
+      <% if (currentPage < pages) { %>
+        <a class="newsletter-page-link" href="<%= makeUrl(currentPage + 1) %>">Next</a>
+      <% } else { %>
+        <span class="newsletter-page-link disabled">Next</span>
+      <% } %>
+    </div>
+  </div>
+</div>
