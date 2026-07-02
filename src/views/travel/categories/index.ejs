@@ -393,10 +393,10 @@
             <input class="form-check-input" type="checkbox" id="fShowInHome" role="switch">
             <label class="form-check-label" for="fShowInHome">Show in Home</label>
           </div>
-          <div class="form-check form-switch category-switch">
+          <!-- <div class="form-check form-switch category-switch">
             <input class="form-check-input" type="checkbox" id="fIsCustomizable" role="switch">
             <label class="form-check-label" for="fIsCustomizable">Customizable</label>
-          </div>
+          </div> -->
           <div class="form-check form-switch category-switch">
             <input class="form-check-input" type="checkbox" id="fIsTourType" role="switch">
             <label class="form-check-label" for="fIsTourType">Tour Type</label>
@@ -614,7 +614,7 @@ function openCreate() {
   document.getElementById('fShowInMenu').checked=false;
   document.getElementById('fShowInSidebar').checked=false;
   document.getElementById('fShowInHome').checked=false;
-  document.getElementById('fIsCustomizable').checked=false;
+  // document.getElementById('fIsCustomizable').checked=false;
   document.getElementById('fIsTourType').checked=false;
 
   // Reset file/image preview
@@ -649,7 +649,7 @@ function openEdit(id){
   document.getElementById('fShowInMenu').checked=!!r.show_in_menu;
   document.getElementById('fShowInSidebar').checked=!!r.show_in_sidebar;
   document.getElementById('fShowInHome').checked = !!r.show_in_home;
-  document.getElementById('fIsCustomizable').checked = !!r.is_customizable;
+  // document.getElementById('fIsCustomizable').checked = !!r.is_customizable;
   document.getElementById('fIsTourType').checked = !!r.is_tour_type;
 
   // Set file/image preview
@@ -686,7 +686,7 @@ async function save(){
   const show_in_menu=!!document.getElementById('fShowInMenu').checked;
   const show_in_sidebar=!!document.getElementById('fShowInSidebar').checked;
   const show_in_home = !!document.getElementById('fShowInHome').checked;
-  const is_customizable = !!document.getElementById('fIsCustomizable').checked;
+  const is_customizable = false; // removed from form
   const is_tour_type = !!document.getElementById('fIsTourType').checked;
   
   if(!name) return alert('Name is required');
