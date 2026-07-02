@@ -5,11 +5,19 @@ class MediaController {
 
     async getAll(req, res) {
         try {
-            // Find all media, can add pagination later
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 20;
+            const offset = (page - 1) * limit;
+
             const media = await this.mediaRepo.Media.findAll({
-                order: [['created_at', 'DESC']]
+                order: [['created_at', 'DESC']],
+                limit: limit,
+                offset: offset
             });
-            res.json({ success: true, data: media });
+            const total = await this.mediaRepo.Media.count();
+            const hasMore = offset + media.length < total;
+
+            res.json({ success: true, data: media, hasMore, page, total });
         } catch (err) {
             console.error('[MediaController.getAll] Error:', err);
             res.status(500).json({ success: false, message: err.message });

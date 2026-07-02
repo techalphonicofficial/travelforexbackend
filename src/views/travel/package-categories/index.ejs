@@ -1,0 +1,732 @@
+<style>
+  .pkg-categories-page {
+    --pkgcat-primary: #4f46e5;
+    --pkgcat-primary-dark: #4338ca;
+    --pkgcat-border: #e5e7eb;
+    --pkgcat-text: #111827;
+  }
+  .design-card {
+    background: #fff;
+    border: 1px solid #eef2f7;
+    border-radius: 10px;
+    padding: 1.25rem;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+    margin-bottom: 2rem;
+  }
+  .table-minimal {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  .table-minimal thead th {
+    background: #f8fafc;
+    border-bottom: 1px solid #e5e7eb;
+    color: #475569;
+    font-weight: 700;
+    font-size: 0.74rem;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    padding: 0.8rem 0.7rem;
+    white-space: nowrap;
+  }
+  .table-minimal tbody tr {
+    background-color: #fff;
+    transition: background-color .18s ease;
+  }
+  .table-minimal tbody tr:hover {
+    background-color: #f8fafc;
+  }
+  .table-minimal tbody td {
+    border-bottom: 1px solid #eef2f7;
+    padding: 0.8rem 0.7rem;
+    color: #4b5563;
+    font-size: 0.85rem;
+    font-weight: 500;
+    vertical-align: middle;
+  }
+  .table-minimal thead th:first-child { border-top-left-radius: 8px; }
+  .table-minimal thead th:last-child { border-top-right-radius: 8px; }
+  .btn-create {
+    background-color: var(--pkgcat-primary);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+  .btn-create:hover { background-color: var(--pkgcat-primary-dark); color: #fff; }
+
+  .filter-input {
+    background-color: #f9fafb;
+    border: 1px solid #f3f4f6;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: #4b5563;
+  }
+  .filter-input:focus {
+    background-color: #fff;
+    border-color: #d1d5db;
+    box-shadow: none;
+  }
+  .btn-group-toggle .btn {
+    border: 1px solid #e5e7eb;
+    background-color: #fff;
+    color: #4b5563;
+    font-size: 0.82rem;
+    padding: 0.35rem 0.75rem;
+    font-weight: 500;
+  }
+  .btn-group-toggle .btn.active {
+    background-color: #f3f4f6;
+    color: #111827;
+    box-shadow: none;
+  }
+
+  /* bulk select custom styles */
+  .custom-checkbox {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1.5px solid #d1d5db;
+    appearance: none;
+    outline: none;
+    cursor: pointer;
+    position: relative;
+    background-color: #fff;
+    transition: all 0.2s;
+    margin: 0;
+    vertical-align: middle;
+  }
+  .custom-checkbox:checked {
+    background-color: #22c55e;
+    border-color: #22c55e;
+  }
+  .custom-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .table-minimal tbody tr td:first-child {
+    padding-left: 1rem;
+    border-left: 3px solid transparent;
+  }
+  .table-minimal tbody tr.row-selected td:first-child {
+    border-left-color: #22c55e;
+  }
+  .table-minimal tbody tr.row-selected td {
+    background-color: #f8fafc;
+  }
+  .bulk-delete-bar {
+    display: none;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .pkgcat-shell {
+    background: linear-gradient(180deg, #f8fafc 0%, #fff 42%);
+    border-radius: 10px;
+    padding: 1rem;
+  }
+  .pkgcat-table-wrap {
+    border: 1px solid #eef2f7;
+    border-radius: 10px;
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+  .pkgcat-modal .modal-dialog {
+    max-width: 720px;
+  }
+  .pkgcat-modal .modal-content {
+    border: 0;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .pkgcat-modal .modal-header {
+    background: #fff !important;
+    border-bottom: 1px solid #eef2f7;
+    color: var(--pkgcat-text) !important;
+    padding: 1rem 1.35rem;
+  }
+  .pkgcat-modal .btn-close {
+    filter: none;
+  }
+  .pkgcat-modal .modal-body {
+    max-height: min(72vh, 720px);
+    overflow-y: auto;
+    padding: 1.25rem 1.35rem;
+  }
+  .pkgcat-modal .modal-footer {
+    background: #fff;
+    border-top: 1px solid #eef2f7;
+    padding: 1rem 1.35rem;
+  }
+  .pkgcat-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  .pkgcat-form-grid .full-span {
+    grid-column: 1 / -1;
+  }
+  .pkgcat-seo-button {
+    border-radius: 8px !important;
+    min-height: 48px;
+  }
+  @media (max-width: 767px) {
+    .design-card {
+      padding: 1rem;
+    }
+    .pkgcat-form-grid {
+      grid-template-columns: 1fr;
+    }
+    .pkgcat-modal .modal-dialog {
+      margin: .75rem;
+    }
+    .pkgcat-modal .modal-body {
+      max-height: 70vh;
+    }
+  }
+</style>
+
+<div class="design-card pkg-categories-page">
+  <!-- HEADER ROW -->
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+    <div>
+      <h3 class="fw-bold mb-1" style="color: #111827;">Package Categories</h3>
+      <p class="text-muted mb-0" style="font-size: 0.85rem;">Manage categories for travel packages</p>
+    </div>
+    <div class="d-flex gap-3 align-items-center">
+      <div class="btn-group btn-group-toggle shadow-sm" role="group">
+        <button type="button" class="btn active d-flex align-items-center gap-2" id="vList" onclick="setView('list')">
+          <i class="bi bi-list-ul"></i> List
+        </button>
+        <button type="button" class="btn d-flex align-items-center gap-2" id="vCards" onclick="setView('cards')">
+          <i class="bi bi-person-vcard"></i> Cards
+        </button>
+      </div>
+      <button class="btn-create shadow-sm" data-bs-toggle="modal" data-bs-target="#pkgCatModal" onclick="openCreate()">
+        <i class="bi bi-plus-lg me-1"></i> Add Package Category
+      </button>
+    </div>
+  </div>
+
+  <hr style="border-color: #e5e7eb; margin: 1.25rem -1.5rem;">
+
+  <!-- TOOLBAR ROW -->
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 mt-2">
+    <div class="d-flex gap-2">
+      <div class="position-relative" style="width: 260px;">
+        <i class="bi bi-search position-absolute text-muted" style="left: 12px; top: 50%; transform: translateY(-50%); font-size: 0.85rem;"></i>
+        <input type="text" id="searchInput" class="form-control form-control-sm filter-input ps-5 py-2" placeholder="Search package category..." oninput="applyFilters()">
+      </div>
+    </div>
+    <div>
+      <span class="text-muted fw-bold" id="countLabel" style="font-size: 0.85rem;"></span>
+    </div>
+  </div>
+
+  <!-- BULK ACTIONS BAR -->
+  <div id="bulkActionsBar" class="bulk-delete-bar align-items-center justify-content-between">
+    <div>
+      <button class="btn btn-danger btn-sm px-3 py-2 d-inline-flex align-items-center gap-2" style="background-color: #ef4444; border:none; border-radius:6px; font-weight:600;" onclick="confirmBulkDelete()">
+        <i class="bi bi-trash3"></i> Delete selected
+      </button>
+    </div>
+    <div>
+      <span id="selectedCountMsg" class="fw-bold" style="color: #4b5563; font-size:0.9rem;">0 records selected</span>
+    </div>
+  </div>
+
+  <!-- LIST VIEW -->
+  <div id="listView" class="pkgcat-shell">
+    <div class="pkgcat-table-wrap">
+      <table class="table table-minimal w-100">
+        <thead>
+          <tr>
+            <th style="width:30px">
+              <input type="checkbox" class="custom-checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()">
+            </th>
+            <th style="width:40px">#</th>
+            <th>Title</th>
+            <th>Parent Category</th>
+            <th>Slug</th>
+            <th>Image</th>
+            <th style="width:80px;text-align:right">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="listBody"></tbody>
+      </table>
+      <div id="listPag"></div>
+    </div>
+  </div>
+
+<!-- CARDS VIEW -->
+<div id="cardsView" class="pkgcat-shell" style="display:none">
+  <div class="tf-cards" id="cardsBody"></div>
+  <div class="tf-pagination mt-3" style="border-radius:16px;background:#fff;box-shadow:0 4px 16px rgba(79,70,229,.07)" id="cardsPag"></div>
+</div>
+
+<!-- MODAL -->
+<div class="modal fade tf-modal pkgcat-modal" id="pkgCatModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold" id="modalTitle">Add Package Category</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="fId">
+        <div class="pkgcat-form-grid">
+          <div>
+            <label class="form-label">Title <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="fTitle" placeholder="e.g. Honeymoon, Adventure, Wildlife">
+          </div>
+          <div>
+            <label class="form-label">Parent Category</label>
+            <select class="form-select" id="fCategoryId">
+              <option value="">— None —</option>
+              <% categories.forEach(c => { %>
+                <option value="<%= c.id %>"><%= c.name %></option>
+              <% }); %>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Slug</label>
+            <input type="text" class="form-control" id="fSlug" placeholder="e.g. honeymoon-packages (auto-generated if empty)">
+          </div>
+          <div>
+            <label class="form-label">Feature Image</label>
+            <input type="file" class="form-control" id="fImageFile" accept="image/*" onchange="previewImage(this)">
+            <div id="imagePreviewContainer" class="mt-2 position-relative d-none" style="max-width: 150px;">
+              <img id="imagePreview" src="" alt="Feature Image" class="img-thumbnail w-100" style="max-height: 100px; object-fit: cover;">
+              <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 p-1" style="line-height:1;" onclick="clearImage()"><i class="bi bi-x-circle"></i></button>
+            </div>
+            <input type="hidden" id="fRemoveImage" value="false">
+          </div>
+          <div class="full-span">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" id="fDesc" rows="3" placeholder="Short description…"></textarea>
+          </div>
+        </div>
+
+        <!-- CTA Buttons Section -->
+        <div class="mt-4 mb-2">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold m-0" style="color: #374151;">CTA Buttons</h6>
+            <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2" onclick="addBtnRow()" style="font-size:0.75rem;"><i class="bi bi-plus-lg"></i> Add Button</button>
+          </div>
+          <div id="btnRowsContainer">
+            <!-- Dynamic button rows will go here -->
+          </div>
+        </div>
+
+        <!-- SEO Collapse Section -->
+        <div class="accordion mb-3 mt-3" id="seoAccordion">
+          <div class="accordion-item border rounded-3 overflow-hidden">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed pkgcat-seo-button px-3 fw-semibold text-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#seoFields" style="box-shadow:none; background:none;">
+                <i class="bi bi-search me-2"></i> SEO & Schema Settings
+              </button>
+            </h2>
+            <div id="seoFields" class="accordion-collapse collapse" data-bs-parent="#seoAccordion">
+              <div class="accordion-body px-3 py-3 bg-light">
+                <div class="mb-3">
+                  <label class="form-label text-dark">Meta Title</label>
+                  <input type="text" class="form-control bg-white" id="fMetaTitle" placeholder="SEO Title">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label text-dark">Meta Description</label>
+                  <textarea class="form-control bg-white" id="fMetaDesc" rows="2" placeholder="SEO Description..."></textarea>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label text-dark">Meta Keyword</label>
+                  <textarea class="form-control bg-white" id="fMetaKeyword" rows="2" placeholder="SEO Keywords..."></textarea>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label text-dark">Schema (JSON-LD)</label>
+                  <textarea class="form-control bg-white" id="fMetaSchema" rows="2" placeholder="JSON-LD Schema Markup..."></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-light px-4 rounded-3" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn-add-primary" style="background:linear-gradient(135deg,#10b981,#34d399);box-shadow:0 4px 14px rgba(16,185,129,.35)" onclick="save()"><i class="bi bi-check2 me-1"></i>Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE MODAL -->
+<div class="modal fade tf-modal" id="delModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:380px">
+    <div class="modal-content">
+      <div class="modal-body text-center p-4">
+        <div style="width:60px;height:60px;background:#fef2f2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:1.7rem;color:#ef4444"><i class="bi bi-trash3"></i></div>
+        <h5 class="fw-bold mb-1">Delete Package Category?</h5>
+        <p class="text-muted" id="delMsg" style="font-size:.88rem"></p>
+        <div class="d-flex gap-2 justify-content-center mt-3">
+          <button class="btn btn-light px-4 rounded-3" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-danger px-4 rounded-3 fw-semibold" id="delBtn">Yes, Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const ALL = <%- JSON.stringify(packageCategories) %>;
+const CAT_COLORS = ['#4f46e5','#10b981','#f59e0b','#ec4899','#0ea5e9','#8b5cf6','#ef4444','#06b6d4'];
+const CAT_ICONS  = ['bi-box-seam','bi-suitcase-lg-fill','bi-compass-fill','bi-heart-fill','bi-airplane-fill','bi-water','bi-tree-fill','bi-star-fill'];
+const PS=12; let view='list',page=1,filtered=[...ALL],delId=null;
+let selectedIds = new Set();
+
+function applyFilters(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  filtered=ALL.filter(r=>r.title.toLowerCase().includes(q));
+  page=1; render();
+}
+function render(){
+  const tot=filtered.length,pages=Math.max(1,Math.ceil(tot/PS));
+  page=Math.min(page,pages);
+  const s=(page-1)*PS,slice=filtered.slice(s,s+PS);
+  document.getElementById('countLabel').textContent=`${tot} result${tot!==1?'s':''}`;
+  if(view==='cards') renderCards(slice,s,tot,pages);
+  else               renderList(slice,s,tot,pages);
+  evaluateSelectionState();
+}
+function renderCards(slice,s,tot,pages){
+  const body=document.getElementById('cardsBody');
+  if(!slice.length){body.innerHTML=`<div class="tf-empty" style="grid-column:1/-1"><div class="tf-empty-icon"><i class="bi bi-box-seam"></i></div><p>No package categories found.</p></div>`;document.getElementById('cardsPag').innerHTML='';return;}
+  body.innerHTML=slice.map((r,i)=>{
+    const col=CAT_COLORS[(r.id||i)%CAT_COLORS.length];
+    const ico=CAT_ICONS[(r.id||i)%CAT_ICONS.length];
+    return `<div class="tf-card">
+      <div class="tf-card-icon" style="background:${col}18;color:${col}"><i class="bi ${ico}"></i></div>
+      <div class="tf-card-name">${r.title}</div>
+      ${r.description?`<div class="tf-card-meta">${r.description}</div>`:''}
+      ${r.category?`<div class="tf-card-meta" style="font-size:0.75rem;color:#6366f1;">Parent: ${r.category.name}</div>`:''}
+      <div class="tf-card-actions">
+        <button class="btn-icon btn-icon-edit" style="flex:1;justify-content:center" onclick="openEdit('${r.id}')" data-bs-toggle="modal" data-bs-target="#pkgCatModal"><i class="bi bi-pencil me-1"></i>Edit</button>
+        <button class="btn-icon btn-icon-del" onclick="confirmDel('${r.id}','${r.title.replace(/'/g,"\\\\'")}')" ><i class="bi bi-trash3"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('cardsPag').innerHTML=pagHTML(page,pages,tot,s,slice.length);
+}
+function renderList(slice,s,tot,pages){
+  const body=document.getElementById('listBody');
+  if(!slice.length){body.innerHTML=`<tr><td colspan="7"><div class="text-center p-4 text-muted"><p>No package categories found.</p></div></td></tr>`;document.getElementById('listPag').innerHTML='';return;}
+  body.innerHTML=slice.map((r,i)=>{
+    const col=CAT_COLORS[(r.id||i)%CAT_COLORS.length];
+    const ico=CAT_ICONS[(r.id||i)%CAT_ICONS.length];
+    const checked = selectedIds.has(r.id.toString()) ? 'checked' : '';
+    const rowClass = checked ? 'row-selected' : '';
+    return `<tr class="${rowClass}">
+      <td><input type="checkbox" class="custom-checkbox row-checkbox" value="${r.id}" onchange="toggleRowSelection(this)" ${checked}></td>
+      <td style="color:#6b7280;">${s+i+1}</td>
+      <td><div style="display:flex;align-items:center;gap:.7rem">
+        <div class="row-avatar" style="background:${col}18;color:${col}; width:28px; height:28px; font-size:0.8rem; border-radius:10px; display:flex; align-items:center; justify-content:center;"><i class="bi ${ico}"></i></div>
+        <span style="font-weight:600;color:#1e1e4a;">${r.title}</span>
+      </div></td>
+      <td>${r.category ? `<span style="background:#ede9fe;color:#6d28d9;padding:2px 8px;border-radius:12px;font-size:0.76rem;font-weight:600;">${r.category.name}</span>` : '<span style="color:#9ca3af;">—</span>'}</td>
+      <td><span style="color:#6b7280;font-size:0.82rem">${r.slug||'—'}</span></td>
+      <td>${r.feature_image ? `<img src="${r.feature_image}" style="width:36px;height:36px;border-radius:6px;object-fit:cover;" alt="">` : '<span style="color:#9ca3af;">—</span>'}</td>
+      <td style="text-align:right">
+        <button class="btn btn-sm btn-light border me-1 rounded-circle p-1" style="width:26px;height:26px;line-height:1;" onclick="openEdit('${r.id}')" data-bs-toggle="modal" data-bs-target="#pkgCatModal"><i class="bi bi-pencil" style="font-size:0.8rem;color:#4b5563;"></i></button>
+        <button class="btn btn-sm btn-light border rounded-circle p-1" style="width:26px;height:26px;line-height:1;" onclick="confirmDel('${r.id}','${r.title.replace(/'/g,"\\\\'")}')" ><i class="bi bi-trash3" style="font-size:0.8rem;color:#ef4444;"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('listPag').innerHTML=pagHTML(page,pages,tot,s,slice.length);
+}
+function pagHTML(p,pages,tot,s,len){
+  const prev=`<button onclick="goPage(${p-1})" ${p<=1?'disabled':''}><i class="bi bi-chevron-left"></i></button>`;
+  const next=`<button onclick="goPage(${p+1})" ${p>=pages?'disabled':''}><i class="bi bi-chevron-right"></i></button>`;
+  let nums='';
+  for(let i=1;i<=pages;i++){
+    if(pages<=6||Math.abs(i-p)<=1||i===1||i===pages) nums+=`<button class="${i===p?'active':''}" onclick="goPage(${i})">${i}</button>`;
+    else if(Math.abs(i-p)===2) nums+=`<button disabled style="border:0;background:none;color:#8888bb">…</button>`;
+  }
+  return `<div class="tf-page-info">Showing ${s+1}–${s+len} of ${tot}</div><div class="tf-pages">${prev}${nums}${next}</div>`;
+}
+function goPage(p){page=p;render();}
+function setView(v){
+  view=v;
+  document.getElementById('cardsView').style.display=v==='cards'?'':'none';
+  document.getElementById('listView').style.display=v==='list'?'':'none';
+  document.getElementById('vCards').classList.toggle('active',v==='cards');
+  document.getElementById('vList').classList.toggle('active',v==='list');
+  render();
+}
+function previewImage(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById('imagePreview').src = e.target.result;
+      document.getElementById('imagePreviewContainer').classList.remove('d-none');
+      document.getElementById('fRemoveImage').value = 'false';
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+function clearImage() {
+  document.getElementById('fImageFile').value = '';
+  document.getElementById('imagePreview').src = '';
+  document.getElementById('imagePreviewContainer').classList.add('d-none');
+  document.getElementById('fRemoveImage').value = 'true';
+}
+
+function openCreate() {
+  document.getElementById('modalTitle').textContent='Add Package Category';
+  document.getElementById('fId').value='';
+  document.getElementById('fTitle').value='';
+  document.getElementById('fCategoryId').value='';
+  document.getElementById('fSlug').value='';
+  document.getElementById('fDesc').value='';
+
+  // Reset Buttons
+  document.getElementById('btnRowsContainer').innerHTML = '';
+  addBtnRow(); // add one empty row by default
+
+  // Reset file/image preview
+  document.getElementById('fImageFile').value='';
+  document.getElementById('imagePreview').src='';
+  document.getElementById('imagePreviewContainer').classList.add('d-none');
+  document.getElementById('fRemoveImage').value='false';
+
+  // Reset SEO fields
+  document.getElementById('fMetaTitle').value='';
+  document.getElementById('fMetaDesc').value='';
+  document.getElementById('fMetaKeyword').value='';
+  document.getElementById('fMetaSchema').value='';
+  
+  // Collapse accordion if open
+  const collapseEl = document.getElementById('seoFields');
+  if (collapseEl && collapseEl.classList.contains('show')) {
+    bootstrap.Collapse.getInstance(collapseEl).hide();
+  }
+}
+
+function openEdit(id){ 
+  const r = ALL.find(x => String(x.id) === String(id));
+  if(!r) return;
+  document.getElementById('modalTitle').textContent='Edit Package Category'; 
+  document.getElementById('fId').value=r.id; 
+  document.getElementById('fTitle').value=r.title; 
+  document.getElementById('fCategoryId').value=r.category_id||'';
+  document.getElementById('fSlug').value=r.slug||'';
+  document.getElementById('fDesc').value=r.description||'';
+
+  // Set Buttons
+  const container = document.getElementById('btnRowsContainer');
+  container.innerHTML = '';
+  if (r.buttons && Array.isArray(r.buttons) && r.buttons.length > 0) {
+    r.buttons.forEach(btn => addBtnRow(btn.text, btn.link));
+  } else {
+    addBtnRow(); // add one empty row by default
+  }
+
+  // Set file/image preview
+  document.getElementById('fImageFile').value='';
+  document.getElementById('fRemoveImage').value='false';
+  if (r.feature_image) {
+    document.getElementById('imagePreview').src = r.feature_image;
+    document.getElementById('imagePreviewContainer').classList.remove('d-none');
+  } else {
+    document.getElementById('imagePreview').src = '';
+    document.getElementById('imagePreviewContainer').classList.add('d-none');
+  }
+
+  // Set SEO fields
+  document.getElementById('fMetaTitle').value = r.meta_title || '';
+  document.getElementById('fMetaDesc').value = r.meta_description || '';
+  document.getElementById('fMetaKeyword').value = r.meta_keyword || '';
+  document.getElementById('fMetaSchema').value = r.meta_schema || '';
+
+  // Collapse accordion if open
+  const collapseEl = document.getElementById('seoFields');
+  if (collapseEl && collapseEl.classList.contains('show')) {
+    bootstrap.Collapse.getInstance(collapseEl).hide();
+  }
+}
+
+function addBtnRow(text = '', link = '') {
+  const container = document.getElementById('btnRowsContainer');
+  const row = document.createElement('div');
+  row.className = 'd-flex gap-2 mb-2 btn-row align-items-center';
+  row.innerHTML = `
+    <input type="text" class="form-control form-control-sm btn-text" placeholder="Display Title (e.g. Apply Forex Card)" value="${text.replace(/"/g, '&quot;')}">
+    <input type="text" class="form-control form-control-sm btn-link" placeholder="Btn Link (e.g. /forex)" value="${link.replace(/"/g, '&quot;')}">
+    <button type="button" class="btn btn-sm btn-light border text-danger px-2" onclick="this.parentElement.remove()"><i class="bi bi-trash3"></i></button>
+  `;
+  container.appendChild(row);
+}
+
+async function save(){
+  const id=document.getElementById('fId').value;
+  const title=document.getElementById('fTitle').value.trim();
+  const category_id=document.getElementById('fCategoryId').value;
+  const slug=document.getElementById('fSlug').value.trim();
+  const description=document.getElementById('fDesc').value.trim();
+  
+  if(!title) return alert('Title is required');
+
+  const formData = new FormData();
+  formData.append('title', title);
+  formData.append('category_id', category_id || '');
+  formData.append('slug', slug);
+  formData.append('description', description);
+
+  // File
+  const fileInput = document.getElementById('fImageFile');
+  if (fileInput.files.length > 0) {
+    formData.append('feature_image_file', fileInput.files[0]);
+  }
+  formData.append('remove_feature_image', document.getElementById('fRemoveImage').value);
+
+  // SEO fields
+  formData.append('meta_title', document.getElementById('fMetaTitle').value.trim());
+  formData.append('meta_description', document.getElementById('fMetaDesc').value.trim());
+  formData.append('meta_keyword', document.getElementById('fMetaKeyword').value.trim());
+  formData.append('meta_schema', document.getElementById('fMetaSchema').value.trim());
+
+  // Buttons
+  const btnRows = document.querySelectorAll('#btnRowsContainer .btn-row');
+  const buttonsArray = [];
+  btnRows.forEach(row => {
+    const txt = row.querySelector('.btn-text').value.trim();
+    const lnk = row.querySelector('.btn-link').value.trim();
+    if (txt || lnk) {
+      buttonsArray.push({ text: txt, link: lnk });
+    }
+  });
+  formData.append('buttons', JSON.stringify(buttonsArray));
+
+  const saveBtn = document.querySelector('.btn-add-primary');
+  const originalHtml = saveBtn.innerHTML;
+  
+  try {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+    
+    const res = await fetch(id ? `/api/v1/package-categories/${id}` : '/api/v1/package-categories', {
+      method: id ? 'PUT' : 'POST',
+      body: formData
+    });
+    
+    const j = await res.json();
+    if(j.success) {
+      location.reload();
+    } else {
+      alert(j.message || 'Error saving package category');
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = originalHtml;
+    }
+  } catch(e) {
+    alert('Network error occurred');
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = originalHtml;
+  }
+}
+function confirmDel(id,name){delId=id;document.getElementById('delMsg').textContent=`"${name}" will be permanently removed.`;new bootstrap.Modal(document.getElementById('delModal')).show();}
+document.getElementById('delBtn').addEventListener('click',executeSingleDelete);
+async function executeSingleDelete(){
+  const res=await fetch(`/api/v1/package-categories/${delId}`,{method:'DELETE'}); const j=await res.json();
+  if(j.success) location.reload(); else alert(j.message);
+}
+
+// BULK DELETE API HOOKS
+function toggleSelectAll() {
+  const mainCheckbox = document.getElementById('selectAllCheckbox');
+  const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+  const checked = mainCheckbox.checked;
+
+  rowCheckboxes.forEach(cb => {
+    cb.checked = checked;
+    const tr = cb.closest('tr');
+    if(checked) {
+      tr.classList.add('row-selected');
+      selectedIds.add(cb.value);
+    } else {
+      tr.classList.remove('row-selected');
+      selectedIds.delete(cb.value);
+    }
+  });
+
+  updateBulkActionBar();
+}
+
+function toggleRowSelection(cb) {
+  const tr = cb.closest('tr');
+  if(cb.checked) {
+    tr.classList.add('row-selected');
+    selectedIds.add(cb.value);
+  } else {
+    tr.classList.remove('row-selected');
+    selectedIds.delete(cb.value);
+    document.getElementById('selectAllCheckbox').checked = false;
+  }
+  updateBulkActionBar();
+}
+
+function evaluateSelectionState() {
+   const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+   if(!rowCheckboxes.length) {
+     document.getElementById('selectAllCheckbox').checked = false;
+     return;
+   }
+
+   let allChecked = true;
+   rowCheckboxes.forEach(cb => {
+      if(!cb.checked) allChecked = false;
+   });
+   document.getElementById('selectAllCheckbox').checked = allChecked;
+}
+
+function updateBulkActionBar() {
+  const bar = document.getElementById('bulkActionsBar');
+  const count = selectedIds.size;
+  if(count > 0) {
+    bar.style.display = 'flex';
+    document.getElementById('selectedCountMsg').textContent = `${count} record${count!==1?'s':''} selected`;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function confirmBulkDelete() {
+  if(!selectedIds.size) return;
+  if(!confirm(`Delete ${selectedIds.size} selected package categories?`)) return;
+  executeBulkDelete();
+}
+
+async function executeBulkDelete() {
+  try {
+    const res = await fetch('/api/v1/package-categories/bulk-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: Array.from(selectedIds).map(Number) })
+    });
+    const j = await res.json();
+    if(j.success) location.reload(); else alert(j.message);
+  } catch(e) {
+    alert('Network error occurred');
+  }
+}
+
+render();
+</script>

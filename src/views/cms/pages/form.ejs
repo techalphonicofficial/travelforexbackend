@@ -107,6 +107,7 @@
                         <option value="why_choose_us" <%=detail.section==='why_choose_us' ? 'selected' : '' %>>Why Choose Us</option>
                         <option value="story_grid" <%=detail.section==='story_grid' ? 'selected' : '' %>>Story (Text + Stats + Images)</option>
                         <option value="team_grid" <%=detail.section==='team_grid' ? 'selected' : '' %>>Team Grid</option>
+                        <option value="tabs_section" <%=detail.section==='tabs_section' ? 'selected' : '' %>>Tabs Content (Image + Rich Text)</option>
                       </select>
                     </div>
 
@@ -123,8 +124,22 @@
                         <div class="type-image_text section-content"
                           style="display: <%= detail.section === 'image_text' ? 'block' : 'none' %>">
                           <div class="row g-2">
-                            <div class="col-md-8"><textarea class="form-control item-body"
-                                placeholder="Body Content"><%= content.body || '' %></textarea></div>
+                            <div class="col-md-8">
+                                <textarea class="form-control item-body"
+                                  placeholder="Body Content"><%= content.body || '' %></textarea>
+                                <div class="mt-2">
+                                  <label class="small fw-bold text-muted mb-1">Points (Optional)</label>
+                                  <div class="image-text-points-list d-flex flex-column gap-2 mb-2">
+                                    <% (content.points || []).forEach(pt => { %>
+                                      <div class="item-row d-flex gap-2 align-items-center bg-white p-1 rounded border">
+                                        <input type="text" class="form-control form-control-sm f1" placeholder="Point Title" value="<%= pt.title %>">
+                                        <button type="button" class="btn btn-sm btn-light text-danger border py-0 px-2" onclick="this.parentElement.remove()"><i class="bi bi-x-lg"></i></button>
+                                      </div>
+                                    <% }) %>
+                                  </div>
+                                  <button type="button" class="btn btn-xs btn-outline-secondary" onclick="addItem(<%= index %>, 'image_text_point')">+ Add Point</button>
+                                </div>
+                            </div>
                             <div class="col-md-4">
                               <div class="media-selector-wrap bg-white border rounded-3 p-2 text-center mb-1">
                                 <% const isVideo = content.media_url && content.media_url.match(/\.(mp4|webm|ogg|mov|avi)$/i); %>
@@ -348,6 +363,44 @@
                           </div>
                         </div>
 
+                        <!-- Tabs Section -->
+                        <div class="type-tabs_section section-content"
+                          style="display: <%= detail.section === 'tabs_section' ? 'block' : 'none' %>">
+                          <div class="mb-3">
+                            <label class="small fw-bold text-muted mb-1">Block Description (Optional)</label>
+                            <textarea class="form-control form-control-sm item-block-desc" rows="2" placeholder="Brief text under heading..."><%= content.block_desc || '' %></textarea>
+                          </div>
+                          <div class="tabs-list d-flex flex-column gap-2 mb-3">
+                            <% (content.tabs || []).forEach((tab, i) => { %>
+                              <div class="item-row d-flex flex-column gap-2 bg-white p-3 rounded-3 border shadow-sm">
+                                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                                  <span class="fw-bold text-primary small"><i class="bi bi-window-stack me-1"></i> Tab Item</span>
+                                  <button type="button" class="btn btn-sm btn-light text-danger border py-0 px-2" onclick="this.closest('.item-row').remove()"><i class="bi bi-x-lg"></i></button>
+                                </div>
+                                <div class="row g-3">
+                                  <div class="col-md-4">
+                                    <label class="small fw-bold text-muted">Tab Title / Key</label>
+                                    <input type="text" class="form-control form-control-sm f1 mb-2" placeholder="e.g. Inside Cabin" value="<%= tab.title %>">
+                                    <label class="small fw-bold text-muted">Badge (Optional)</label>
+                                    <input type="text" class="form-control form-control-sm f2 mb-2" placeholder="e.g. BEST VALUE" value="<%= tab.badge %>">
+                                    <label class="small fw-bold text-muted">Tab Image</label>
+                                    <div class="media-selector-wrap border rounded p-2 text-center bg-light">
+                                      <img src="<%= tab.img || '/assets/img/placeholder.png' %>" class="img-preview rounded shadow-sm" style="width:100%; height:80px; object-fit:cover; display:<%= tab.img ? 'block' : 'none' %>;">
+                                      <input type="text" class="form-control form-control-sm f3 mt-2" placeholder="Image URL" value="<%= tab.img %>" onchange="updatePreview(this)">
+                                      <button type="button" class="btn btn-sm btn-outline-primary mt-1 w-100" onclick="openMediaLibrary(this)"><i class="bi bi-image me-1"></i> Select</button>
+                                    </div>
+                                  </div>
+                                  <div class="col-md-8">
+                                    <label class="small fw-bold text-muted">Tab Content (Rich Text)</label>
+                                    <textarea class="form-control f4 rich-editor" placeholder="Tab Content (Rich Text)"><%= tab.content %></textarea>
+                                  </div>
+                                </div>
+                              </div>
+                            <% }) %>
+                          </div>
+                          <button type="button" class="btn btn-sm btn-light border fw-bold text-primary" onclick="addItem(<%= index %>, 'tabs_section')"><i class="bi bi-plus-lg me-1"></i> Add Tab</button>
+                        </div>
+
                         <input type="hidden" name="sections[<%= index %>][json_data]"
                           value='<%= detail.json_data || "{}" %>' class="json-data-input">
                     </div>
@@ -447,22 +500,35 @@
     }
   }
 
-  let activeMediaTarget = null;
-  function openMediaLibrary(btn) {
-    activeMediaTarget = btn.closest('.media-selector-wrap') || btn.parentElement;
-    const modal = new bootstrap.Modal(document.getElementById('mediaLibraryModal'));
-    loadMediaLibrary();
-    modal.show();
-  }
+  let currentMediaPage = 1;
+  let hasMoreMedia = true;
+  let isMediaLoading = false;
 
-  async function loadMediaLibrary() {
+  async function loadMediaLibrary(reset = false) {
+    if (reset) {
+        currentMediaPage = 1;
+        hasMoreMedia = true;
+        document.getElementById('mediaGrid').innerHTML = '';
+    }
+    if (!hasMoreMedia || isMediaLoading) return;
+    
+    isMediaLoading = true;
     const container = document.getElementById('mediaGrid');
-    container.innerHTML = '<div class="text-center py-5 w-100"><div class="spinner-border text-primary"></div></div>';
+    
+    const loadingIndicator = document.createElement('div');
+    loadingIndicator.className = 'text-center py-5 w-100 media-loading-indicator';
+    loadingIndicator.innerHTML = '<div class="spinner-border text-primary"></div>';
+    container.appendChild(loadingIndicator);
+
     try {
-      const res = await fetch('/cms/media/all');
+      const res = await fetch(`/cms/media/all?page=${currentMediaPage}&limit=16`);
       const result = await res.json();
+      
+      const loader = container.querySelector('.media-loading-indicator');
+      if (loader) loader.remove();
+
       if (result.success) {
-        container.innerHTML = result.data.map(m => {
+        const html = result.data.map(m => {
           const isVideo = m.url && m.url.match(/\.(mp4|webm|ogg|mov|avi)$/i);
           return `
           <div class="col-md-3 col-6 mb-3">
@@ -474,10 +540,36 @@
             </div>
           </div>
         `}).join('');
+        container.insertAdjacentHTML('beforeend', html);
+        
+        hasMoreMedia = result.hasMore;
+        if (hasMoreMedia) {
+            const loadMoreBtn = document.createElement('div');
+            loadMoreBtn.className = 'col-12 text-center mt-3 mb-3 media-load-more-container';
+            loadMoreBtn.innerHTML = '<button type="button" class="btn btn-outline-primary btn-sm px-4 rounded-pill" onclick="loadMoreMedia()">Load More</button>';
+            container.appendChild(loadMoreBtn);
+        }
       }
     } catch (e) {
-      container.innerHTML = '<div class="alert alert-danger">Failed to load media</div>';
+      const loader = container.querySelector('.media-loading-indicator');
+      if (loader) loader.remove();
+      container.insertAdjacentHTML('beforeend', '<div class="alert alert-danger w-100">Failed to load media</div>');
     }
+    isMediaLoading = false;
+  }
+
+  function loadMoreMedia() {
+    const btnContainer = document.querySelector('.media-load-more-container');
+    if (btnContainer) btnContainer.remove();
+    currentMediaPage++;
+    loadMediaLibrary();
+  }
+
+  function openMediaLibrary(btn) {
+    activeMediaTarget = btn.closest('.media-selector-wrap') || btn.parentElement;
+    const modal = new bootstrap.Modal(document.getElementById('mediaLibraryModal'));
+    loadMediaLibrary(true);
+    modal.show();
   }
 
   function selectMedia(url) {
@@ -497,7 +589,7 @@
       const res = await fetch('/cms/media/upload', { method: 'POST', body: formData });
       const result = await res.json();
       if (result.success) {
-        loadMediaLibrary(); // Refresh grid
+        loadMediaLibrary(true); // Refresh grid from page 1
       } else {
         alert('Upload failed: ' + result.message);
       }
@@ -553,13 +645,19 @@
     } else if (type === 'story_grid') {
       const listMap = { 'story_stat': 'story-stats-list', 'story_gallery': 'story-gallery-list' };
       list = section.querySelector(`.${listMap[subType]}`);
+    } else if (type === 'image_text') {
+      list = section.querySelector('.image-text-points-list');
+    } else if (type === 'tabs_section') {
+      list = section.querySelector('.tabs-list');
     }
 
     let html = '';
     const rowClass = "item-row d-flex gap-2 align-items-center bg-white p-2 rounded-3 border shadow-sm";
     const delBtn = '<button type="button" class="btn btn-sm btn-light text-danger border" onclick="this.parentElement.remove()"><i class="bi bi-x-lg"></i></button>';
 
-    if (type === 'why_choose_us') {
+    if (type === 'image_text' && subType === 'image_text_point') {
+        html = `<div class="${rowClass} p-1"><input type="text" class="form-control form-control-sm f1" placeholder="Point Title">${delBtn}</div>`;
+    } else if (type === 'why_choose_us') {
       if (subType === 'stat') html = `<div class="${rowClass}"><input type="text" class="form-control form-control-sm f1" placeholder="Value"><input type="text" class="form-control form-control-sm f2" placeholder="Label">${delBtn}</div>`;
       if (subType === 'feature') html = `<div class="${rowClass}"><input type="text" class="form-control form-control-sm f1" placeholder="Title"><input type="text" class="form-control form-control-sm f2" placeholder="Desc">${delBtn}</div>`;
       if (subType === 'gallery') html = `<div class="${rowClass}">
@@ -632,6 +730,31 @@
                 </div>
                 ${delBtn}
               </div>`;
+    } else if (type === 'tabs_section') {
+      html = `<div class="item-row d-flex flex-column gap-2 bg-white p-3 rounded-3 border shadow-sm">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                  <span class="fw-bold text-primary small"><i class="bi bi-window-stack me-1"></i> Tab Item</span>
+                  <button type="button" class="btn btn-sm btn-light text-danger border py-0 px-2" onclick="this.closest('.item-row').remove()"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="small fw-bold text-muted">Tab Title / Key</label>
+                    <input type="text" class="form-control form-control-sm f1 mb-2" placeholder="e.g. Inside Cabin">
+                    <label class="small fw-bold text-muted">Badge (Optional)</label>
+                    <input type="text" class="form-control form-control-sm f2 mb-2" placeholder="e.g. BEST VALUE">
+                    <label class="small fw-bold text-muted">Tab Image</label>
+                    <div class="media-selector-wrap border rounded p-2 text-center bg-light">
+                      <img src="/assets/img/placeholder.png" class="img-preview rounded shadow-sm" style="width:100%; height:80px; object-fit:cover; display:none;">
+                      <input type="text" class="form-control form-control-sm f3 mt-2" placeholder="Image URL" onchange="updatePreview(this)">
+                      <button type="button" class="btn btn-sm btn-outline-primary mt-1 w-100" onclick="openMediaLibrary(this)"><i class="bi bi-image me-1"></i> Select</button>
+                    </div>
+                  </div>
+                  <div class="col-md-8">
+                    <label class="small fw-bold text-muted">Tab Content (Rich Text)</label>
+                    <textarea class="form-control f4 rich-editor" placeholder="Tab Content (Rich Text)"></textarea>
+                  </div>
+                </div>
+              </div>`;
     }
     list.insertAdjacentHTML('beforeend', html);
     
@@ -673,13 +796,21 @@
               <option value="why_choose_us">Why Choose Us</option>
               <option value="story_grid">Story (Text + Stats + Images)</option>
               <option value="team_grid">Team Grid</option>
+              <option value="tabs_section">Tabs Content (Image + Rich Text)</option>
             </select>
           </div>
           <div class="col-12 mt-3 content-area">
             <div class="type-standard section-content"><textarea name="sections[${sectionCount}][description]" class="form-control" rows="3" placeholder="Description"></textarea></div>
             <div class="type-image_text section-content" style="display:none">
               <div class="row g-2">
-                <div class="col-md-8"><textarea class="form-control item-body" placeholder="Body Content"></textarea></div>
+                <div class="col-md-8">
+                  <textarea class="form-control item-body" placeholder="Body Content"></textarea>
+                  <div class="mt-2">
+                    <label class="small fw-bold text-muted mb-1">Points (Optional)</label>
+                    <div class="image-text-points-list d-flex flex-column gap-2 mb-2"></div>
+                    <button type="button" class="btn btn-xs btn-outline-secondary" onclick="addItem(${sectionCount}, 'image_text_point')">+ Add Point</button>
+                  </div>
+                </div>
                 <div class="col-md-4">
                   <div class="media-selector-wrap bg-white border rounded-3 p-2 text-center mb-1">
                     <img src="/assets/img/placeholder.png" class="img-preview mb-2 rounded" style="max-height: 80px; display: none; margin: 0 auto;">
@@ -715,6 +846,14 @@
                 <div class="col-12"><label class="small fw-bold text-indigo mb-2 d-block">2. Labels / Stats</label><div class="story-stats-list d-flex flex-column gap-2 mb-2"></div><button type="button" class="btn btn-xs btn-outline-indigo" onclick="addItem(${sectionCount}, 'story_stat')">+ Add Label</button></div>
                 <div class="col-12"><label class="small fw-bold text-indigo mb-2 d-block">3. Images</label><div class="story-gallery-list d-flex flex-column gap-2 mb-2"></div><button type="button" class="btn btn-xs btn-outline-indigo" onclick="addItem(${sectionCount}, 'story_gallery')">+ Add Image</button></div>
               </div>
+            </div>
+            <div class="type-tabs_section section-content" style="display:none">
+              <div class="mb-3">
+                <label class="small fw-bold text-muted mb-1">Block Description (Optional)</label>
+                <textarea class="form-control form-control-sm item-block-desc" rows="2" placeholder="Brief text under heading..."></textarea>
+              </div>
+              <div class="tabs-list d-flex flex-column gap-2 mb-3"></div>
+              <button type="button" class="btn btn-sm btn-light border fw-bold text-primary" onclick="addItem(${sectionCount}, 'tabs_section')"><i class="bi bi-plus-lg me-1"></i> Add Tab</button>
             </div>
             <input type="hidden" name="sections[${sectionCount}][json_data]" value="{}" class="json-data-input">
           </div>
@@ -760,7 +899,8 @@
       let data = { heading_content: headingContent };
 
       if (type === 'image_text') {
-        data = { ...data, body: section.querySelector('.type-image_text .item-body').value, media_url: section.querySelector('.item-img').value, side: section.querySelector('.item-side').value };
+        const points = Array.from(section.querySelectorAll('.image-text-points-list .item-row')).map(r => ({ title: r.querySelector('.f1').value }));
+        data = { ...data, body: section.querySelector('.type-image_text .item-body').value, media_url: section.querySelector('.item-img').value, side: section.querySelector('.item-side').value, points };
       } else if (type === 'rich_text') {
         data = { ...data, body: section.querySelector('.type-rich_text .item-body').value };
       } else if (type === 'cta_banner') {
@@ -775,6 +915,16 @@
         const stats = Array.from(section.querySelectorAll('.story-stats-list .item-row')).map(r => ({ value: r.querySelector('.f1').value, desc: r.querySelector('.f2').value }));
         const gallery = Array.from(section.querySelectorAll('.story-gallery-list .item-row')).map(r => ({ img: r.querySelector('.f1').value, alt: r.querySelector('.f2').value }));
         data = { ...data, story_desc, stats, gallery };
+      } else if (type === 'tabs_section') {
+        const blockDesc = section.querySelector('.type-tabs_section .item-block-desc') ? section.querySelector('.type-tabs_section .item-block-desc').value : '';
+        if (blockDesc) data.block_desc = blockDesc;
+        const tabs = Array.from(section.querySelectorAll('.tabs-list .item-row')).map(r => ({
+          title: r.querySelector('.f1').value,
+          badge: r.querySelector('.f2').value,
+          img: r.querySelector('.f3').value,
+          content: r.querySelector('.f4').value
+        }));
+        data = { ...data, tabs };
       } else if (['faq_accordion', 'stats_bar', 'timeline', 'feature_grid', 'testimonial_grid', 'gallery', 'team_grid'].includes(type)) {
         const rows = section.querySelectorAll('.type-list-based .items-list .item-row');
         const listKey = { 'faq_accordion': 'faqs', 'stats_bar': 'stats', 'timeline': 'items', 'feature_grid': 'features', 'testimonial_grid': 'testimonials', 'gallery': 'images', 'team_grid': 'team' }[type];

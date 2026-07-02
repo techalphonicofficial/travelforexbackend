@@ -106,6 +106,21 @@ const { repositories: { packageRepo } } = require('../container');
  *         schema:
  *           type: string
  *         description: Category slug or name filter
+ *       - in: query
+ *         name: package_category_slug
+ *         schema:
+ *           type: string
+ *         description: Package category slug filter
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Number of items per page
  *     responses:
  *       200:
  *         description: A list of packages
@@ -123,14 +138,14 @@ const { repositories: { packageRepo } } = require('../container');
  */
 router.get('/', async (req, res) => {
     try {
-        const { minPrice, maxPrice, duration, startDate, endDate, city, country, continent, destination, category } = req.query;
+        const { page = 1, limit = 10, minPrice, maxPrice, duration, startDate, endDate, city, country, continent, destination, category, package_category_slug } = req.query;
         let data;
-        if (minPrice || maxPrice || duration || startDate || endDate || city || country || continent || destination || category) {
-            data = await packageRepo.filterPackages({ minPrice, maxPrice, duration, startDate, endDate, city, country, continent, destination, category });
+        if (minPrice || maxPrice || duration || startDate || endDate || city || country || continent || destination || category || package_category_slug) {
+            data = await packageRepo.filterPackages({ page, limit, minPrice, maxPrice, duration, startDate, endDate, city, country, continent, destination, category, package_category_slug });
         } else {
-            data = await packageRepo.findAll();
+            data = await packageRepo.findAll({ page, limit });
         }
-        res.json({ success: true, data });
+        res.json({ success: true, data: data.rows, total: data.count, currentPage: parseInt(page), totalPages: Math.ceil(data.count / limit) });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }

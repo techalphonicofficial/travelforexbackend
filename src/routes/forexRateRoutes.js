@@ -154,6 +154,78 @@ router.get('/', async (req, res) => {
 
 /**
  * @swagger
+ * /api/v1/forex-rates/public-board:
+ *   get:
+ *     summary: Get public forex board rates
+ *     description: Returns active forex rates with calculated buy and sell rates based on interbank standard spread.
+ *     tags: [Forex Rates]
+ *     responses:
+ *       200:
+ *         description: Public forex board rates
+ */
+router.get('/public-board', async (req, res) => {
+  try {
+    const [rows, rawSpread] = await Promise.all([
+      forexConversionRateRepo.findPublic({ base_code: 'INR' }),
+      appSettingRepo.get('public_forex_spread_percentage')
+    ]);
+    
+    // Fallback to 1% spread if not configured in settings
+    const spreadPercentage = Number(rawSpread) > 0 ? Number(rawSpread) : 1; 
+    const halfSpreadMultiplier = (spreadPercentage / 100) / 2;
+
+    const currencyNames = new Intl.DisplayNames(['en'], { type: 'currency' });
+    
+    // Deduplicate by code in case multiple countries use the same currency (like EUR)
+    const uniqueCodes = new Set();
+    const board = [];
+
+    for (const row of rows) {
+      if (uniqueCodes.has(row.code)) continue;
+      uniqueCodes.add(row.code);
+
+      const conversion_rate = Number(row.conversion_rate || 0);
+      const spread = conversion_rate * halfSpreadMultiplier;
+
+      
+      let name = row.code;
+      try { name = currencyNames.of(row.code); } catch(e) {}
+      if (row.code === 'AED') name = 'UAE Dirham'; // Match UI exactly
+      
+      board.push({
+        code: row.code,
+        currency_name: name,
+        buy_rate: roundMoney(conversion_rate - spread),
+        sell_rate: roundMoney(conversion_rate + spread),
+        updated_at: row.updated_at
+      });
+    }
+
+    // Pagination logic
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    
+    const paginatedBoard = board.slice(startIndex, endIndex);
+
+    res.json({
+      success: true,
+      data: paginatedBoard,
+      meta: {
+        current_page: page,
+        per_page: limit,
+        total_items: board.length,
+        total_pages: Math.ceil(board.length / limit)
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+/**
+ * @swagger
  * /api/v1/forex-rates/convert:
  *   get:
  *     summary: Create and calculate a forex conversion request

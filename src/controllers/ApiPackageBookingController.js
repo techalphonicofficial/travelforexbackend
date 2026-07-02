@@ -869,7 +869,7 @@ class ApiPackageBookingController {
 
       transaction = await this.db.transaction();
 
-      const booking = await this.models.PackageBooking.create({
+        const booking = await this.models.PackageBooking.create({
         booking_reference: bookingReference,
         package_id: pkg.id,
         package_slug: clean(payload.package_slug) || pkg.slug || null,
@@ -903,6 +903,21 @@ class ApiPackageBookingController {
         page_url: cleanUrl(payload.page_url) || null,
         raw_payload: rawPayload
       }, { transaction });
+
+      // Create a Notification for the new package booking
+      try {
+        const { Notification } = require('../container').models;
+        if (Notification) {
+            await Notification.create({
+                title: 'New Package Booking',
+                message: `A new package booking has been made. Package: ${pkg.name}`,
+                type: 'new_booking',
+                reference_id: booking.id
+            }, { transaction });
+        }
+      } catch (notifErr) {
+        console.error("Error creating Notification for package booking:", notifErr);
+      }
 
       if (couponPreview) {
         await this.couponService.redeem({

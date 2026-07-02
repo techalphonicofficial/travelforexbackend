@@ -79,6 +79,45 @@ class LeadRepository {
         leads.forEach(l => { counts[l.stage_id] = (counts[l.stage_id] || 0) + 1; });
         return counts;
     }
+
+    async countByPipeline() {
+        const results = await this.Lead.findAll({
+            attributes: ['pipeline_id', [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'count']],
+            group: ['pipeline_id'],
+            raw: true
+        });
+        const counts = {};
+        results.forEach(r => { counts[r.pipeline_id] = parseInt(r.count); });
+        return counts;
+    }
+
+    async countNewByPipeline() {
+        const sequelize = require('sequelize');
+        const pipelines = await this.Pipeline.findAll({
+            include: [{ model: this.PipelineStage, as: 'stages' }],
+            order: [[{ model: this.PipelineStage, as: 'stages' }, 'order', 'ASC']]
+        });
+        
+        const firstStageIds = [];
+        pipelines.forEach(p => {
+            if (p.stages && p.stages.length > 0) {
+                firstStageIds.push(p.stages[0].id);
+            }
+        });
+
+        if (firstStageIds.length === 0) return {};
+
+        const results = await this.Lead.findAll({
+            where: { stage_id: { [sequelize.Op.in]: firstStageIds } },
+            attributes: ['pipeline_id', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
+            group: ['pipeline_id'],
+            raw: true
+        });
+
+        const counts = {};
+        results.forEach(r => { counts[r.pipeline_id] = parseInt(r.count); });
+        return counts;
+    }
 }
 
 module.exports = LeadRepository;

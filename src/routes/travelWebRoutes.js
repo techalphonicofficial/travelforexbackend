@@ -4,13 +4,13 @@ const {
     db,
     repositories: {
         continentRepo, countryRepo, cityRepo,
-        destinationRepo, categoryRepo, packageRepo, activityRepo, videoReviewRepo,
+        destinationRepo, categoryRepo, packageCategoryRepo, packageRepo, activityRepo, videoReviewRepo,
         appSettingRepo, reviewRepo, forexServiceRepo, forexConversionRateRepo,
         couponRepo, leadRepo, pipelineRepo, userRepo
     },
     models: {
         Continent, Country, City, Destination, DestinationMapping,
-        DestinationCategory, Category, Package, Activity,
+        DestinationCategory, Category, PackageCategory, PackageCategoryMapping, Package, Activity,
         PackageDestination, PackageInclusion, PackageExclusion, Media, VideoReview, Review, DestinationCrowdLevel, DestinationTax, Hotel,
         ForexConversionRequest, Customer, User, Lead, JournalEntry
     },
@@ -952,6 +952,19 @@ router.get('/categories', async (req, res) => {
     }
 });
 
+// ─────────────────────────────────────────────
+// PACKAGE CATEGORIES MASTER
+// ─────────────────────────────────────────────
+router.get('/package-categories', async (req, res) => {
+    try {
+        const packageCategories = await packageCategoryRepo.findAll();
+        const categories = await categoryRepo.findAll();
+        res.render('travel/package-categories/index', { title: 'Package Categories', packageCategories, categories });
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+
 router.get('/categories/create', async (req, res) => {
     res.render('travel/categories/form', { title: 'Create Category', category: null });
 });
@@ -1051,6 +1064,7 @@ router.get('/packages/create', async (req, res) => {
 
         const destinations = await Destination.findAll({ order: [['name', 'ASC']] });
         const categories = await categoryRepo.findAll();
+        const packageCategories = await PackageCategory.findAll({ order: [['title', 'ASC']] });
         const activities = await Activity.findAll({ order: [['name', 'ASC']] });
         const hotels = await Hotel.findAll({ order: [['name', 'ASC']] });
         const taxTypes = await getTaxTypes();
@@ -1059,6 +1073,7 @@ router.get('/packages/create', async (req, res) => {
             pkg: null,
             destinations,
             categories,
+            packageCategories,
             activities,
             hotels,
             taxTypes
@@ -1080,7 +1095,8 @@ router.get('/packages/:id/edit', async (req, res) => {
                 },
                 { model: PackageInclusion, as: 'inclusions' },
                 { model: PackageExclusion, as: 'exclusions' },
-                { model: Media, as: 'gallery' }
+                { model: Media, as: 'gallery' },
+                { model: PackageCategory, as: 'package_categories' }
             ],
             order: [[{ model: PackageDestination, as: 'destinations' }, 'order', 'ASC']]
         });
@@ -1104,6 +1120,7 @@ router.get('/packages/:id/edit', async (req, res) => {
         const destinations = await Destination.findAll({ order: [['name', 'ASC']] });
         const activities = await Activity.findAll({ order: [['name', 'ASC']] });
         const hotels = await Hotel.findAll({ order: [['name', 'ASC']] });
+        const packageCategories = await PackageCategory.findAll({ order: [['title', 'ASC']] });
         const taxTypes = await getTaxTypes();
 
         res.render('travel/packages/edit', {
@@ -1112,6 +1129,7 @@ router.get('/packages/:id/edit', async (req, res) => {
             destinations: destinations,
             activities: activities,
             hotels: hotels,
+            packageCategories,
             taxTypes
         });
 
@@ -1370,7 +1388,7 @@ router.post('/packages/activity-image', handleUpload(upload.single('activity_ima
 });
 
 router.post('/packages/save', async (req, res) => {
-    const { id, name, duration, price, description, show_in_home_page, main_image, main_image_alt, destinations, inclusions, exclusions } = req.body;
+    const { id, name, duration, price, description, show_in_home_page, main_image, main_image_alt, destinations, inclusions, exclusions, package_categories } = req.body;
     const is_customizable = req.body.is_customizable === true || req.body.is_customizable === 'true' || req.body.is_customizable === 'on' || req.body.is_customizable === 1 || req.body.is_customizable === '1';
     const slug = (req.body.slug || name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
@@ -1409,6 +1427,7 @@ router.post('/packages/save', async (req, res) => {
                 await PackageDestination.destroy({ where: { package_id: id }, transaction });
                 await PackageInclusion.destroy({ where: { package_id: id }, transaction });
                 await PackageExclusion.destroy({ where: { package_id: id }, transaction });
+                await PackageCategoryMapping.destroy({ where: { package_id: id }, transaction });
             } else {
                 // Create new Package
                 pkg = await Package.create({
@@ -1453,6 +1472,14 @@ router.post('/packages/save', async (req, res) => {
             if (exclusions?.length) {
                 await PackageExclusion.bulkCreate(
                     exclusions.map(text => ({ package_id: pkg.id, text })),
+                    { transaction }
+                );
+            }
+
+            // 5. Package Categories
+            if (package_categories && Array.isArray(package_categories) && package_categories.length) {
+                await PackageCategoryMapping.bulkCreate(
+                    package_categories.map(catId => ({ package_id: pkg.id, package_category_id: parseInt(catId) })),
                     { transaction }
                 );
             }

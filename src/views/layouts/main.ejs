@@ -1049,6 +1049,9 @@
                                 <li><a href="/travel/categories"
                                         class="nav-link-item <%= title === 'Destination Categories' ? 'active' : '' %>"><i
                                             class="bi bi-tags nav-icon"></i> Categories</a></li>
+                                <li><a href="/travel/package-categories"
+                                        class="nav-link-item <%= title === 'Package Categories' ? 'active' : '' %>"><i
+                                            class="bi bi-box-seam nav-icon"></i> Pkg Categories</a></li>
                                 <li><a href="/travel/destinations"
                                         class="nav-link-item <%= title === 'Destinations' ? 'active' : '' %>"><i
                                             class="bi bi-geo-alt nav-icon"></i> Destinations</a></li>
@@ -1121,8 +1124,15 @@
                                         class="nav-link-item <%= title === 'CRM Form Builder' ? 'active' : '' %>"><i
                                             class="bi bi-ui-checks nav-icon"></i> Form Builder</a></li>
                                 <li><a href="/crm/follow-ups"
-                                        class="nav-link-item <%= title === 'CRM Follow-ups' ? 'active' : '' %>"><i
-                                            class="bi bi-calendar-check nav-icon"></i> Follow-ups</a></li>
+                                        class="nav-link-item <%= title === 'CRM Follow-ups' ? 'active' : '' %>">
+                                        <i class="bi bi-calendar-check nav-icon"></i> 
+                                        <span style="display: flex; align-items: center; gap: 0.4rem;">
+                                            Follow-ups
+                                            <% if (typeof pendingFollowUpCount !== 'undefined' && pendingFollowUpCount > 0) { %>
+                                                <span class="badge bg-danger rounded-pill" style="font-size: 0.7rem; padding: 0.25em 0.6em;"><%= pendingFollowUpCount %></span>
+                                            <% } %>
+                                        </span>
+                                    </a></li>
                                
                             </ul>
                         </div>
@@ -1214,7 +1224,37 @@
                     <%= title %>
                 </span>
                 <div class="topbar-actions">
-                    <button class="topbar-btn" title="Notifications"><i class="bi bi-bell"></i></button>
+                    <div class="dropdown">
+                        <button class="topbar-btn position-relative" title="Notifications" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-bell"></i>
+                            <% if (typeof unreadNotificationCount !== 'undefined' && unreadNotificationCount > 0) { %>
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">
+                                    <%= unreadNotificationCount > 99 ? '99+' : unreadNotificationCount %>
+                                </span>
+                            <% } %>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end p-0 shadow-lg" style="width: 320px; border: none; border-radius: 12px; overflow: hidden;">
+                            <li class="bg-light p-3 border-bottom d-flex justify-content-between align-items-center">
+                                <h6 class="m-0 fw-bold">Notifications</h6>
+                            </li>
+                            <div style="max-height: 350px; overflow-y: auto;">
+                                <% if (typeof recentNotifications !== 'undefined' && recentNotifications.length > 0) { %>
+                                    <% recentNotifications.forEach(notif => { %>
+                                        <li>
+                                            <a class="dropdown-item p-3 border-bottom text-wrap" href="#">
+                                                <div class="d-flex w-100 justify-content-between">
+                                                    <h6 class="mb-1 fw-semibold" style="font-size: 0.85rem;"><%= notif.title %></h6>
+                                                </div>
+                                                <p class="mb-1 text-muted" style="font-size: 0.8rem;"><%= notif.message %></p>
+                                            </a>
+                                        </li>
+                                    <% }) %>
+                                <% } else { %>
+                                    <li><div class="dropdown-item p-3 text-center text-muted" style="font-size: 0.85rem;">No new notifications</div></li>
+                                <% } %>
+                            </div>
+                        </ul>
+                    </div>
                     <button class="topbar-btn" title="Search"><i class="bi bi-search"></i></button>
                 </div>
             </header>

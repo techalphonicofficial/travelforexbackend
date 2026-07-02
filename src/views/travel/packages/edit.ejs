@@ -554,6 +554,22 @@
                 </div>
               </div>
               <div class="col-md-12">
+                <label class="form-label fw-bold">Package Categories</label>
+                <div class="d-flex flex-wrap gap-3 mt-2">
+                  <% 
+                    const selectedCatIds = (pkg.package_categories || []).map(c => c.id);
+                    (packageCategories || []).forEach(cat => { 
+                  %>
+                    <div class="form-check">
+                      <input class="form-check-input f-package-category-checkbox" type="checkbox" value="<%= cat.id %>" id="f_cat_<%= cat.id %>" <%= selectedCatIds.includes(cat.id) ? 'checked' : '' %>>
+                      <label class="form-check-label" for="f_cat_<%= cat.id %>">
+                          <%= cat.title %>
+                      </label>
+                    </div>
+                  <% }) %>
+                </div>
+              </div>
+              <div class="col-md-12">
                 <label class="form-label fw-bold">Description</label>
                 <textarea class="form-control" id="fDesc" rows="3" placeholder="Package description..."></textarea>
               </div>
@@ -1418,6 +1434,7 @@
         discount_percentage: discountPercentage,
         tax_type: taxType,
         tax_percent: taxPercent,
+        package_categories: Array.from(document.querySelectorAll('.f-package-category-checkbox:checked')).map(cb => cb.value),
         main_image: document.getElementById('fMainImage').value,
         main_image_alt: document.getElementById('fMainImageAlt').value,
         destinations: destinations.map(dest => ({

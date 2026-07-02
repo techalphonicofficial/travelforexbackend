@@ -81,12 +81,36 @@ app.use(async (req, res, next) => {
     res.locals.theme_colours = await loadThemeColours(appSettingRepo, themeRepo);
     res.locals.theme_css_variables = buildThemeCssVariables(res.locals.theme_colours);
     res.locals.theme_primary_color = res.locals.theme_colours.theme_brand_primary;
+
+    // Notifications and Followups
+    const Notification = require('./container').models.Notification;
+    const LeadFollowUp = require('./container').models.LeadFollowUp;
+    if (Notification) {
+      res.locals.unreadNotificationCount = await Notification.count({ where: { is_read: false } });
+      res.locals.recentNotifications = await Notification.findAll({ where: { is_read: false }, order: [['created_at', 'DESC']], limit: 5 });
+    } else {
+      res.locals.unreadNotificationCount = 0;
+      res.locals.recentNotifications = [];
+    }
+    
+    if (LeadFollowUp) {
+      res.locals.pendingFollowUpCount = await LeadFollowUp.count({ 
+        where: { 
+          status: 'pending'
+        } 
+      });
+    } else {
+      res.locals.pendingFollowUpCount = 0;
+    }
   } catch (err) {
     res.locals.company_logo_url = '';
     res.locals.company_name = '';
     res.locals.theme_colours = DEFAULT_THEME_COLOURS;
     res.locals.theme_css_variables = buildThemeCssVariables(DEFAULT_THEME_COLOURS);
     res.locals.theme_primary_color = DEFAULT_THEME_COLOURS.theme_brand_primary;
+    res.locals.unreadNotificationCount = 0;
+    res.locals.recentNotifications = [];
+    res.locals.pendingFollowUpCount = 0;
   }
   next();
 });
@@ -138,7 +162,8 @@ const getDashboardData = async () => {
       recentPackageBookings,
       recentPackageReturnRequests,
       recentForexConversionRequests,
-      recentNewsletters
+      recentNewsletters,
+      leadPipelineData
     ] = await Promise.all([
       User ? User.count() : 0,
       PackageBooking ? PackageBooking.count() : 0,
@@ -211,7 +236,31 @@ const getDashboardData = async () => {
         attributes: ['id', 'email', 'status', 'subscribed_at', 'created_at'],
         order: [['subscribed_at', 'DESC'], ['created_at', 'DESC']],
         limit: 6
-      }).catch(() => []) : []
+      }).catch(() => []) : [],
+      (async () => {
+        try {
+            const { Pipeline, PipelineStage, Lead } = require('./container').models;
+            if (!Pipeline || !Lead) return [];
+            const pipelines = await Pipeline.findAll({
+                include: [{ model: PipelineStage, as: 'stages' }],
+                order: [['id', 'ASC']]
+            });
+            const leadCounts = await Lead.findAll({
+                attributes: ['pipeline_id', 'stage_id', [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'count']],
+                group: ['pipeline_id', 'stage_id'],
+                raw: true
+            });
+            return pipelines.map(p => {
+                const stagesList = (p.stages || []).sort((a,b) => a.order - b.order).map(s => {
+                    const match = leadCounts.find(lc => lc.pipeline_id === p.id && lc.stage_id === s.id);
+                    return { name: s.name, color: s.color, count: match ? parseInt(match.count) : 0 };
+                });
+                return { pipeline: p.name, stages: stagesList };
+            });
+        } catch (e) {
+            return [];
+        }
+      })()
     ]);
 
     const total = Number(packageBookingTotal || 0);
@@ -237,7 +286,8 @@ const getDashboardData = async () => {
       recentPackageBookings: recentPackageBookings.map(row => row.get ? row.get({ plain: true }) : row),
       recentPackageReturnRequests: recentPackageReturnRequests.map(row => row.get ? row.get({ plain: true }) : row),
       recentForexConversionRequests: recentForexConversionRequests.map(row => row.get ? row.get({ plain: true }) : row),
-      recentNewsletters: recentNewsletters.map(row => row.get ? row.get({ plain: true }) : row)
+      recentNewsletters: recentNewsletters.map(row => row.get ? row.get({ plain: true }) : row),
+      leadPipelineData
     };
   } catch (error) {
     console.error('Dashboard booking data error:', error.message);
@@ -294,6 +344,8 @@ app.use('/api/v1/pages', cmsApiRoutes);
 // Travel & Booking API Routes (Phase 1)
 app.use('/api/v1/destinations', destinationRoutes);
 app.use('/api/v1/categories', categoryRoutes);
+const packageCategoryRoutes = require('./routes/packageCategoryRoutes');
+app.use('/api/v1/package-categories', packageCategoryRoutes);
 app.use('/api/v1/packages', packageRoutes);
 app.use('/api/v1/tours', tourRoutes);
 app.use('/api/v1/activities', activityRoutes);

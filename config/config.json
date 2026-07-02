@@ -2,7 +2,7 @@
   "development": {
     "username": "postgres",
     "password": "Techalphonic@123",
-    "database": "mydb",
+    "database": "tourtravel_live",
     "host": "127.0.0.1",
     "dialect": "postgres"
   },

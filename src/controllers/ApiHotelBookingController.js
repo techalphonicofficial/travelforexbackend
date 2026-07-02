@@ -46,6 +46,20 @@ class ApiHotelBookingController {
                 }
             }
 
+            try {
+                const { Notification } = require('../container').models;
+                if (Notification) {
+                    await Notification.create({
+                        title: 'New Hotel Booking',
+                        message: `A new hotel booking has been made. Hotel ID: ${data.hotel_id}`,
+                        type: 'new_booking',
+                        reference_id: data.id
+                    });
+                }
+            } catch (notifErr) {
+                console.error("Error creating Notification for hotel booking:", notifErr);
+            }
+
             return res.status(201).json({
                 success: true,
                 message: 'Hotel booking submitted successfully',

@@ -36,20 +36,24 @@ class PackageRepository extends BaseRepository {
         }];
     }
 
-    async findAll() {
-        return this.model.findAll({
+    async findAll({ page = 1, limit = 10 } = {}) {
+        const offset = (page - 1) * limit;
+        return this.model.findAndCountAll({
             include: [
                 { 
-                    model: this.packageDestinationModel, as: 'destinations',
-                    include: [{ model: this.destinationModel, as: 'destination' }]
+                    model: this.packageDestinationModel, as: 'destinations', attributes: { exclude: ['activities'] }, include: [{ model: this.destinationModel, as: 'destination' }]
                 },
-                { model: this.mediaModel, as: 'gallery' }
+                { model: this.mediaModel, as: 'gallery' },
+                { association: 'package_categories' }
             ],
-            order: [['created_at', 'DESC']]
+            order: [['created_at', 'DESC']],
+            limit: parseInt(limit),
+            offset: parseInt(offset),
+            distinct: true
         });
     }
 
-    async filterPackages({ city, country, continent, destination, category, minPrice, maxPrice, duration }) {
+    async filterPackages({ page = 1, limit = 10,  minPrice, maxPrice, duration, startDate, endDate, city, country, continent, destination, category, package_category_slug  }) {
         const where = {};
         if (minPrice || maxPrice) {
             where.price = {};
@@ -155,13 +159,29 @@ class PackageRepository extends BaseRepository {
             required: destIncludeOptions.required
         };
 
-        return this.model.findAll({
+        let packageCategoryInclude = {
+            association: 'package_categories'
+        };
+
+        if (package_category_slug) {
+            packageCategoryInclude.required = true;
+            packageCategoryInclude.where = { slug: package_category_slug };
+        }
+
+        let includes = [
+            pkgDestInclude,
+            { model: this.mediaModel, as: 'gallery' },
+            packageCategoryInclude
+        ];
+
+        const offset = (page - 1) * limit;
+        return this.model.findAndCountAll({
             where,
-            include: [
-                pkgDestInclude,
-                { model: this.mediaModel, as: 'gallery' }
-            ],
-            order: [['created_at', 'DESC']]
+            include: includes,
+            order: [['created_at', 'DESC']],
+            limit: parseInt(limit),
+            offset: parseInt(offset),
+            distinct: true
         });
     }
 

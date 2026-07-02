@@ -28,6 +28,9 @@
     <% pipelines.forEach(p => { %>
       <button class="tf-pipeline-tab<%= p.id == selectedPipelineId ? ' active' : '' %>" onclick="changePipeline('<%= p.id %>')">
         <%= p.name %>
+        <% if (typeof pipelineNewLeadCounts !== 'undefined' && pipelineNewLeadCounts[p.id]) { %>
+            <span class="badge bg-primary rounded-pill ms-1" style="font-size: 0.7rem;"><%= pipelineNewLeadCounts[p.id] %></span>
+        <% } %>
       </button>
     <% }) %>
   </div>
@@ -243,8 +246,12 @@
                 <td class="small text-muted">${new Date(l.updated_at).toLocaleDateString()}</td>
                 <td class="text-end">
                   <div class="d-flex justify-content-end gap-1">
-                    <a href="/crm/leads/${l.id}/edit" class="btn-icon btn-icon-edit"><i class="bi bi-pencil"></i></a>
-                    <button onclick="deleteLead(${l.id})" class="btn-icon btn-icon-del"><i class="bi bi-trash3"></i></button>
+                    ${l.status === 'won' ? `
+                      <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-lock-fill"></i> Frozen</span>
+                    ` : `
+                      <a href="/crm/leads/${l.id}/edit" class="btn-icon btn-icon-edit"><i class="bi bi-pencil"></i></a>
+                      <button onclick="deleteLead(${l.id})" class="btn-icon btn-icon-del"><i class="bi bi-trash3"></i></button>
+                    `}
                   </div>
                 </td>
               </tr>
@@ -273,8 +280,8 @@
               </div>
               <div class="kanban-cards" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, ${stage.id})">
                 ${stageLeads.map(l => `
-                  <div class="lead-card" draggable="true" ondragstart="drag(event, ${l.id})" onclick="window.location.href='/crm/leads/${l.id}'">
-                    <div class="name">${l.name}</div>
+                  <div class="lead-card" ${l.status === 'won' ? 'draggable="false" style="cursor: not-allowed; opacity: 0.9;"' : 'draggable="true"'} ondragstart="${l.status === 'won' ? 'return false;' : `drag(event, ${l.id})`}" onclick="window.location.href='/crm/leads/${l.id}'">
+                    <div class="name">${l.name} ${l.status === 'won' ? '<i class="bi bi-lock-fill text-muted ms-1" title="Frozen"></i>' : ''}</div>
                     <div class="source"><i class="bi bi-bullseye"></i> ${l.source}</div>
                     <div class="meta">
                       <span><i class="bi bi-clock me-1"></i>${new Date(l.updated_at).toLocaleDateString()}</span>

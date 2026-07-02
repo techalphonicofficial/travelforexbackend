@@ -261,10 +261,15 @@ router.get('/leads', async (req, res) => {
         const users = await userRepo.findEmployees();
         // Today's follow-up count for badge
         const todayFollowUps = await followUpRepo.findTodayPending();
+        // Lead counts per pipeline for tabs
+        const pipelineLeadCounts = await leadRepo.countByPipeline();
+        const pipelineNewLeadCounts = await leadRepo.countNewByPipeline();
         res.render('crm/leads/index', {
             title: 'CRM Leads',
             leads, pipelines, pipeline, selectedPipelineId, users,
-            todayFollowUpCount: todayFollowUps.length
+            todayFollowUpCount: todayFollowUps.length,
+            pipelineLeadCounts,
+            pipelineNewLeadCounts
         });
     } catch (err) { res.status(500).send(err.message); }
 });
@@ -326,12 +331,31 @@ router.post('/leads/save', async (req, res) => {
 
         const data = { name, email, phone, source, pipeline_id: pipeline_id || null, stage_id: stage_id || null, assigned_to: finalAssignedTo, notes, status: status || 'active', custom_fields: parsedCustom };
         let lead;
+        let isNewLead = false;
         if (id) {
             lead = await Lead.findByPk(id, { transaction });
             if (!lead) throw new Error('Lead not found');
+            if (lead.status === 'won') throw new Error('Cannot edit a won lead. It is frozen.');
             await lead.update(data, { transaction });
         } else {
             lead = await Lead.create(data, { transaction });
+            isNewLead = true;
+        }
+
+        if (isNewLead) {
+            try {
+                const { Notification } = require('../container').models;
+                if (Notification) {
+                    await Notification.create({
+                        title: 'New Lead Created',
+                        message: `A new lead has been added: ${lead.name} from source: ${lead.source || 'Manual'}`,
+                        type: 'new_lead',
+                        reference_id: lead.id
+                    }, { transaction });
+                }
+            } catch (notifErr) {
+                console.error("Error creating Notification:", notifErr);
+            }
         }
         const selectedStage = stage_id ? await PipelineStage.findByPk(stage_id, { transaction }) : null;
         if (data.status === 'won' || isWonStage(selectedStage)) {
@@ -351,6 +375,7 @@ router.post('/leads/:id/move-stage', async (req, res) => {
         const { stage_id } = req.body;
         const lead = await Lead.findByPk(req.params.id, { transaction });
         if (!lead) throw new Error('Lead not found');
+        if (lead.status === 'won') throw new Error('Cannot move a won lead. It is frozen.');
 
         const stage = await PipelineStage.findByPk(stage_id, { transaction });
         await lead.update({
@@ -440,6 +465,7 @@ router.get('/settings', async (req, res) => {
         const partialBookingPercentage = await appSettingRepo.get('crm_partial_booking_percentage') || '0';
         const forexServiceChargeType = await appSettingRepo.get('forex_service_charge_type') || 'percent';
         const forexServiceChargeValue = await appSettingRepo.get('forex_service_charge_value') || '0';
+        const publicForexSpreadPercentage = await appSettingRepo.get('public_forex_spread_percentage') || '';
         const activeTheme = await themeRepo.findActive();
         const themeRecords = await themeRepo.findAllOrdered();
         const theme_colours = await loadThemeColours(appSettingRepo, themeRepo);
@@ -490,6 +516,7 @@ router.get('/settings', async (req, res) => {
             partialBookingPercentage,
             forexServiceChargeType,
             forexServiceChargeValue,
+            publicForexSpreadPercentage,
             theme_colours,
             theme_colour_definitions: THEME_COLOUR_DEFINITIONS,
             theme_themes: themeRecords.map(row => ({
@@ -525,7 +552,7 @@ router.post('/settings/save', async (req, res) => {
             crm_default_pipeline_id, crm_default_assignee_id, crm_category_pipeline_mapping, 
             assignment_type, crm_webhook_url, crm_webhook_enabled,
             partial_booking_enabled, partial_booking_percentage,
-            forex_service_charge_type, forex_service_charge_value,
+            forex_service_charge_type, forex_service_charge_value, public_forex_spread_percentage,
             company_name, razorpay_key_id, razorpay_key_secret, company_phone, company_whatsapp, company_email,
             social_facebook, social_twitter, social_youtube, social_instagram, 
             company_office_address, company_map_coordinates, tax_types, cancellation_rules,
@@ -548,6 +575,7 @@ router.post('/settings/save', async (req, res) => {
         await appSettingRepo.set('crm_partial_booking_percentage', normalizedPartialPercent);
         await appSettingRepo.set('forex_service_charge_type', normalizedForexChargeType);
         await appSettingRepo.set('forex_service_charge_value', normalizedForexChargeValue);
+        await appSettingRepo.set('public_forex_spread_percentage', public_forex_spread_percentage || '');
         await Promise.all(THEME_COLOUR_DEFINITIONS.map(item => (
             appSettingRepo.set(item.key, normalizedThemeColours[item.key])
         )));
@@ -733,6 +761,19 @@ router.delete('/webhook-receiver/logs', (req, res) => {
     webhookLogs.length = 0;
     sseClients.forEach(client => client.write(`data: ${JSON.stringify({ type: 'clear' })}\n\n`));
     res.json({ success: true });
+});
+
+// Notifications
+router.post('/notifications/mark-read', async (req, res) => {
+    try {
+        const { Notification } = require('../container').models;
+        if (Notification) {
+            await Notification.update({ is_read: true }, { where: { is_read: false } });
+        }
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
 });
 
 module.exports = router;

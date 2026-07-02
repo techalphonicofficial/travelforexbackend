@@ -34,6 +34,16 @@ class CategoryController {
         }
     }
 
+    async getMenuTourTypes(req, res) {
+        try {
+            const data = await this.categoryRepo.findMenuTourTypes();
+
+            res.json({ success: true, data });
+        } catch (err) {
+            res.status(500).json({ success: false, message: err.message });
+        }
+    }
+
     async getById(req, res) {
         try {
             const data = await this.categoryRepo.findById(req.params.id);

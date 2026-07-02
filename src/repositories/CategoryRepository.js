@@ -32,13 +32,29 @@ class CategoryRepository extends BaseRepository {
     async findTourTypes() {
         return this.model.findAll({
             where: {
-                is_tour_type: {
-                    [Op.eq]: true
-                }
+                is_tour_type: true
             },
             order: [
                 ['sort_order', 'ASC'],
                 ['name', 'ASC']
+            ]
+        });
+    }
+
+    async findMenuTourTypes() {
+        return this.model.findAll({
+            where: {
+                is_tour_type: true,
+                show_in_menu: true
+            },
+            include: [{
+                association: 'packageCategories',
+                attributes: ['id', 'title', 'slug', 'feature_image']
+            }],
+            order: [
+                ['sort_order', 'ASC'],
+                ['name', 'ASC'],
+                [{ model: this.model.sequelize.models.PackageCategory, as: 'packageCategories' }, 'title', 'ASC']
             ]
         });
     }

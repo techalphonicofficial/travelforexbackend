@@ -496,6 +496,19 @@
                                 </div>
                             </div>
                             <div class="col-md-12">
+                                <label class="form-label fw-bold">Package Categories</label>
+                                <div class="d-flex flex-wrap gap-3 mt-2">
+                                    <% (packageCategories || []).forEach(cat => { %>
+                                        <div class="form-check">
+                                            <input class="form-check-input package-category-checkbox" type="checkbox" value="<%= cat.id %>" id="cat_<%= cat.id %>">
+                                            <label class="form-check-label" for="cat_<%= cat.id %>">
+                                                <%= cat.title %>
+                                            </label>
+                                        </div>
+                                    <% }) %>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
                                 <label class="form-label fw-bold">Description</label>
                                 <textarea class="form-control" id="description" rows="3"
                                     placeholder="Package description..."></textarea>
@@ -1346,6 +1359,7 @@
                 description: description,
                 show_in_home_page: showInHomePage,
                 is_customizable: isCustomizable,
+                package_categories: Array.from(document.querySelectorAll('.package-category-checkbox:checked')).map(cb => cb.value),
                 main_image: document.getElementById('fMainImage').value,
                 main_image_alt: document.getElementById('fMainImageAlt').value,
                 destinations: destinations.map(dest => ({

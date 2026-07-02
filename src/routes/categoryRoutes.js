@@ -178,12 +178,32 @@ function handleUpload(multerMiddleware) {
  *     responses:
  *       200:
  *         description: Reordered successfully
+ *
+ * /api/v1/categories/menu-tour-types:
+ *   get:
+ *     summary: Get tour types enabled for the menu (with package categories)
+ *     tags: [Categories]
+ *     responses:
+ *       200:
+ *         description: List of menu tour types and their package categories
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
  */
 
 
 router.get('/', (req, res) => categoryController.getAll(req, res));
 router.get('/home',(req,res)=> categoryController.getHome(req,res));
 router.get('/tour-types',(req,res)=> categoryController.getTourTypes(req,res));
+router.get('/menu-tour-types', (req, res) => categoryController.getMenuTourTypes(req, res));
 router.get('/get-category', (req, res) => categoryController.getAll(req, res));
 router.get('/:id', (req, res) => categoryController.getById(req, res));
 router.post('/', handleUpload(upload.single('feature_image_file')), (req, res) => categoryController.create(req, res));

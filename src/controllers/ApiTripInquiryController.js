@@ -151,6 +151,21 @@ class ApiTripInquiryController {
                     // Do not fail the booking if lead creation fails
                 }
             }
+            
+            // Create a Notification for the new enquiry
+            try {
+                const { Notification } = require('../container').models;
+                if (Notification) {
+                    await Notification.create({
+                        title: 'New Enquiry Received',
+                        message: `A new enquiry has been submitted by ${authCustomer.name || 'Unknown'} for destination: ${trip.destination}. Source: ${source}`,
+                        type: 'new_enquiry',
+                        reference_id: inquiry.id
+                    });
+                }
+            } catch (notifErr) {
+                console.error("Error creating Notification:", notifErr);
+            }
 
             return res.status(201).json({
                 success: true,

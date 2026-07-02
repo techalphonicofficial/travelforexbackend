@@ -18,6 +18,8 @@ const DestinationCrowdLevel = require('./models/DestinationCrowdLevel');
 const DestinationMapping = require('./models/DestinationMapping');
 const Category = require('./models/Category');
 const DestinationCategory = require('./models/DestinationCategory');
+const PackageCategory = require('./models/PackageCategory');
+const PackageCategoryMapping = require('./models/PackageCategoryMapping');
 const Package = require('./models/Package');
 const PackageBooking = require('./models/PackageBooking');
 const PackageReturnRequest = require('./models/PackageReturnRequest');
@@ -81,6 +83,8 @@ const CustomTripActivity = require('./models/CustomTripActivity');
 const Payment = require('./models/Payment');
 const TripInquiry = require('./models/TripInquiry');
 
+const Notification = require('./models/Notification');
+
 // Setup Blog Associations
 BlogCategory.hasMany(BlogPost, { foreignKey: 'category_id', as: 'posts' });
 BlogPost.belongsTo(BlogCategory, { foreignKey: 'category_id', as: 'category' });
@@ -122,6 +126,8 @@ HotelBooking.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer' });
 Customer.hasMany(HotelBooking, { foreignKey: 'customer_id', as: 'hotel_bookings' });
 
 // Setup Package Associations
+Package.belongsToMany(PackageCategory, { through: PackageCategoryMapping, foreignKey: 'package_id', as: 'package_categories' });
+PackageCategory.belongsToMany(Package, { through: PackageCategoryMapping, foreignKey: 'package_category_id', as: 'packages' });
 Package.hasMany(PackageInclusion, { foreignKey: 'package_id', as: 'inclusions', onDelete: 'CASCADE' });
 Package.hasMany(PackageExclusion, { foreignKey: 'package_id', as: 'exclusions', onDelete: 'CASCADE' });
 Package.hasMany(PackageDestination, { foreignKey: 'package_id', as: 'destinations', onDelete: 'CASCADE' });
@@ -273,6 +279,10 @@ Media.belongsTo(Hotel, { foreignKey: 'entity_id', constraints: false, as: 'hotel
 Destination.hasMany(DestinationCrowdLevel, { foreignKey: 'destination_id', as: 'crowdLevels', onDelete: 'CASCADE' });
 DestinationCrowdLevel.belongsTo(Destination, { foreignKey: 'destination_id', as: 'destination' });
 
+// PackageCategory -> Category
+PackageCategory.belongsTo(Category, { foreignKey: 'category_id', as: 'category' });
+Category.hasMany(PackageCategory, { foreignKey: 'category_id', as: 'packageCategories' });
+
 // Category and DestinationCategory M:N
 Category.belongsToMany(Destination, {
   through: DestinationCategory,
@@ -364,6 +374,7 @@ const CountryRepository = require('./repositories/CountryRepository');
 const CityRepository = require('./repositories/CityRepository');
 const DestinationRepository = require('./repositories/DestinationRepository');
 const CategoryRepository = require('./repositories/CategoryRepository');
+const PackageCategoryRepository = require('./repositories/PackageCategoryRepository');
 const PackageRepository = require('./repositories/PackageRepository');
 const CouponRepository = require('./repositories/CouponRepository');
 const ActivityRepository = require('./repositories/ActivityRepository');
@@ -409,6 +420,7 @@ const BlogController = require('./controllers/BlogController');
 const ApiBlogController = require('./controllers/ApiBlogController');
 const MediaController = require('./controllers/MediaController');
 const CategoryController = require('./controllers/CategoryController');
+const PackageCategoryController = require('./controllers/PackageCategoryController');
 const VendorAuthController = require('./controllers/VendorAuthController');
 const VendorDashboardController = require('./controllers/VendorDashboardController');
 const VendorPackageController = require('./controllers/VendorPackageController');
@@ -434,6 +446,7 @@ const countryRepo = new CountryRepository(Country, Continent);
 const cityRepo = new CityRepository(City, Country, Continent);
 const airportRepo = new AirportRepository(Airport);
 const categoryRepo = new CategoryRepository(Category);
+const packageCategoryRepo = new PackageCategoryRepository(PackageCategory, Category);
 const destinationRepo = new DestinationRepository(Destination, Category, DestinationMapping, Media, City, Country, Continent, Package);
 const packageRepo = new PackageRepository(Package, Destination, Activity, Media, PackageInclusion, PackageExclusion, PackageDestination, Review);
 const couponRepo = new CouponRepository(Coupon, CouponRedemption);
@@ -498,6 +511,7 @@ const blogController = new BlogController(blogRepo, mediaRepo);
 const apiBlogController = new ApiBlogController(blogRepo);
 const mediaController = new MediaController(mediaRepo);
 const categoryController = new CategoryController(categoryRepo, Category, sequelize);
+const packageCategoryController = new PackageCategoryController(packageCategoryRepo, PackageCategory);
 const vendorAuthController = new VendorAuthController(authService, { User, VendorProfile }, sequelize);
 const vendorDashboardController = new VendorDashboardController(vendorService, walletService);
 const vendorPackageController = new VendorPackageController(vendorService, packageRepo, destinationRepo, categoryRepo, activityRepo, sequelize, {
@@ -540,7 +554,7 @@ module.exports = {
     User, Role, Module, Permission, RolePermission, Customer, VendorProfile,
     Continent, Country, City,
     Destination, DestinationMapping, DestinationCrowdLevel, DestinationTax,
-    Category, DestinationCategory,
+    Category, DestinationCategory, PackageCategory, PackageCategoryMapping,
     Package, PackageBooking, PackageReturnRequest, Coupon, CouponRedemption, PackageInclusion, PackageExclusion, PackageDestination,
     Activity, AppSetting, Theme, Media, VideoReview, Review, TourType, Hotel, HotelBooking,
     Pipeline, PipelineStage, LeadFormField, Lead, LeadFollowUp, CancellationRule,
@@ -548,12 +562,13 @@ module.exports = {
     Wallet, WalletTransaction,
     Account, JournalEntry, JournalEntryLine, Voucher, VoucherSequence,
     CustomTrip, CustomTripDay, CustomTripActivity,
-    Payment, TripInquiry, Airport, ForexService, ForexConversionRate, ForexConversionRequest, Newsletter
+    Payment, TripInquiry, Airport, ForexService, ForexConversionRate, ForexConversionRequest, Newsletter,
+    Notification
   },
   repositories: {
     userRepo, roleRepo, permissionRepo, moduleRepo, customerRepo,
     continentRepo, countryRepo, cityRepo, airportRepo, forexServiceRepo, forexConversionRateRepo,
-    destinationRepo, categoryRepo,
+    destinationRepo, categoryRepo, packageCategoryRepo,
     packageRepo, couponRepo, activityRepo, appSettingRepo, themeRepo, videoReviewRepo, reviewRepo,
     pipelineRepo, leadRepo, followUpRepo, mediaRepo, pageRepo, bannerRepo, blogRepo,
     walletRepo, accountingRepo, hotelRepo, hotelBookingRepo, customTripRepo, bookingRepo, tripInquiryRepo
@@ -564,7 +579,7 @@ module.exports = {
   },
   controllers: {
     roleController, moduleController, permissionController, userController, crmCustomerController, authController, apiCustomerController, apiBlogController,
-    pageController, bannerController, blogController, mediaController, categoryController, vendorAuthController,
+    pageController, bannerController, blogController, mediaController, categoryController, packageCategoryController, vendorAuthController,
     vendorDashboardController, vendorPackageController, vendorWalletController, accountingController, adminWalletController, adminVendorController, adminBookingController, adminTripBuilderController, travelHotelController, travelActivityController, apiAirportController, apiTripInquiryController, apiHotelBookingController, apiPackageBookingController
   },
   middleware: {
