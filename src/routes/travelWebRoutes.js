@@ -1050,7 +1050,8 @@ router.delete('/mappings/:id', async (req, res) => {
 // ─────────────────────────────────────────────
 router.get('/packages', async (req, res) => {
     try {
-        const packages = await packageRepo.findAll();
+        const result = await packageRepo.findAll();
+        const packages = result.rows ?? result;
 
         // return res.json(packages);
         res.render('travel/packages/index', { title: 'Packages', packages });

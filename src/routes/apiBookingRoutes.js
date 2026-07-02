@@ -1624,7 +1624,7 @@ router.post('/package/customize', optionalApiAuth, async (req, res) => {
             return res.status(400).json({ success: false, message: 'package_id, and customer name, email are required' });
         }
 
-        const pkg = await bookingRepo.models.Package.findByPk(package_id);
+        const pkg = await apiPackageBookingController.models.Package.findByPk(package_id);
         if (!pkg) {
             return res.status(404).json({ success: false, message: 'Package not found' });
         }
@@ -1633,7 +1633,7 @@ router.post('/package/customize', optionalApiAuth, async (req, res) => {
         const reference = apiPackageBookingController.buildReference(package_id) + '-CUST';
         const raw_payload = { ...payload, is_customized: true, custom_message: message };
 
-        const booking = await bookingRepo.models.PackageBooking.create({
+        const booking = await apiPackageBookingController.models.PackageBooking.create({
             booking_reference: reference,
             package_id: pkg.id,
             package_slug: pkg.slug,

@@ -1406,7 +1406,7 @@
       const slug = document.getElementById('fSlug')?.value.trim() || '';
       const description = document.getElementById('fDesc')?.value || '';
       const showInHomePage = !!document.getElementById('showInHomePage')?.checked;
-      const isCustomizable = !!document.getElementById('fIsCustomizable')?.checked;
+      const isCustomizable = false;
       const duration = parseInt(document.getElementById('fDays').value) || 0;
       const price = parseInt(document.getElementById('fPrice').value) || 0;
       const discountPercentage = parseFloat(document.getElementById('fDiscountPercentage')?.value) || 0;
@@ -1481,7 +1481,7 @@
       if (document.getElementById('fPrice')) document.getElementById('fPrice').value = PKG_DATA.price || '';
       if (document.getElementById('fDiscountPercentage')) document.getElementById('fDiscountPercentage').value = PKG_DATA.discount_percentage || 0;
       if (document.getElementById('showInHomePage')) document.getElementById('showInHomePage').checked = !!PKG_DATA.show_in_home_page;
-      if (document.getElementById('fIsCustomizable')) document.getElementById('fIsCustomizable').checked = !!PKG_DATA.is_customizable;
+      // customizable removed
       if (document.getElementById('fMainImageAlt')) document.getElementById('fMainImageAlt').value = PKG_DATA.main_image_alt || '';
 
       // Fill inclusions
