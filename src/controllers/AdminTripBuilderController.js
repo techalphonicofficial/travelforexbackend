@@ -475,7 +475,7 @@ class AdminTripBuilderController {
         let transaction = null;
 
         try {
-            const { customer_id, package_id, adults, inquiry_id, payment_mode } = req.body || {};
+            const { customer_id, package_id, adults, inquiry_id, payment_mode, passengers } = req.body || {};
             if (!customer_id) {
                 return res.status(400).json({ success: false, message: 'Please select a customer.' });
             }
@@ -486,6 +486,7 @@ class AdminTripBuilderController {
 
             const sequelize = this.bookingRepo.CustomTrip.sequelize;
             const PackageBooking = sequelize.models.PackageBooking;
+            const BookingPassenger = sequelize.models.BookingPassenger;
             const Customer = this.bookingRepo.Customer;
             const User = sequelize.models.User;
             if (!PackageBooking || !Customer) {
@@ -589,6 +590,29 @@ class AdminTripBuilderController {
                 page_url: '/admin/bookings/create',
                 raw_payload: rawPayload
             }, { transaction });
+
+            if (BookingPassenger) {
+                let passengerData = [];
+                if (Array.isArray(passengers) && passengers.length > 0) {
+                    passengerData = passengers.map(p => ({
+                        booking_id: booking.id,
+                        full_name: p.full_name,
+                        age: p.age || null,
+                        gender: p.gender || null,
+                        dob: p.dob || null,
+                        passport_no: p.passport_no || null,
+                        passport_expiry: p.passport_expiry || null,
+                        is_lead: p.is_lead === true || p.is_lead === 'true'
+                    }));
+                } else {
+                    passengerData = [{
+                        booking_id: booking.id,
+                        full_name: customerUser.name || 'Lead Passenger',
+                        is_lead: true
+                    }];
+                }
+                await BookingPassenger.bulkCreate(passengerData, { transaction });
+            }
 
             let accountingEntry = null;
             if (this.accountingService && typeof this.accountingService.recordPackageBookingSplit === 'function') {

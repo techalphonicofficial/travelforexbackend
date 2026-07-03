@@ -428,7 +428,7 @@
   <h1 class="db-hero-title">Travel &amp; Forex Analytics</h1>
   <p class="db-hero-sub">Real-time overview of your operations · Updated just now</p>
   <div style="position:absolute;top:1.5rem;right:2rem;display:flex;gap:0.6rem;z-index:1;">
-    <button class="db-panel-pill" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.2);">
+    <button id="exportDashboardBtn" class="db-panel-pill" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.2);">
       <i class="bi bi-download"></i> Export
     </button>
     <button class="db-panel-pill" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.2);">
@@ -630,14 +630,18 @@
     </div>
   </div>
 
-  <!-- Forex Currency Bar Chart -->
+  <!-- Lead Trend Line Chart -->
   <div class="db-panel">
     <div class="db-panel-header">
-      <div class="db-panel-title"><i class="bi bi-bar-chart-fill"></i> Forex Volume by Currency</div>
-      <button class="db-panel-pill">This Week</button>
+      <div class="db-panel-title"><i class="bi bi-graph-up"></i> Lead Count by Pipeline</div>
+      <div style="display:flex;gap:0.5rem;">
+        <button class="db-panel-pill lead-pill active" onclick="switchLeadPeriod(this,'7d')">7D</button>
+        <button class="db-panel-pill lead-pill" onclick="switchLeadPeriod(this,'30d')" style="background:#f0f0fa;color:#8888bb;">30D</button>
+        <button class="db-panel-pill lead-pill" onclick="switchLeadPeriod(this,'90d')" style="background:#f0f0fa;color:#8888bb;">90D</button>
+      </div>
     </div>
     <div class="db-chart-canvas-wrap" style="height:260px;">
-      <canvas id="forexBarChart"></canvas>
+      <canvas id="leadTrendChart"></canvas>
     </div>
   </div>
 
@@ -933,6 +937,137 @@
   new Chart(document.getElementById('spark8'), sparkOpts('#0f766e'));
   new Chart(document.getElementById('spark9'), sparkOpts('#ef4444'));
 
+  /* ── Dynamic Chart Data ── */
+  const chartBookings = <%- JSON.stringify(locals.chartBookings || []) %>;
+  const now = new Date();
+  const getStartOfDay = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+  const buckets7d = Array.from({length: 7}, (_, i) => {
+    const d = new Date(now); d.setDate(d.getDate() - (6 - i));
+    return { label: d.toLocaleDateString('en-US', {weekday:'short'}), rev: 0, bk: 0, date: getStartOfDay(d).getTime() };
+  });
+
+  const buckets30d = Array.from({length: 4}, (_, i) => {
+    return { label: 'W' + (4 - i), rev: 0, bk: 0 };
+  });
+  const intervals30d = Array.from({length: 4}, (_, i) => {
+    const end = new Date(now); end.setDate(end.getDate() - i * 7);
+    const start = new Date(end); start.setDate(start.getDate() - 7);
+    return { start: start.getTime(), end: end.getTime(), bucket: 3 - i };
+  });
+
+  const buckets90d = Array.from({length: 3}, (_, i) => {
+    const d = new Date(now); d.setMonth(d.getMonth() - (2 - i));
+    return { label: d.toLocaleDateString('en-US', {month:'short'}), rev: 0, bk: 0, month: d.getMonth(), year: d.getFullYear() };
+  });
+
+  chartBookings.forEach(b => {
+    const bDate = new Date(b.created_at);
+    const bTime = bDate.getTime();
+    const amount = Number(b.paid_amount || 0);
+
+    const dayStart = getStartOfDay(bDate).getTime();
+    const b7 = buckets7d.find(x => x.date === dayStart);
+    if (b7) { b7.rev += amount; b7.bk += 1; }
+
+    const i30 = intervals30d.find(x => bTime > x.start && bTime <= x.end);
+    if (i30) { buckets30d[i30.bucket].rev += amount; buckets30d[i30.bucket].bk += 1; }
+
+    const bMonth = bDate.getMonth();
+    const bYear = bDate.getFullYear();
+    const b90 = buckets90d.find(x => x.month === bMonth && x.year === bYear);
+    if (b90) { b90.rev += amount; b90.bk += 1; }
+  });
+
+  window.dynamicDatasets = {
+    '7d': { labels: buckets7d.map(b => b.label), rev: buckets7d.map(b => b.rev), bk: buckets7d.map(b => b.bk) },
+    '30d': { labels: buckets30d.map(b => b.label), rev: buckets30d.map(b => b.rev), bk: buckets30d.map(b => b.bk) },
+    '90d': { labels: buckets90d.map(b => b.label), rev: buckets90d.map(b => b.rev), bk: buckets90d.map(b => b.bk) },
+  };
+
+  /* ── Dynamic Lead Trend Chart Data ── */
+  const chartLeads = <%- JSON.stringify(locals.chartLeads || []) %>;
+  const leadPipelineData = <%- JSON.stringify(locals.leadPipelineData || []) %>;
+  
+  const pipelineColors = ['#4f46e5', '#10b981', '#f59e0b', '#ec4899', '#06b6d4', '#8b5cf6'];
+  const leadTrendDatasets = { '7d': {}, '30d': {}, '90d': {} };
+  
+  leadPipelineData.forEach((p, idx) => {
+    const pId = p.pipeline_id;
+    const pName = p.pipeline;
+    const color = pipelineColors[idx % pipelineColors.length];
+    
+    const l7d = Array.from({length: 7}, (_, i) => {
+      const d = new Date(now); d.setDate(d.getDate() - (6 - i));
+      return { count: 0, date: getStartOfDay(d).getTime() };
+    });
+    const l30d = Array.from({length: 4}, () => ({ count: 0 }));
+    const l90d = Array.from({length: 3}, (_, i) => {
+      const d = new Date(now); d.setMonth(d.getMonth() - (2 - i));
+      return { count: 0, month: d.getMonth(), year: d.getFullYear() };
+    });
+    
+    leadTrendDatasets['7d'][pId] = { name: pName, color: color, data: l7d };
+    leadTrendDatasets['30d'][pId] = { name: pName, color: color, data: l30d };
+    leadTrendDatasets['90d'][pId] = { name: pName, color: color, data: l90d };
+  });
+
+  chartLeads.forEach(lead => {
+    const lDate = new Date(lead.created_at);
+    const lTime = lDate.getTime();
+    const pId = lead.pipeline_id;
+    if(!leadTrendDatasets['7d'][pId]) return;
+
+    const dayStart = getStartOfDay(lDate).getTime();
+    const b7 = leadTrendDatasets['7d'][pId].data.find(x => x.date === dayStart);
+    if (b7) b7.count += 1;
+
+    const i30 = intervals30d.find(x => lTime > x.start && lTime <= x.end);
+    if (i30) leadTrendDatasets['30d'][pId].data[i30.bucket].count += 1;
+
+    const bMonth = lDate.getMonth();
+    const bYear = lDate.getFullYear();
+    const b90 = leadTrendDatasets['90d'][pId].data.find(x => x.month === bMonth && x.year === bYear);
+    if (b90) b90.count += 1;
+  });
+
+  const getLeadDatasets = (period) => {
+     const datasets = leadPipelineData.map(p => {
+       const pData = leadTrendDatasets[period][p.pipeline_id];
+       return {
+         type: 'bar',
+         label: pData.name,
+         data: pData.data.map(d => d.count),
+         borderColor: pData.color,
+         backgroundColor: pData.color + '2E',
+         borderWidth: 1.5,
+         borderRadius: 6
+       };
+     });
+
+     if (datasets.length > 0) {
+       const length = datasets[0].data.length;
+       const totalData = Array.from({length}, (_, i) => {
+         return datasets.reduce((sum, ds) => sum + ds.data[i], 0);
+       });
+       
+       datasets.unshift({
+         type: 'line',
+         label: 'Total Leads',
+         data: totalData,
+         borderColor: '#4f46e5',
+         backgroundColor: 'transparent',
+         borderWidth: 2.5,
+         tension: 0.45,
+         pointBackgroundColor: '#4f46e5',
+         pointRadius: 4,
+         pointHoverRadius: 7
+       });
+     }
+     
+     return datasets;
+  };
+
   /* ── Revenue Chart ── */
   const revenueCtx = document.getElementById('revenueChart').getContext('2d');
   const revenueGrad = revenueCtx.createLinearGradient(0, 0, 0, 230);
@@ -943,18 +1078,16 @@
   bookingGrad.addColorStop(0, 'rgba(16,185,129,0.2)');
   bookingGrad.addColorStop(1, 'rgba(16,185,129,0)');
 
-  const labels7d = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  const revenueData7d = [2800, 3200, 2900, 4100, 3800, 5200, 4600];
-  const bookingData7d = [8, 12, 9, 15, 11, 19, 14];
+  const d7 = window.dynamicDatasets['7d'];
 
   window.revenueChart = new Chart(revenueCtx, {
     data: {
-      labels: labels7d,
+      labels: d7.labels,
       datasets: [
         {
           type: 'line',
-          label: 'Revenue ($)',
-          data: revenueData7d,
+          label: 'Revenue (₹)',
+          data: d7.rev,
           borderColor: '#4f46e5',
           backgroundColor: revenueGrad,
           borderWidth: 2.5,
@@ -968,7 +1101,7 @@
         {
           type: 'bar',
           label: 'Bookings',
-          data: bookingData7d,
+          data: d7.bk,
           backgroundColor: 'rgba(16,185,129,0.18)',
           borderColor: '#10b981',
           borderWidth: 1.5,
@@ -999,7 +1132,7 @@
         y: {
           position: 'left',
           grid: { color: 'rgba(79,70,229,0.06)' },
-          ticks: { color: '#8888bb', font: { size: 11 }, callback: v => '$'+v },
+          ticks: { color: '#8888bb', font: { size: 11 }, callback: v => '₹'+v },
         },
         y1: {
           position: 'right',
@@ -1038,40 +1171,32 @@
     }
   });
 
-  /* ── Forex Bar Chart ── */
-  new Chart(document.getElementById('forexBarChart'), {
-    type: 'bar',
+  /* ── Lead Trend Line Chart ── */
+  const leadTrendCtx = document.getElementById('leadTrendChart').getContext('2d');
+  window.leadTrendChart = new Chart(leadTrendCtx, {
     data: {
-      labels: ['USD/INR', 'EUR/INR', 'GBP/INR', 'AED/INR', 'AUD/INR', 'SGD/INR'],
-      datasets: [{
-        label: 'Volume ($)',
-        data: [1800, 1200, 980, 650, 420, 350],
-        backgroundColor: [
-          'rgba(79,70,229,0.75)', 'rgba(16,185,129,0.75)', 'rgba(245,158,11,0.75)',
-          'rgba(236,72,153,0.75)', 'rgba(59,130,246,0.75)', 'rgba(139,92,246,0.75)'
-        ],
-        borderRadius: 8,
-        borderWidth: 0,
-      }]
+      labels: window.dynamicDatasets['7d'].labels,
+      datasets: getLeadDatasets('7d')
     },
     options: {
       responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { display: false },
+        legend: { position: 'top', align: 'end', labels: { boxWidth: 12, font: { size: 11 }, color: '#555577' } },
         tooltip: {
           backgroundColor: '#1e1b4b',
           titleColor: '#a5b4fc',
           bodyColor: '#e0e7ff',
-          padding: 10,
-          cornerRadius: 8,
-          callbacks: { label: ctx => ' $' + ctx.parsed.y }
+          padding: 12,
+          cornerRadius: 10,
         }
       },
       scales: {
-        x: { grid: { display: false }, ticks: { color: '#8888bb', font: { size: 10 } } },
+        x: { grid: { display: false }, ticks: { color: '#8888bb', font: { size: 11 } } },
         y: {
+          position: 'left',
           grid: { color: 'rgba(79,70,229,0.06)' },
-          ticks: { color: '#8888bb', font: { size: 11 }, callback: v => '$'+v }
+          ticks: { color: '#8888bb', font: { size: 11 }, stepSize: 1 },
         }
       }
     }
@@ -1122,17 +1247,58 @@
     });
     btn.style.background = '#4f46e5'; btn.style.color = '#fff';
 
-    const datasets = {
-      '7d': { labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], rev: [2800,3200,2900,4100,3800,5200,4600], bk: [8,12,9,15,11,19,14] },
-      '30d': { labels: ['W1','W2','W3','W4'], rev: [12000,16500,14200,18700], bk: [38,52,44,62] },
-      '90d': { labels: ['Jan','Feb','Mar'], rev: [45000,52000,61000], bk: [142,168,195] },
-    };
-    const d = datasets[period];
+    const d = window.dynamicDatasets[period];
     window.revenueChart.data.labels = d.labels;
     window.revenueChart.data.datasets[0].data = d.rev;
     window.revenueChart.data.datasets[1].data = d.bk;
     window.revenueChart.update();
   };
 
+  window.switchLeadPeriod = function(btn, period) {
+    document.querySelectorAll('.lead-pill').forEach(b => {
+      b.style.background = '#f0f0fa'; b.style.color = '#8888bb';
+    });
+    btn.style.background = '#4f46e5'; btn.style.color = '#fff';
+
+    window.leadTrendChart.data.labels = window.dynamicDatasets[period].labels;
+    window.leadTrendChart.data.datasets = getLeadDatasets(period);
+    window.leadTrendChart.update();
+  };
+
 })();
+</script>
+
+<!-- html2pdf CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const exportBtn = document.getElementById('exportDashboardBtn');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        // Find the main container to capture (this file is injected into .page-content)
+        const element = document.querySelector('.page-content') || document.body;
+        
+        const opt = {
+          margin:       0.3,
+          filename:     'Dashboard_Export.pdf',
+          image:        { type: 'jpeg', quality: 0.98 },
+          html2canvas:  { scale: 2, useCORS: true },
+          jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
+        };
+        
+        const originalBtnText = exportBtn.innerHTML;
+        exportBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Exporting...';
+        exportBtn.disabled = true;
+
+        html2pdf().set(opt).from(element).save().then(() => {
+          exportBtn.innerHTML = originalBtnText;
+          exportBtn.disabled = false;
+        }).catch(err => {
+          console.error("PDF Export error:", err);
+          exportBtn.innerHTML = originalBtnText;
+          exportBtn.disabled = false;
+        });
+      });
+    }
+  });
 </script>

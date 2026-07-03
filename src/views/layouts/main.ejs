@@ -918,6 +918,104 @@
 
 <body>
     <div class="layout-wrapper">
+        <%
+            const visibleNavItems = (typeof navItems !== 'undefined' ? navItems : [])
+                .filter(item => typeof canAccessItem === 'function' ? canAccessItem(item) : true);
+            const itemActive = item => item && typeof item.active === 'function' ? item.active(title || '') : false;
+            const itemChildren = item => (item.children || [])
+                .filter(child => typeof canAccessItem === 'function' ? canAccessItem(child) : true);
+            const parentHref = item => {
+                const children = itemChildren(item);
+                return item.href && item.href !== '#' ? item.href : (children[0] ? children[0].href : '#');
+            };
+            const renderIconItems = visibleNavItems.filter(item => item.stripIcon || item.icon);
+        %>
+
+        <div class="icon-strip">
+            <button class="strip-toggle" id="stripToggleBtn" title="Toggle sidebar">
+                <i class="bi bi-layout-sidebar"></i>
+            </button>
+            <div class="strip-divider"></div>
+            <% renderIconItems.forEach((item, index) => { %>
+                <% if (index > 0 && ['access_control', 'travel', 'crm', 'pages', 'reports'].includes(item.key)) { %>
+                    <div class="strip-divider"></div>
+                <% } %>
+                <a href="<%= parentHref(item) %>" class="strip-icon <%= itemActive(item) ? 'active' : '' %>" title="<%= item.label %>">
+                    <i class="bi <%= item.stripIcon || item.icon %>"></i>
+                </a>
+            <% }) %>
+            <div class="strip-divider"></div>
+        </div>
+
+        <aside class="nav-panel">
+            <div class="nav-panel-header">
+                <div class="nav-company">
+                    <div style="background-color:#1e293b; padding:8px 12px; border-radius:6px; display:flex; justify-content:center; align-items:center;">
+                        <% if (company_logo_url) { %>
+                            <img src="<%= company_logo_url %>" alt="Company Logo" style="max-height:30px; max-width: 100%;">
+                        <% } else { %>
+                            <span style="color:white; font-weight:bold; font-size:16px;"><%= typeof company_name !== 'undefined' && company_name ? company_name : 'PickTrails' %></span>
+                        <% } %>
+                    </div>
+                </div>
+                <button class="nav-panel-toggle"><i class="bi bi-chevron-left"></i></button>
+            </div>
+
+            <nav class="nav-menu">
+                <ul class="list-unstyled">
+                    <% visibleNavItems.forEach(item => { const children = itemChildren(item); const active = itemActive(item); %>
+                        <% if (children.length) { %>
+                            <li>
+                                <a class="nav-link-item <%= active ? 'active' : '' %>" data-bs-toggle="collapse" href="#nav_<%= item.key %>" aria-expanded="<%= active ? 'true' : 'false' %>">
+                                    <span class="nav-label-row"><i class="bi <%= item.icon %> nav-icon"></i> <%= item.label %></span>
+                                    <i class="bi bi-chevron-down chevron"></i>
+                                </a>
+                                <div class="collapse <%= active ? 'show' : '' %>" id="nav_<%= item.key %>">
+                                    <ul class="nav-sub list-unstyled">
+                                        <% children.forEach(child => { %>
+                                            <li>
+                                                <a href="<%= child.href %>" class="nav-link-item <%= itemActive(child) ? 'active' : '' %>">
+                                                    <i class="bi <%= child.icon %> nav-icon"></i>
+                                                    <% if (child.key === 'follow_ups') { %>
+                                                        <span style="display: flex; align-items: center; gap: 0.4rem;">
+                                                            <%= child.label %>
+                                                            <% if (typeof pendingFollowUpCount !== 'undefined' && pendingFollowUpCount > 0) { %>
+                                                                <span class="badge bg-danger rounded-pill" style="font-size: 0.7rem; padding: 0.25em 0.6em;"><%= pendingFollowUpCount %></span>
+                                                            <% } %>
+                                                        </span>
+                                                    <% } else { %>
+                                                        <%= child.label %>
+                                                    <% } %>
+                                                </a>
+                                            </li>
+                                        <% }) %>
+                                    </ul>
+                                </div>
+                            </li>
+                        <% } else { %>
+                            <li>
+                                <a href="<%= item.href %>" class="nav-link-item <%= active ? 'active' : '' %>">
+                                    <span class="nav-label-row"><i class="bi <%= item.icon %> nav-icon"></i> <%= item.label %></span>
+                                </a>
+                            </li>
+                        <% } %>
+                    <% }) %>
+                </ul>
+            </nav>
+
+            <div class="nav-panel-footer">
+                <div class="user-chip">
+                    <img src="https://ui-avatars.com/api/?name=<%= encodeURIComponent(user ? user.name : 'G') %>&background=4f46e5&color=fff" alt="User">
+                    <div class="user-chip-info">
+                        <div class="user-chip-name"><%= user ? user.name : 'Guest' %></div>
+                        <div class="user-chip-role"><%= user ? user.role_name : 'No Role' %></div>
+                    </div>
+                    <a href="/auth/logout" class="user-chip-logout" title="Logout"><i class="bi bi-box-arrow-right"></i></a>
+                </div>
+            </div>
+        </aside>
+
+        <% if (false) { %>
 
         <!-- ① Icon Strip -->
         <div class="icon-strip">
@@ -1077,33 +1175,37 @@
                                 <li><a href="/travel/reviews"
                                         class="nav-link-item <%= title && title.includes('Review') ? 'active' : '' %>"><i
                                             class="bi bi-camera-reels nav-icon"></i> Video Reviews</a></li>
-                                <li><a href="/admin/bookings/inquiries"
-                                        class="nav-link-item <%= title && title.includes('Inquiry') ? 'active' : '' %>"><i
-                                            class="bi bi-ui-checks-grid nav-icon"></i> Custom Requests</a></li>
+
                                 <!-- <li><a href="/travel/package-dates" class="nav-link-item <%= title === 'Package Dates' ? 'active' : '' %>"><i class="bi bi-calendar-range nav-icon"></i> Package Dates</a></li> -->
                             </ul>
                         </div>
                     </li>
                     <li>
-                        <a href="/travel/forex-services" class="nav-link-item <%= title === 'Forex Services' ? 'active' : '' %>">
+                        <a class="nav-link-item <%= title && (title.includes('Forex')) ? 'active' : '' %>"
+                            data-bs-toggle="collapse" href="#forexCollapse"
+                            aria-expanded="<%= title && title.includes('Forex') ? 'true' : 'false' %>">
                             <span class="nav-label-row"><i class="bi bi-currency-exchange nav-icon"></i> Forex Services</span>
+                            <i class="bi bi-chevron-down chevron"></i>
                         </a>
+                        <div class="collapse <%= title && title.includes('Forex') ? 'show' : '' %>"
+                            id="forexCollapse">
+                            <ul class="nav-sub list-unstyled">
+                                <li><a href="/travel/forex-services"
+                                        class="nav-link-item <%= title === 'Forex Services' ? 'active' : '' %>"><i
+                                            class="bi bi-currency-exchange nav-icon"></i> Forex Services</a></li>
+                                <li><a href="/travel/forex-rates"
+                                        class="nav-link-item <%= title === 'Forex Conversion Rates' ? 'active' : '' %>"><i
+                                            class="bi bi-cash-coin nav-icon"></i> Forex Rates</a></li>
+                                <li><a href="/travel/forex-converter"
+                                        class="nav-link-item <%= title === 'Forex Converter' ? 'active' : '' %>"><i
+                                            class="bi bi-arrow-left-right nav-icon"></i> Forex Converter</a></li>
+                                <li><a href="/travel/forex-service-requests"
+                                        class="nav-link-item <%= title === 'Forex Service Requests' ? 'active' : '' %>"><i
+                                            class="bi bi-receipt nav-icon"></i> Forex Service Requests</a></li>
+                            </ul>
+                        </div>
                     </li>
-                    <li>
-                        <a href="/travel/forex-rates" class="nav-link-item <%= title === 'Forex Conversion Rates' ? 'active' : '' %>">
-                            <span class="nav-label-row"><i class="bi bi-cash-coin nav-icon"></i> Forex Rates</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/travel/forex-converter" class="nav-link-item <%= title === 'Forex Converter' ? 'active' : '' %>">
-                            <span class="nav-label-row"><i class="bi bi-arrow-left-right nav-icon"></i> Forex Converter</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="/travel/forex-service-requests" class="nav-link-item <%= title === 'Forex Service Requests' ? 'active' : '' %>">
-                            <span class="nav-label-row"><i class="bi bi-receipt nav-icon"></i> Forex Service Requests</span>
-                        </a>
-                    </li>
+
                     <li>
                         <a class="nav-link-item <%= title && (title.includes('CRM') || title.includes('Lead') || title.includes('Pipeline') || title.includes('Follow-up')) ? 'active' : '' %>"
                             data-bs-toggle="collapse" href="#crmCollapse"
@@ -1216,6 +1318,8 @@
                 </div>
             </div>
         </aside>
+
+        <% } %>
 
         <!-- ③ Main Content -->
         <main class="main-content">

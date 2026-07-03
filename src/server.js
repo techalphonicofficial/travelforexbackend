@@ -8,9 +8,11 @@ const cors = require('cors');
 const { swaggerUi, specs } = require('./config/swagger');
 const container = require('./container');
 const { DEFAULT_THEME_COLOURS, buildThemeCssVariables, loadThemeColours } = require('./utils/themeColours');
+const { NAV_ITEMS, canAccessItem, hasPermission, findPermissionForPath, isFullAccessUser } = require('./utils/rbacConfig');
+const seedRbac = require('./utils/seedRbac');
 const {
   repositories: { appSettingRepo, themeRepo },
-  models: { PackageBooking, PackageReturnRequest, Package, User, Lead, Customer, VendorProfile, Country, ForexService, ForexConversionRate, ForexConversionRequest, Newsletter }
+  models: { PackageBooking, PackageReturnRequest, Package, User, Role, Module, Permission, Lead, Customer, VendorProfile, Country, ForexService, ForexConversionRate, ForexConversionRequest, Newsletter }
 } = container;
 
 
@@ -75,7 +77,34 @@ app.set('layout', 'layouts/main');
 app.use(async (req, res, next) => {
   res.locals.user = req.session.user || null;
   res.locals.title = 'Dashboard';
+  res.locals.navItems = NAV_ITEMS;
+  res.locals.canAccessItem = item => canAccessItem(req.session.user, item);
+  res.locals.hasPermission = permission => hasPermission(req.session.user, permission);
+  res.locals.isFullAccessUser = isFullAccessUser(req.session.user);
   try {
+    if (req.session.user && User && Role) {
+      const freshUser = await User.findByPk(req.session.user.id, {
+        include: [{
+          model: Role,
+          as: 'role',
+          required: false,
+          include: Permission ? [{ model: Permission, as: 'permissions', required: false }] : []
+        }]
+      }).catch(() => null);
+      if (freshUser) {
+        const plainUser = freshUser.get ? freshUser.get({ plain: true }) : freshUser;
+        req.session.user = {
+          ...req.session.user,
+          role_id: plainUser.role_id || null,
+          role_name: plainUser.role ? plainUser.role.name : req.session.user.role_name,
+          permissions: plainUser.role && Array.isArray(plainUser.role.permissions)
+            ? plainUser.role.permissions.map(permission => permission.name)
+            : []
+        };
+        res.locals.user = req.session.user;
+      }
+    }
+
     res.locals.company_logo_url = await appSettingRepo.get('company_logo_url') || '';
     res.locals.company_name = await appSettingRepo.get('company_name') || '';
     res.locals.theme_colours = await loadThemeColours(appSettingRepo, themeRepo);
@@ -123,6 +152,16 @@ const isAuthenticated = (req, res, next) => {
   res.redirect('/auth/login');
 };
 
+const enforceWebPermission = (req, res, next) => {
+  if (!req.session.user) return res.redirect('/auth/login');
+  const requiredPermission = findPermissionForPath(req.originalUrl || req.path);
+  if (!requiredPermission || hasPermission(req.session.user, requiredPermission)) return next();
+  if (req.xhr || req.headers.accept?.includes('application/json')) {
+    return res.status(403).json({ success: false, message: 'You do not have permission to access this module.' });
+  }
+  return res.status(403).send('You do not have permission to access this module.');
+};
+
 const getDashboardData = async () => {
   const defaults = {
     totalUsers: 0,
@@ -163,7 +202,9 @@ const getDashboardData = async () => {
       recentPackageReturnRequests,
       recentForexConversionRequests,
       recentNewsletters,
-      leadPipelineData
+      leadPipelineData,
+      chartBookings,
+      chartLeads
     ] = await Promise.all([
       User ? User.count() : 0,
       PackageBooking ? PackageBooking.count() : 0,
@@ -255,10 +296,45 @@ const getDashboardData = async () => {
                     const match = leadCounts.find(lc => lc.pipeline_id === p.id && lc.stage_id === s.id);
                     return { name: s.name, color: s.color, count: match ? parseInt(match.count) : 0 };
                 });
-                return { pipeline: p.name, stages: stagesList };
+                return { pipeline_id: p.id, pipeline: p.name, stages: stagesList };
             });
         } catch (e) {
             return [];
+        }
+      })(),
+      (async () => {
+        try {
+          const ninetyDaysAgo = new Date();
+          ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+          return PackageBooking ? await PackageBooking.findAll({
+            where: {
+              created_at: {
+                [require('sequelize').Op.gte]: ninetyDaysAgo
+              }
+            },
+            attributes: ['id', 'created_at', 'paid_amount', 'package_total'],
+            raw: true
+          }) : [];
+        } catch (e) {
+          return [];
+        }
+      })(),
+      (async () => {
+        try {
+          const ninetyDaysAgo = new Date();
+          ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+          const Lead = require('./container').models.Lead;
+          return Lead ? await Lead.findAll({
+            where: {
+              created_at: {
+                [require('sequelize').Op.gte]: ninetyDaysAgo
+              }
+            },
+            attributes: ['id', 'created_at', 'pipeline_id'],
+            raw: true
+          }) : [];
+        } catch (e) {
+          return [];
         }
       })()
     ]);
@@ -287,11 +363,13 @@ const getDashboardData = async () => {
       recentPackageReturnRequests: recentPackageReturnRequests.map(row => row.get ? row.get({ plain: true }) : row),
       recentForexConversionRequests: recentForexConversionRequests.map(row => row.get ? row.get({ plain: true }) : row),
       recentNewsletters: recentNewsletters.map(row => row.get ? row.get({ plain: true }) : row),
-      leadPipelineData
+      leadPipelineData,
+      chartBookings,
+      chartLeads
     };
   } catch (error) {
     console.error('Dashboard booking data error:', error.message);
-    return { dashboardStats: defaults, recentVendorRequests: [], recentPackageBookings: [], recentPackageReturnRequests: [], recentForexConversionRequests: [], recentNewsletters: [] };
+    return { dashboardStats: defaults, recentVendorRequests: [], recentPackageBookings: [], recentPackageReturnRequests: [], recentForexConversionRequests: [], recentNewsletters: [], chartBookings: [], chartLeads: [] };
   }
 };
 
@@ -307,11 +385,11 @@ const vendorRoutes = require('./routes/vendorRoutes');
 
 app.use('/auth', authRoutes);
 app.use('/vendor', vendorRoutes);
-app.use('/users', isAuthenticated, userRoutes);
-app.use('/roles', isAuthenticated, roleRoutes);
-app.use('/modules', isAuthenticated, moduleRoutes);
-app.use('/permissions', isAuthenticated, permissionRoutes);
-app.use('/customers', isAuthenticated, crmCustomerRoutes);
+app.use('/users', isAuthenticated, enforceWebPermission, userRoutes);
+app.use('/roles', isAuthenticated, enforceWebPermission, roleRoutes);
+app.use('/modules', isAuthenticated, enforceWebPermission, moduleRoutes);
+app.use('/permissions', isAuthenticated, enforceWebPermission, permissionRoutes);
+app.use('/customers', isAuthenticated, enforceWebPermission, crmCustomerRoutes);
 
 // ===== Travel & Booking API Routes (Phase 1) =====
 const continentRoutes = require('./routes/continentRoutes');
@@ -365,18 +443,18 @@ app.use('/api/v1/customers', apiCustomerRoutes);
 
 // ===== Travel UI Web Routes (EJS Views) =====
 const travelWebRoutes = require('./routes/travelWebRoutes');
-app.use('/travel', isAuthenticated, travelWebRoutes);
+app.use('/travel', isAuthenticated, enforceWebPermission, travelWebRoutes);
 
 // ===== CRM Web Routes =====
 const crmWebRoutes = require('./routes/crmWebRoutes');
-app.use('/crm', isAuthenticated, crmWebRoutes);
+app.use('/crm', isAuthenticated, enforceWebPermission, crmWebRoutes);
 
 // ===== CMS Web Routes =====
 const cmsRoutes = require('./routes/cmsRoutes');
 const publicRoutes = require('./routes/publicRoutes');
 const newsletterWebRoutes = require('./routes/newsletterWebRoutes');
-app.use('/cms', isAuthenticated, cmsRoutes);
-app.use('/newsletter-subscribers', isAuthenticated, newsletterWebRoutes);
+app.use('/cms', isAuthenticated, enforceWebPermission, cmsRoutes);
+app.use('/newsletter-subscribers', isAuthenticated, enforceWebPermission, newsletterWebRoutes);
 app.use('/page', publicRoutes);
 
 const redirectTourLink = async (req, res) => {
@@ -405,28 +483,32 @@ const redirectTourLink = async (req, res) => {
   }
 };
 
-app.get('/tours', isAuthenticated, redirectTourLink);
-app.get('/tours/:slug', isAuthenticated, redirectTourLink);
+app.get('/tours', isAuthenticated, enforceWebPermission, redirectTourLink);
+app.get('/tours/:slug', isAuthenticated, enforceWebPermission, redirectTourLink);
 
 // ===== Accounting Web Routes =====
 const accountingRoutes = require('./routes/accountingRoutes');
-app.use('/accounting', isAuthenticated, accountingRoutes);
+app.use('/accounting', isAuthenticated, enforceWebPermission, accountingRoutes);
 
 // ===== Admin Wallet Web Routes =====
 const adminWalletRoutes = require('./routes/adminWalletRoutes');
-app.use('/admin/wallets', isAuthenticated, adminWalletRoutes);
+app.use('/admin/wallets', isAuthenticated, enforceWebPermission, adminWalletRoutes);
 
 // ===== Admin Vendor Web Routes =====
 const adminVendorRoutes = require('./routes/adminVendorRoutes');
-app.use('/admin/vendors', isAuthenticated, adminVendorRoutes);
+app.use('/admin/vendors', isAuthenticated, enforceWebPermission, adminVendorRoutes);
 
 // ===== Admin Booking Web Routes =====
 const adminBookingRoutes = require('./routes/adminBookingRoutes');
-app.use('/admin/bookings', isAuthenticated, adminBookingRoutes);
+app.use('/admin/bookings', isAuthenticated, enforceWebPermission, adminBookingRoutes);
 
-app.get('/', isAuthenticated, async (req, res) => {
+app.get('/', isAuthenticated, enforceWebPermission, async (req, res) => {
   const dashboardData = await getDashboardData();
   res.render('dashboard', { title: 'Travel & Forex Dashboard', ...dashboardData });
+});
+
+seedRbac({ Module, Permission, Role }).catch(error => {
+  console.error('RBAC seed error:', error.message);
 });
 
 // Global Error Handler

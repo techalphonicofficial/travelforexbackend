@@ -99,6 +99,7 @@ const findDepartureDate = (raw = {}) => {
   .pb-action-download{background:#f8fafc;color:#334155;border-color:#cbd5e1;}
   .pb-action-pay{background:#ecfdf5;color:#047857;border-color:#bbf7d0;}
   .pb-action-refund{background:#fff7ed;color:#c2410c;border-color:#fed7aa;}
+  .pb-action-edit{background:#faf5ff;color:#7c3aed;border-color:#d8b4fe;}
   .pb-action-disabled{background:#f8fafc;color:#94a3b8;border-color:#e2e8f0;cursor:not-allowed;}
   .pb-action[disabled]{opacity:.7;}
   .pb-modal-label{font-size:.78rem;font-weight:800;color:#475569;margin-bottom:.25rem;}
@@ -139,8 +140,13 @@ const findDepartureDate = (raw = {}) => {
       <a href="/admin/bookings/package-bookings" class="pb-tab active"><i class="bi bi-receipt-cutoff"></i> Package Bookings</a>
       <a href="/admin/bookings/return-requests" class="pb-tab"><i class="bi bi-arrow-counterclockwise"></i> Cancel Requests</a>
       <a href="/" class="pb-tab"><i class="bi bi-speedometer2"></i> Dashboard</a>
-      <a href="/admin/bookings/inquiries" class="pb-tab"><i class="bi bi-ui-checks-grid"></i> Custom Requests</a>
+
       <a href="/admin/bookings/hotel-bookings" class="pb-tab"><i class="bi bi-building"></i> Hotel Bookings</a>
+    </div>
+    <div>
+      <a href="/admin/bookings/create" class="pb-btn" style="display:inline-flex;align-items:center;gap:0.4rem;text-decoration:none;white-space:nowrap;">
+        <i class="bi bi-plus-lg"></i> Create Booking
+      </a>
     </div>
   </div>
 
@@ -326,6 +332,7 @@ const findDepartureDate = (raw = {}) => {
                   <button type="button" class="pb-action pb-action-view" data-bs-toggle="modal" data-bs-target="#bookingSummaryModal<%= modalKey %>">
                     <i class="bi bi-eye"></i> View
                   </button>
+                  <a href="/admin/bookings/package-bookings/<%= booking.id %>/edit" class="pb-action pb-action-edit"><i class="bi bi-pencil-square"></i> Edit</a>
                   <button type="button" class="pb-action pb-action-download pb-download-booking" data-summary-id="bookingSummaryContent<%= modalKey %>" data-filename="<%= downloadName %>">
                     <i class="bi bi-download"></i> Download
                   </button>
@@ -579,6 +586,59 @@ const findDepartureDate = (raw = {}) => {
                   </div>
                 </div>
                 <% } %>
+
+                <!-- Edit Booking Modal -->
+                <div class="modal fade" id="editBookingModal<%= modalKey %>" tabindex="-1" aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                      <form method="POST" action="/admin/bookings/package-bookings/<%= booking.id %>/edit">
+                        <div class="modal-header">
+                          <h5 class="modal-title"><i class="bi bi-pencil-square" style="color:#7c3aed;"></i> Edit Booking</h5>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                          <div class="pb-main mb-1"><%= booking.booking_reference %></div>
+                          <div class="pb-sub mb-3"><%= booking.package_name || booking.package_slug || 'N/A' %></div>
+                          <div class="pb-modal-grid">
+                            <div>
+                              <label class="pb-modal-label">Payment Status</label>
+                              <select class="pb-modal-input" name="payment_status">
+                                <% statuses.forEach(s => { %>
+                                  <option value="<%= s %>" <%= booking.payment_status === s ? 'selected' : '' %>><%= label(s) %></option>
+                                <% }) %>
+                              </select>
+                            </div>
+                            <div>
+                              <label class="pb-modal-label">Accounting Status</label>
+                              <select class="pb-modal-input" name="accounting_status">
+                                <% ['pending', 'recorded', 'posted', 'failed'].forEach(s => { %>
+                                  <option value="<%= s %>" <%= booking.accounting_status === s ? 'selected' : '' %>><%= label(s) %></option>
+                                <% }) %>
+                              </select>
+                            </div>
+                            <div>
+                              <label class="pb-modal-label">Customer Name</label>
+                              <input class="pb-modal-input" type="text" name="customer_name" value="<%= booking.customer_name || '' %>">
+                            </div>
+                            <div>
+                              <label class="pb-modal-label">Customer Email</label>
+                              <input class="pb-modal-input" type="email" name="customer_email" value="<%= booking.customer_email || '' %>">
+                            </div>
+                            <div>
+                              <label class="pb-modal-label">Customer Phone</label>
+                              <input class="pb-modal-input" type="text" name="customer_phone" value="<%= booking.customer_phone || '' %>">
+                            </div>
+                          </div>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                          <button type="submit" class="btn" style="background:#7c3aed;color:#fff;"><i class="bi bi-check2-circle"></i> Save Changes</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+
               </td>
             </tr>
           <% }) %>

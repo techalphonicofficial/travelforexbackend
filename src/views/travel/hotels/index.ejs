@@ -464,6 +464,54 @@
             min-height: auto;
         }
     }
+
+    .hotel-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .hotel-action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.8rem;
+        text-decoration: none;
+        transition: background 0.15s, transform 0.1s;
+    }
+
+    .hotel-action-btn.edit {
+        background: #eef2ff;
+        color: #4f46e5;
+    }
+
+    .hotel-action-btn.edit:hover {
+        background: #4f46e5;
+        color: #fff;
+        transform: scale(1.08);
+    }
+
+    .hotel-action-btn.delete {
+        background: #fff1f2;
+        color: #e11d48;
+    }
+
+    .hotel-action-btn.delete:hover {
+        background: #e11d48;
+        color: #fff;
+        transform: scale(1.08);
+    }
+
+    .hotel-action-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
 </style>
 
 <div class="content-header">

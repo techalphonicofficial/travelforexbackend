@@ -461,6 +461,13 @@ router.get('/settings', async (req, res) => {
         const crmApiKey = await appSettingRepo.get('crm_api_key') || '';
         const crmWebhookUrl = await appSettingRepo.get('crm_webhook_url') || '';
         const crmWebhookEnabled = await appSettingRepo.get('crm_webhook_enabled') || 'false';
+        const bookingMailHost = await appSettingRepo.get('booking_mail_host') || '';
+        const bookingMailPort = await appSettingRepo.get('booking_mail_port') || '587';
+        const bookingMailSecure = await appSettingRepo.get('booking_mail_secure') || 'false';
+        const bookingMailFromName = await appSettingRepo.get('booking_mail_from_name') || '';
+        const bookingMailFromEmail = await appSettingRepo.get('booking_mail_from_email') || '';
+        const bookingMailUsername = await appSettingRepo.get('booking_mail_username') || '';
+        const bookingMailAppPassword = await appSettingRepo.get('booking_mail_app_password') || '';
         const partialBookingEnabled = await appSettingRepo.get('crm_partial_booking_enabled') || 'false';
         const partialBookingPercentage = await appSettingRepo.get('crm_partial_booking_percentage') || '0';
         const forexServiceChargeType = await appSettingRepo.get('forex_service_charge_type') || 'percent';
@@ -512,6 +519,13 @@ router.get('/settings', async (req, res) => {
             crmApiKey,
             crmWebhookUrl,
             crmWebhookEnabled,
+            bookingMailHost,
+            bookingMailPort,
+            bookingMailSecure,
+            bookingMailFromName,
+            bookingMailFromEmail,
+            bookingMailUsername,
+            bookingMailAppPassword,
             partialBookingEnabled,
             partialBookingPercentage,
             forexServiceChargeType,
@@ -551,6 +565,8 @@ router.post('/settings/save', async (req, res) => {
         const { 
             crm_default_pipeline_id, crm_default_assignee_id, crm_category_pipeline_mapping, 
             assignment_type, crm_webhook_url, crm_webhook_enabled,
+            booking_mail_host, booking_mail_port, booking_mail_secure, booking_mail_from_name,
+            booking_mail_from_email, booking_mail_username, booking_mail_app_password,
             partial_booking_enabled, partial_booking_percentage,
             forex_service_charge_type, forex_service_charge_value, public_forex_spread_percentage,
             company_name, razorpay_key_id, razorpay_key_secret, company_phone, company_whatsapp, company_email,
@@ -571,6 +587,13 @@ router.post('/settings/save', async (req, res) => {
         await appSettingRepo.set('crm_assignment_type', assignment_type || 'manual');
         await appSettingRepo.set('crm_webhook_url', crm_webhook_url || '');
         await appSettingRepo.set('crm_webhook_enabled', crm_webhook_enabled === 'on' || crm_webhook_enabled === 'true' ? 'true' : 'false');
+        await appSettingRepo.set('booking_mail_host', booking_mail_host || '');
+        await appSettingRepo.set('booking_mail_port', booking_mail_port || '587');
+        await appSettingRepo.set('booking_mail_secure', booking_mail_secure === 'on' || booking_mail_secure === 'true' ? 'true' : 'false');
+        await appSettingRepo.set('booking_mail_from_name', booking_mail_from_name || '');
+        await appSettingRepo.set('booking_mail_from_email', booking_mail_from_email || '');
+        await appSettingRepo.set('booking_mail_username', booking_mail_username || '');
+        await appSettingRepo.set('booking_mail_app_password', booking_mail_app_password || '');
         await appSettingRepo.set('crm_partial_booking_enabled', partial_booking_enabled === 'on' || partial_booking_enabled === 'true' ? 'true' : 'false');
         await appSettingRepo.set('crm_partial_booking_percentage', normalizedPartialPercent);
         await appSettingRepo.set('forex_service_charge_type', normalizedForexChargeType);

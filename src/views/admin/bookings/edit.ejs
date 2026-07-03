@@ -23,12 +23,12 @@
             <div class="card-header">
                 <h3 class="card-title">Update Details for <%= booking.booking_reference %></h3>
             </div>
-            <form action="/admin/bookings/<%= booking.id %>" method="POST">
+            <form action="/admin/bookings/package-bookings/<%= booking.id %>" method="POST">
                 <div class="card-body">
                     <div class="form-group">
                         <label>Customer Name</label>
                         <select name="customer_id" class="form-control select2" required>
-                            <option value="">Select Customer</option>
+                            <option value="" <%= !booking.customer_id ? 'selected' : '' %>>Select Customer</option>
                             <% customers.forEach(c => { %>
                                 <option value="<%= c.id %>" <%= booking.customer_id === c.id ? 'selected' : '' %>><%= c.user ? c.user.name : 'Unknown' %> (<%= c.user ? c.user.email : 'Unknown' %>)</option>
                             <% }) %>

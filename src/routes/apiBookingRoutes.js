@@ -410,6 +410,48 @@ router.get('/customer/:customer_id', apiAuth, (req, res) => apiPackageBookingCon
 
 /**
  * @swagger
+ * /api/v1/bookings/package/customize:
+ *   get:
+ *     summary: Get customizable package bookings
+ *     description: Returns package bookings whose related package is marked customizable, with customer and package details.
+ *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: customer_id
+ *         schema:
+ *           type: string
+ *         description: Optional customer profile UUID, user UUID, or customer email. Admin/manager can filter; customers see their own records.
+ *       - in: query
+ *         name: booking_id
+ *         schema:
+ *           type: string
+ *         description: Optional booking UUID or booking reference.
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *         description: Optional payment status filter.
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *           maximum: 100
+ *     responses:
+ *       200:
+ *         description: Customizable package bookings
+ */
+router.get('/package/customize', apiAuth, (req, res) => apiPackageBookingController.listCustomizablePackageBookings(req, res));
+
+/**
+ * @swagger
  * /api/v1/bookings/package/{booking_id}/pay-remaining:
  *   post:
  *     summary: Pay remaining amount for a package booking
@@ -1212,16 +1254,19 @@ router.post('/package/:booking_id/refund', apiAuth, (req, res) => apiPackageBook
  *       403:
  *         description: Admin/manager token required
  *       404:
- *         description: Package booking not found
+ *         description: Invalid or expired token
  */
-router.post('/package/:booking_id/return-refund', apiAuth, (req, res) => apiPackageBookingController.refundBooking(req, res));
-
 /**
  * @swagger
  * /api/v1/bookings/create-booking:
  *   post:
  *     summary: Create a package booking and record vendor accounting split
- *     description: Stores the package booking payload from the frontend, links it to the package/vendor, saves hotel selections in raw_payload, and posts accounting entries when payment is verified.
+ *     description: >
+ *       Stores the package booking payload, links it to the package/vendor,
+ *       saves hotel selections in raw_payload, posts accounting entries when payment is verified,
+ *       persists per-traveller passenger details in booking_passengers,
+ *       and queues an itinerary email in booking_email_queue for the customer.
+ *       If passengers[] is omitted, a single lead passenger is auto-created from the customer object.
  *     tags: [Bookings]
  *     security:
  *       - bearerAuth: []
@@ -1237,158 +1282,122 @@ router.post('/package/:booking_id/return-refund', apiAuth, (req, res) => apiPack
  *               - package_total
  *               - customer
  *             properties:
- *               package_id:
- *                 type: integer
- *                 example: 29
- *               package_slug:
- *                 type: string
- *                 example: bangkok-explorer-5n6d
- *               package_name:
- *                 type: string
- *                 example: Bangkok Explorer - 5N6D
- *               package_price:
- *                 type: number
- *                 example: 32000
- *               package_base_amount:
- *                 type: number
- *                 example: 32000
- *               tax_type:
- *                 type: string
- *                 example: GST
- *               tax_percent:
- *                 type: number
- *                 example: 5
- *               tax_amount:
- *                 type: number
- *                 example: 1575
- *               package_total:
- *                 type: number
- *                 example: 33075
- *               coupon_code:
- *                 type: string
- *                 example: SUMMER500
- *               duration:
- *                 type: string
- *                 example: 5N/6D
- *               route:
- *                 type: array
- *                 items:
- *                   type: string
- *                 example: [Bali, Philippines]
- *               hotels:
- *                 type: array
- *                 items:
- *                   type: object
- *                   properties:
- *                     id: { type: string, example: 1780404153466-4aicoqwza }
- *                     hotel_id: { type: integer, example: 317 }
- *                     name: { type: string, example: Crown Bali Palace 315 }
- *                     destination: { type: string, example: Bali }
- *                     image: { type: string }
- *                     notes: { type: string, example: ASDF }
- *                     rooms: { type: integer, example: 1 }
- *                     nights: { type: integer, example: 2 }
- *                     star_rating: { type: number, example: 1 }
- *                     guest_rating: { type: number, example: 3.7 }
- *                     price_per_night: { type: number, example: 1500 }
- *                     estimated_amount: { type: number, example: 3000 }
- *               hotel_count:
- *                 type: integer
- *                 example: 3
- *               hotel_estimated_amount:
- *                 type: number
- *                 example: 24200
- *               partial_booking_enabled:
- *                 type: boolean
- *                 example: true
- *               partial_booking_percentage:
- *                 type: number
- *                 example: 30
- *               payable_now:
- *                 type: number
- *                 example: 10080
- *               remaining_amount:
- *                 type: number
- *                 example: 23520
- *               remaining_percentage:
- *                 type: number
- *                 example: 70
+ *               package_id: { type: integer, example: 29 }
+ *               package_slug: { type: string, example: bangkok-explorer-5n6d }
+ *               package_name: { type: string, example: Bangkok Explorer - 5N6D }
+ *               package_price: { type: number, example: 32000 }
+ *               package_base_amount: { type: number, example: 32000 }
+ *               tax_type: { type: string, example: GST }
+ *               tax_percent: { type: number, example: 5 }
+ *               tax_amount: { type: number, example: 1575 }
+ *               package_total: { type: number, example: 33075 }
+ *               coupon_code: { type: string, example: SUMMER500 }
+ *               duration: { type: string, example: 5N/6D }
+ *               route: { type: array, items: { type: string }, example: [Bali, Philippines] }
+ *               hotel_count: { type: integer, example: 3 }
+ *               hotel_estimated_amount: { type: number, example: 24200 }
+ *               partial_booking_enabled: { type: boolean, example: true }
+ *               partial_booking_percentage: { type: number, example: 30 }
+ *               payable_now: { type: number, example: 10080 }
+ *               remaining_amount: { type: number, example: 23520 }
+ *               remaining_percentage: { type: number, example: 70 }
  *               customer:
  *                 type: object
  *                 required: [name, email]
  *                 properties:
- *                   id: { type: string, format: uuid, example: 974cfab8-b3e9-4d1d-9a73-03c730fdba31 }
- *                   name: { type: string, example: akash sharma }
- *                   email: { type: string, example: piyush@gmail.com }
- *                   phone: { type: string, example: "08888888827" }
- *               status:
- *                 type: string
- *                 example: payment_verified
- *               page_url:
- *                 type: string
- *                 example: http://localhost:3000/tours?destination=switzerland&view=itinerary&package=bangkok-explorer-5n6d#inclusions
- *               updated_at:
- *                 type: string
- *                 format: date-time
- *               razorpay_order_id:
- *                 type: string
- *                 example: order_Swm2GDnbf2nFqr
- *               razorpay_payment_id:
- *                 type: string
- *                 example: pay_Swm2O7nuADT4f9
- *               payment_verified_at:
- *                 type: string
- *                 format: date-time
+ *                   id: { type: string, format: uuid }
+ *                   name: { type: string, example: Akash Sharma }
+ *                   email: { type: string, example: akash@gmail.com }
+ *                   phone: { type: string, example: "9876543210" }
+ *               passengers:
+ *                 type: array
+ *                 description: Per-traveller details. First item is treated as the lead passenger. If omitted, auto-created from customer.
+ *                 items:
+ *                   type: object
+ *                   required: [full_name]
+ *                   properties:
+ *                     full_name: { type: string, example: Akash Sharma }
+ *                     age: { type: integer, example: 28 }
+ *                     gender: { type: string, enum: [male, female, other], example: male }
+ *                     dob: { type: string, format: date, example: "1996-04-15" }
+ *                     nationality: { type: string, example: Indian }
+ *                     passport_no: { type: string, example: P1234567 }
+ *                     passport_expiry: { type: string, format: date, example: "2030-01-01" }
+ *                     is_lead: { type: boolean, example: true }
+ *               status: { type: string, example: payment_verified }
+ *               page_url: { type: string }
+ *               razorpay_order_id: { type: string, example: order_Swm2GDnbf2nFqr }
+ *               razorpay_payment_id: { type: string, example: pay_Swm2O7nuADT4f9 }
+ *               payment_verified_at: { type: string, format: date-time }
  *           examples:
- *             packageBooking:
- *               summary: Payment verified package booking
+ *             withPassengers:
+ *               summary: Booking with passenger details
  *               value:
  *                 package_id: 29
  *                 package_slug: bangkok-explorer-5n6d
  *                 package_name: Bangkok Explorer - 5N6D
- *                 package_price: 32000
  *                 package_base_amount: 32000
  *                 tax_type: GST
  *                 tax_percent: 5
  *                 tax_amount: 1575
  *                 package_total: 33075
- *                 coupon_code: SUMMER500
  *                 duration: 5N/6D
- *                 route: [Bali, Philippines]
- *                 hotel_count: 3
- *                 hotel_estimated_amount: 24200
  *                 partial_booking_enabled: true
  *                 partial_booking_percentage: 30
  *                 payable_now: 9922.5
  *                 remaining_amount: 23152.5
- *                 remaining_percentage: 70
  *                 customer:
  *                   id: 974cfab8-b3e9-4d1d-9a73-03c730fdba31
- *                   name: akash sharma
- *                   email: piyush@gmail.com
- *                   phone: "08888888827"
+ *                   name: Akash Sharma
+ *                   email: akash@gmail.com
+ *                   phone: "9876543210"
+ *                 passengers:
+ *                   - full_name: Akash Sharma
+ *                     age: 28
+ *                     gender: male
+ *                     dob: "1996-04-15"
+ *                     nationality: Indian
+ *                     passport_no: P1234567
+ *                     passport_expiry: "2030-01-01"
+ *                     is_lead: true
+ *                   - full_name: Priya Sharma
+ *                     age: 25
+ *                     gender: female
+ *                     nationality: Indian
  *                 status: payment_verified
- *                 page_url: http://localhost:3000/tours?destination=switzerland&view=itinerary&package=bangkok-explorer-5n6d#inclusions
  *                 razorpay_order_id: order_Swm2GDnbf2nFqr
  *                 razorpay_payment_id: pay_Swm2O7nuADT4f9
  *     responses:
  *       201:
- *         description: Package booking created and accounting split recorded
+ *         description: Booking created with passenger details and accounting split
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Package booking recorded and vendor split added to accounting.
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Package booking recorded and vendor split added to accounting. }
  *                 data:
- *                   $ref: '#/components/schemas/PackageBookingResponse'
+ *                   allOf:
+ *                     - $ref: '#/components/schemas/PackageBookingResponse'
+ *                     - type: object
+ *                       properties:
+ *                         passengers:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               id: { type: string, format: uuid }
+ *                               full_name: { type: string }
+ *                               age: { type: integer, nullable: true }
+ *                               gender: { type: string, enum: [male, female, other], nullable: true }
+ *                               dob: { type: string, format: date, nullable: true }
+ *                               nationality: { type: string, nullable: true }
+ *                               passport_no: { type: string, nullable: true }
+ *                               passport_expiry: { type: string, format: date, nullable: true }
+ *                               is_lead: { type: boolean }
  *       200:
- *         description: Package booking already exists for the same Razorpay payment id
+ *         description: Booking already exists for this Razorpay payment id
  *       404:
  *         description: Package not found
  *       401:
@@ -1397,6 +1406,7 @@ router.post('/package/:booking_id/return-refund', apiAuth, (req, res) => apiPack
  *         description: Invalid or expired token
  */
 router.post('/create-booking', apiAuth, (req, res) => apiPackageBookingController.createBooking(req, res));
+
 
 /**
  * @swagger

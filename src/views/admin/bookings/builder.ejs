@@ -550,6 +550,15 @@ body {
                                 Select a package to view route, duration, GST and partial booking amounts.
                             </div>
 
+                            <!-- PASSENGER DETAILS SECTION -->
+                            <div class="mt-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="m-0 font-weight-bold"><i class="fas fa-users text-primary mr-2"></i>Passenger Details</h6>
+                                    <small class="text-muted">Lead passenger auto-filled from customer if empty</small>
+                                </div>
+                                <div id="passengersContainer"></div>
+                            </div>
+
                             <div class="mt-4 text-right">
                                 <button type="submit" id="btnInitTrip" class="btn-primary-custom w-100">
                                     <i class="fas fa-rotate mr-2"></i> Fetch Package Details
@@ -1023,6 +1032,7 @@ function initPackageBookingForm() {
         adultInput.addEventListener('input', () => {
             if (Number(adultInput.value || 0) < 1) adultInput.value = 1;
             document.getElementById('summaryAdults').textContent = getBookingSelections().adults;
+            renderPassengerForms();
             if (getBookingSelections().packageId) fetchPackageQuote(true);
         });
     }
@@ -1036,6 +1046,62 @@ function initPackageBookingForm() {
         fetchPackageQuote(true);
     } else {
         resetPackageQuote();
+    }
+    
+    renderPassengerForms();
+}
+
+function renderPassengerForms() {
+    const container = document.getElementById('passengersContainer');
+    if (!container) return;
+    const adults = getBookingSelections().adults;
+    let html = '';
+    for (let i = 0; i < adults; i++) {
+        html += `
+            <div class="card bg-light border-0 mb-3 passenger-form" data-index="${i}">
+                <div class="card-body p-3">
+                    <h6 class="mb-3 text-indigo font-weight-bold" style="font-size: 0.85rem;">
+                        <i class="fas ${i === 0 ? 'fa-user-tie' : 'fa-user'} mr-1"></i> 
+                        ${i === 0 ? 'Lead ' : ''}Passenger ${i + 1}
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <label class="small text-muted mb-1">Full Name</label>
+                            <input type="text" class="form-control form-control-sm p-full-name" placeholder="Full name">
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <label class="small text-muted mb-1">Age</label>
+                            <input type="number" class="form-control form-control-sm p-age" min="1" placeholder="Age">
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <label class="small text-muted mb-1">Gender</label>
+                            <select class="form-control form-control-sm p-gender">
+                                <option value="">Select...</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <label class="small text-muted mb-1">DOB</label>
+                            <input type="date" class="form-control form-control-sm p-dob">
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <label class="small text-muted mb-1">Passport No.</label>
+                            <input type="text" class="form-control form-control-sm p-passport" placeholder="Passport number">
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <label class="small text-muted mb-1">Expiry</label>
+                            <input type="date" class="form-control form-control-sm p-expiry">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    // Only update if number changed to prevent losing input values if not needed
+    if (container.children.length !== adults) {
+        container.innerHTML = html;
     }
 }
 
@@ -1471,7 +1537,16 @@ async function confirmBooking() {
             package_id: selections.packageId,
             adults: selections.adults,
             payment_mode: selections.paymentMode,
-            inquiry_id: selections.inquiryId
+            inquiry_id: selections.inquiryId,
+            passengers: Array.from(document.querySelectorAll('.passenger-form')).map((form, index) => ({
+                full_name: form.querySelector('.p-full-name').value.trim(),
+                age: form.querySelector('.p-age').value.trim(),
+                gender: form.querySelector('.p-gender').value,
+                dob: form.querySelector('.p-dob').value,
+                passport_no: form.querySelector('.p-passport').value.trim(),
+                passport_expiry: form.querySelector('.p-expiry').value,
+                is_lead: index === 0
+            }))
         };
         const res = await fetch('/admin/bookings/api/package-bookings', {
             method: 'POST',

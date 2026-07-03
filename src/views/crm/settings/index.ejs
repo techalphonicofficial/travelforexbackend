@@ -26,6 +26,11 @@
             </button>
           </li>
           <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="email-tab" data-bs-toggle="tab" data-bs-target="#email-credentials" type="button" role="tab" aria-controls="email-credentials" aria-selected="false">
+              <i class="bi bi-envelope-at me-1"></i> Email Credentials
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
             <button class="nav-link fw-bold" id="forex-tab" data-bs-toggle="tab" data-bs-target="#forex" type="button" role="tab" aria-controls="forex" aria-selected="false">
               <i class="bi bi-currency-exchange me-1"></i> Forex
             </button>
@@ -333,6 +338,54 @@
               </div>
 
             </div><!-- /api-integration -->
+
+            <!-- EMAIL CREDENTIALS TAB -->
+            <div class="tab-pane fade" id="email-credentials" role="tabpanel" aria-labelledby="email-tab">
+              <div class="mb-4 p-4 rounded-3 border">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                  <div style="background: #2563eb; border-radius: 8px; padding: 6px 10px;">
+                    <i class="bi bi-envelope-paper text-white fs-5"></i>
+                  </div>
+                  <div>
+                    <h6 class="mb-0 fw-bold">Booking Email SMTP</h6>
+                    <small class="text-muted">Booking itinerary emails will be sent only when host, username email, and app password are configured.</small>
+                  </div>
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold small">SMTP Host</label>
+                    <input type="text" class="form-control" name="booking_mail_host" value="<%= typeof bookingMailHost !== 'undefined' ? bookingMailHost : '' %>" placeholder="smtp.gmail.com">
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label fw-semibold small">Port</label>
+                    <input type="number" class="form-control" name="booking_mail_port" min="1" max="65535" value="<%= typeof bookingMailPort !== 'undefined' ? bookingMailPort : '587' %>">
+                  </div>
+                  <div class="col-md-3 d-flex align-items-end">
+                    <div class="form-check form-switch mb-2">
+                      <input class="form-check-input" type="checkbox" role="switch" id="bookingMailSecureToggle" name="booking_mail_secure" <%= bookingMailSecure === 'true' ? 'checked' : '' %>>
+                      <label class="form-check-label fw-semibold" for="bookingMailSecureToggle">SSL</label>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold small">From Name</label>
+                    <input type="text" class="form-control" name="booking_mail_from_name" value="<%= typeof bookingMailFromName !== 'undefined' ? bookingMailFromName : '' %>" placeholder="Picktrail Team">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold small">From Email</label>
+                    <input type="email" class="form-control" name="booking_mail_from_email" value="<%= typeof bookingMailFromEmail !== 'undefined' ? bookingMailFromEmail : '' %>" placeholder="bookings@example.com">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold small">Username Email</label>
+                    <input type="email" class="form-control" name="booking_mail_username" value="<%= typeof bookingMailUsername !== 'undefined' ? bookingMailUsername : '' %>" placeholder="yourname@gmail.com">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold small">App Password</label>
+                    <input type="password" class="form-control" name="booking_mail_app_password" value="<%= typeof bookingMailAppPassword !== 'undefined' ? bookingMailAppPassword : '' %>" placeholder="16 character app password">
+                  </div>
+                </div>
+              </div>
+            </div><!-- /email-credentials -->
 
             <!-- FOREX TAB -->
             <div class="tab-pane fade" id="forex" role="tabpanel" aria-labelledby="forex-tab">
@@ -1101,6 +1154,10 @@
     const partialBookingToggle = document.getElementById('partialBookingToggle');
     if (partialBookingToggle) {
       body.partial_booking_enabled = partialBookingToggle.checked ? 'true' : 'false';
+    }
+    const bookingMailSecureToggle = document.getElementById('bookingMailSecureToggle');
+    if (bookingMailSecureToggle) {
+      body.booking_mail_secure = bookingMailSecureToggle.checked ? 'true' : 'false';
     }
 
     btn.disabled = true;

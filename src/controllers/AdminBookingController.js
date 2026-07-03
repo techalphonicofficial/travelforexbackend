@@ -730,7 +730,7 @@ class AdminBookingController {
                 return res.status(500).send('Trip inquiry repository is not configured');
             }
 
-            const { 
+            const {
                 customer_name, customer_email, customer_phone,
                 destination, travel_with, duration,
                 departure_city, departure_date, total_travellers,
@@ -930,9 +930,9 @@ class AdminBookingController {
         if (this.accountingService) {
             try {
                 await this.accountingService.recordConfirmedBooking(
-                    customTrip.id, 
-                    bookingRef, 
-                    customTrip.total_price, 
+                    customTrip.id,
+                    bookingRef,
+                    customTrip.total_price,
                     req.session.user ? req.session.user.id : null
                 );
             } catch (accErr) {
@@ -947,22 +947,22 @@ class AdminBookingController {
             const User = CustomTrip.sequelize.models.User;
             const Customer = this.bookingRepo.Customer;
             const Payment = this.bookingRepo.Payment;
-            
+
             const customTrip = await CustomTrip.findByPk(req.params.id, {
                 include: [
                     { model: CustomTrip.associations.destination.target, as: 'destination' },
-                    { 
-                        model: Customer, 
+                    {
+                        model: Customer,
                         as: 'customer',
                         include: [{ model: User, as: 'user' }]
                     },
-                    { 
-                        model: CustomTrip.associations.days.target, 
+                    {
+                        model: CustomTrip.associations.days.target,
                         as: 'days',
                         include: [
                             { model: CustomTrip.associations.days.target.associations.hotel.target, as: 'hotel' },
-                            { 
-                                model: CustomTrip.associations.days.target.associations.activities.target, 
+                            {
+                                model: CustomTrip.associations.days.target.associations.activities.target,
                                 as: 'activities',
                                 include: [
                                     { model: CustomTrip.associations.days.target.associations.activities.target.associations.activity.target, as: 'activity' }
@@ -1013,22 +1013,22 @@ class AdminBookingController {
             const CustomTrip = this.bookingRepo.CustomTrip;
             const User = CustomTrip.sequelize.models.User;
             const Customer = this.bookingRepo.Customer;
-            
+
             const customTrip = await CustomTrip.findByPk(req.params.id, {
                 include: [
                     { model: CustomTrip.associations.destination.target, as: 'destination' },
-                    { 
-                        model: Customer, 
+                    {
+                        model: Customer,
                         as: 'customer',
                         include: [{ model: User, as: 'user' }]
                     },
-                    { 
-                        model: CustomTrip.associations.days.target, 
+                    {
+                        model: CustomTrip.associations.days.target,
                         as: 'days',
                         include: [
                             { model: CustomTrip.associations.days.target.associations.hotel.target, as: 'hotel' },
-                            { 
-                                model: CustomTrip.associations.days.target.associations.activities.target, 
+                            {
+                                model: CustomTrip.associations.days.target.associations.activities.target,
                                 as: 'activities',
                                 include: [
                                     { model: CustomTrip.associations.days.target.associations.activities.target.associations.activity.target, as: 'activity' }
@@ -1054,8 +1054,8 @@ class AdminBookingController {
 
             // Fetch all customers for the dropdown
             const customers = await this.bookingRepo.Customer.findAll({
-                include: [{ 
-                    model: User, 
+                include: [{
+                    model: User,
                     as: 'user',
                     where: { type: 'customer' }
                 }],
@@ -1089,6 +1089,37 @@ class AdminBookingController {
         }
     }
 
+    // Edit Package Booking Page
+    async editPackageBooking(req, res) {
+        try {
+            const PackageBooking = this.bookingRepo.PackageBooking;
+            const booking = await PackageBooking.findByPk(req.params.booking_id);
+            if (!booking) {
+                return res.status(404).send('Booking not found');
+            }
+
+            const User = PackageBooking.sequelize.models.User;
+            const customers = await this.bookingRepo.Customer.findAll({
+                include: [{
+                    model: User,
+                    as: 'user',
+                    where: { type: 'customer' }
+                }],
+                order: [[{ model: User, as: 'user' }, 'name', 'ASC']]
+            });
+
+            return res.render('admin/bookings/edit', {
+                title: 'Edit Package Booking',
+                booking,
+                customers,
+                user: req.session.user
+            });
+        } catch (error) {
+            console.error('Error fetching package booking for edit:', error);
+            res.status(500).send('Internal Server Error');
+        }
+    }
+
     async update(req, res) {
         try {
             const CustomTrip = this.bookingRepo.CustomTrip;
@@ -1113,9 +1144,9 @@ class AdminBookingController {
             // Trigger ledger entry if status changes to confirmed
             if (oldBookingStatus !== 'confirmed' && booking_status === 'confirmed') {
                 await this.accountingService.recordConfirmedBooking(
-                    customTrip.id, 
-                    bookingRef, 
-                    total_amount, 
+                    customTrip.id,
+                    bookingRef,
+                    total_amount,
                     req.session.user ? req.session.user.id : null
                 );
             }

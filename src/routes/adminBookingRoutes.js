@@ -53,6 +53,7 @@ router.get('/create', (req, res) => adminBookingController.create(req, res));
 router.get('/package-bookings', (req, res) => adminBookingController.packageBookings(req, res));
 router.post('/package-bookings/:booking_id/pay-remaining', attachSessionUser, (req, res) => apiPackageBookingController.payRemaining(req, res));
 router.post('/package-bookings/:booking_id/refund', attachSessionUser, (req, res) => apiPackageBookingController.refundBooking(req, res));
+router.get('/package-bookings/:booking_id/edit', attachSessionUser, (req, res) => adminBookingController.editPackageBooking(req, res));
 router.get('/return-requests', (req, res) => adminBookingController.returnRequests(req, res));
 router.post('/return-requests/:request_id/approve', attachSessionUser, redirectAfterJson((req, res) => apiPackageBookingController.approveReturnRequest(req, res)));
 router.post('/return-requests/:request_id/reject', attachSessionUser, redirectAfterJson((req, res) => apiPackageBookingController.rejectReturnRequest(req, res)));

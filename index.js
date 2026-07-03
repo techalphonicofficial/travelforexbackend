@@ -1,5 +1,5 @@
 const server = require('./src/server');
-const { db } = require('./src/container');
+const { db, services: { bookingEmailScheduler } } = require('./src/container');
 const port = process.env.PORT || 3000;
 
 // ─── Guard against any unhandled errors to keep the server alive ───
@@ -17,6 +17,9 @@ process.on('unhandledRejection', (reason) => {
 db.authenticate()
   .then(() => {
     console.log('Database connected successfully.');
+    if (bookingEmailScheduler) {
+      bookingEmailScheduler.start();
+    }
     server.listen(port, () => {
       console.log(`Server is running on http://localhost:${port}`);
     });

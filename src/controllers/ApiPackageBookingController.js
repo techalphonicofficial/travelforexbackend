@@ -39,10 +39,11 @@ const httpError = (message, statusCode = 400) => {
 };
 
 class ApiPackageBookingController {
-  constructor(models = {}, accountingService = null, db = null) {
+  constructor(models = {}, accountingService = null, db = null, bookingEmailService = null) {
     this.models = models;
     this.accountingService = accountingService;
     this.db = db;
+    this.bookingEmailService = bookingEmailService;
     this.couponService = models.Coupon && models.CouponRedemption
       ? new CouponService({ Coupon: models.Coupon, CouponRedemption: models.CouponRedemption })
       : null;
@@ -101,6 +102,59 @@ class ApiPackageBookingController {
     }
 
     return null;
+  }
+
+  async resolveCustomerContact(customer = {}) {
+    const fallback = {
+      id: isUuid(customer.id) ? customer.id : null,
+      name: clean(customer.name),
+      email: clean(customer.email).toLowerCase(),
+      phone: clean(customer.phone || customer.phone_number)
+    };
+
+    if (!this.models.Customer) return fallback;
+
+    const include = this.models.User
+      ? [{ model: this.models.User, as: 'user', required: false, attributes: ['id', 'name', 'email', 'phone_number'] }]
+      : [];
+
+    let profile = null;
+    if (isUuid(customer.id)) {
+      profile = await this.models.Customer.findByPk(customer.id, { include });
+      if (!profile) {
+        profile = await this.models.Customer.findOne({ where: { user_id: customer.id }, include });
+      }
+    }
+
+    if (!profile && customer.email && this.models.User) {
+      const user = await this.models.User.findOne({
+        where: { email: clean(customer.email).toLowerCase() },
+        attributes: ['id', 'name', 'email', 'phone_number']
+      });
+      if (user) {
+        profile = await this.models.Customer.findOne({ where: { user_id: user.id }, include });
+        if (!profile) {
+          const plainUser = user.get ? user.get({ plain: true }) : user;
+          return {
+            id: null,
+            name: fallback.name || clean(plainUser.name),
+            email: fallback.email || clean(plainUser.email).toLowerCase(),
+            phone: fallback.phone || clean(plainUser.phone_number)
+          };
+        }
+      }
+    }
+
+    if (!profile) return fallback;
+
+    const row = profile.get ? profile.get({ plain: true }) : profile;
+    const user = row.user || {};
+    return {
+      id: row.id || fallback.id,
+      name: fallback.name || clean(user.name),
+      email: fallback.email || clean(user.email).toLowerCase(),
+      phone: fallback.phone || clean(row.phone || user.phone_number)
+    };
   }
 
   calculateAmounts(payload = {}, pkg = null, couponPreview = null) {
@@ -836,16 +890,24 @@ class ApiPackageBookingController {
         }
       }
 
+      const payloadCustomer = payload.customer || {};
       const customer = {
-        ...(payload.customer || {}),
+        ...payloadCustomer,
         ...(req.user ? {
-          id: req.user.id || (payload.customer || {}).id,
-          name: req.user.name || (payload.customer || {}).name,
-          email: req.user.email || (payload.customer || {}).email
+          id: payloadCustomer.id || req.user.id,
+          name: payloadCustomer.name || req.user.name,
+          email: payloadCustomer.email || req.user.email
         } : {})
       };
-      const customerId = await this.resolveCustomerId(customer);
-      const couponPreview = await this.buildCouponPreview(payload, pkg, customerId, customer);
+      const resolvedContact = await this.resolveCustomerContact(customer);
+      const customerId = resolvedContact.id || await this.resolveCustomerId(customer);
+      const bookingCustomer = {
+        id: customerId,
+        name: clean(customer.name) || resolvedContact.name,
+        email: clean(customer.email).toLowerCase() || resolvedContact.email,
+        phone: clean(customer.phone) || resolvedContact.phone
+      };
+      const couponPreview = await this.buildCouponPreview(payload, pkg, customerId, bookingCustomer);
       const amounts = this.calculateAmounts(payload, pkg, couponPreview);
       const split = this.calculateSplit(payload, pkg, amounts);
       const couponSnapshot = this.buildCouponSnapshot(couponPreview, amounts);
@@ -876,9 +938,9 @@ class ApiPackageBookingController {
         package_name: clean(payload.package_name) || pkg.name || null,
         vendor_id: pkg.vendor_id || null,
         customer_id: customerId,
-        customer_name: clean(customer.name) || null,
-        customer_email: clean(customer.email).toLowerCase() || null,
-        customer_phone: clean(customer.phone) || null,
+        customer_name: bookingCustomer.name || null,
+        customer_email: bookingCustomer.email || null,
+        customer_phone: bookingCustomer.phone || null,
         package_base_amount: amounts.baseAmount,
         tax_type: clean(payload.tax_type) || pkg.tax_type || null,
         tax_percent: amounts.taxPercent,
@@ -951,16 +1013,87 @@ class ApiPackageBookingController {
         }, { transaction });
       }
 
+      // Save passenger rows for the booking.
+      const rawPassengers = Array.isArray(payload.passengers) ? payload.passengers : [];
+      const passengerRows = rawPassengers
+        .filter(p => p && clean(p.full_name || p.name))
+        .map((p, index) => ({
+          booking_id: booking.id,
+          full_name: clean(p.full_name || p.name),
+          age: p.age !== undefined && p.age !== null && p.age !== '' ? parseInt(p.age, 10) || null : null,
+          gender: ['male', 'female', 'other'].includes(String(p.gender || '').toLowerCase()) ? String(p.gender).toLowerCase() : null,
+          dob: p.dob || null,
+          nationality: clean(p.nationality) || null,
+          passport_no: clean(p.passport_no || p.passport_number) || null,
+          passport_expiry: p.passport_expiry || null,
+          is_lead: index === 0 || Boolean(p.is_lead)
+        }));
+
+      // Auto-create a lead passenger from customer if none provided.
+      if (passengerRows.length === 0 && clean(bookingCustomer.name)) {
+        passengerRows.push({
+          booking_id: booking.id,
+          full_name: clean(bookingCustomer.name),
+          age: null,
+          gender: null,
+          dob: null,
+          nationality: null,
+          passport_no: null,
+          passport_expiry: null,
+          is_lead: true
+        });
+      }
+
+      if (passengerRows.length > 0 && this.models.BookingPassenger) {
+        await this.models.BookingPassenger.bulkCreate(passengerRows, { transaction });
+      }
+
       await transaction.commit();
+
       transaction = null;
 
-      const freshBooking = await this.models.PackageBooking.findByPk(booking.id);
+      const freshBooking = await this.models.PackageBooking.findByPk(booking.id, {
+        include: this.models.BookingPassenger
+          ? [{ model: this.models.BookingPassenger, as: 'passengers' }]
+          : []
+      });
+      let itineraryEmail = null;
+      if (this.bookingEmailService && typeof this.bookingEmailService.enqueuePackageBookingItinerary === 'function') {
+        try {
+          const queuedEmail = await this.bookingEmailService.enqueuePackageBookingItinerary(freshBooking || booking);
+          itineraryEmail = queuedEmail ? {
+            id: queuedEmail.id,
+            status: queuedEmail.status,
+            recipient_email: queuedEmail.recipient_email,
+            scheduled_at: queuedEmail.scheduled_at
+          } : null;
+        } catch (emailError) {
+          console.error('Booking itinerary email queue error:', emailError.message);
+        }
+      }
+
+      const bookingData = (freshBooking || booking).get ? (freshBooking || booking).get({ plain: true }) : (freshBooking || booking);
 
       return res.status(201).json({
         success: true,
         message: pkg.vendor_id ? 'Package booking recorded and vendor split added to accounting.' : 'Package booking recorded without vendor split.',
-        data: this.serializeBooking(freshBooking || booking)
+        data: {
+          ...bookingData,
+          passengers: (bookingData.passengers || []).map(p => ({
+            id: p.id,
+            full_name: p.full_name,
+            age: p.age,
+            gender: p.gender,
+            dob: p.dob,
+            nationality: p.nationality,
+            passport_no: p.passport_no,
+            passport_expiry: p.passport_expiry,
+            is_lead: p.is_lead
+          })),
+          itinerary_email: itineraryEmail
+        }
       });
+
     } catch (error) {
       if (transaction) {
         await transaction.rollback();
@@ -1184,6 +1317,90 @@ class ApiPackageBookingController {
       });
     } catch (error) {
       console.error('Customer package bookings list error:', error);
+      return res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  async listCustomizablePackageBookings(req, res) {
+    try {
+      if (!this.models.PackageBooking || !this.models.Package) {
+        return res.status(500).json({ success: false, message: 'Package booking is not configured.' });
+      }
+
+      const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+      const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 100);
+      const status = clean(req.query.status || req.query.payment_status);
+      const bookingRef = clean(req.query.booking_id || req.query.booking_reference || req.query.reference);
+      const customerRef = clean(req.query.customer_id || req.query.customerId || req.query.customer_email || req.query.email);
+      const Op = this.models.PackageBooking.sequelize.Sequelize.Op;
+      const Customer = this.models.Customer;
+      const User = this.models.User;
+      const where = {};
+
+      if (status) where.payment_status = status;
+      if (bookingRef) {
+        where[isUuid(bookingRef) ? 'id' : 'booking_reference'] = bookingRef;
+      }
+
+      const identityConditions = [];
+      if (customerRef) {
+        if (customerRef.includes('@')) {
+          identityConditions.push({ customer_email: customerRef.toLowerCase() });
+        }
+        if (isUuid(customerRef)) {
+          identityConditions.push({ customer_id: customerRef });
+
+          if (Customer) {
+            const profiles = await Customer.findAll({ where: { user_id: customerRef }, attributes: ['id'] });
+            const profileIds = profiles.map(profile => profile.id);
+            if (profileIds.length) identityConditions.push({ customer_id: { [Op.in]: profileIds } });
+          }
+        }
+      }
+
+      if (identityConditions.length) where[Op.or] = identityConditions;
+
+      const include = [
+        {
+          model: this.models.Package,
+          as: 'package',
+          required: true,
+          where: { is_customizable: true },
+          attributes: [
+            'id', 'name', 'slug', 'price', 'discount_percentage', 'tax_type', 'tax_percent',
+            'duration_days', 'description', 'main_image', 'main_image_alt', 'is_customizable', 'status'
+          ]
+        },
+        Customer ? {
+          model: Customer,
+          as: 'customer',
+          required: false,
+          attributes: ['id', 'user_id', 'phone'],
+          include: User ? [{ model: User, as: 'user', required: false, attributes: ['id', 'name', 'email', 'phone_number'] }] : []
+        } : null
+      ].filter(Boolean);
+
+      const result = await this.models.PackageBooking.findAndCountAll({
+        where,
+        include,
+        limit,
+        offset: (page - 1) * limit,
+        order: [['created_at', 'DESC']],
+        distinct: true
+      });
+
+      return res.json({
+        success: true,
+        data: {
+          total: result.count,
+          page,
+          limit,
+          total_pages: Math.ceil(result.count / limit),
+          rows: result.rows.map(row => this.serializeCustomerBooking(row))
+        }
+      });
+    } catch (error) {
+      console.error('Customizable package bookings list error:', error);
       return res.status(500).json({ success: false, message: error.message });
     }
   }
@@ -1703,20 +1920,32 @@ class ApiPackageBookingController {
         name: row.package.name,
         slug: row.package.slug,
         price: Number(row.package.price || 0),
+        discount_percentage: Number(row.package.discount_percentage || 0),
+        tax_type: row.package.tax_type || null,
+        tax_percent: Number(row.package.tax_percent || 0),
         duration_days: row.package.duration_days,
+        description: row.package.description || null,
         main_image: row.package.main_image || null,
-        main_image_alt: row.package.main_image_alt || null
+        main_image_alt: row.package.main_image_alt || null,
+        is_customizable: Boolean(row.package.is_customizable),
+        status: row.package.status
       } : null,
       duration: raw.duration || null,
       route,
       hotels,
       hotel_count: raw.hotel_count || hotels.length,
       hotel_estimated_amount: Number(raw.hotel_estimated_amount || 0),
+      customize: {
+        is_customized: Boolean(raw.is_customized),
+        message: raw.custom_message || raw.message || null
+      },
       customer: {
         id: row.customer_id,
-        name: row.customer_name,
-        email: row.customer_email,
-        phone: row.customer_phone
+        profile_id: row.customer && row.customer.id ? row.customer.id : row.customer_id,
+        user_id: row.customer && row.customer.user_id ? row.customer.user_id : null,
+        name: row.customer_name || (row.customer && row.customer.user ? row.customer.user.name : null),
+        email: row.customer_email || (row.customer && row.customer.user ? row.customer.user.email : null),
+        phone: row.customer_phone || (row.customer && (row.customer.phone || (row.customer.user && row.customer.user.phone_number))) || null
       },
       amounts: {
         original_package_base_amount: originalPackageBaseAmount,
@@ -1790,6 +2019,35 @@ class ApiPackageBookingController {
       razorpay_payment_id: row.razorpay_payment_id,
       created_at: row.created_at
     };
+  }
+
+  async editBooking(req, res) {
+    try {
+      const { PackageBooking } = this.models;
+      const bookingId = req.params.booking_id;
+      const booking = await PackageBooking.findByPk(bookingId);
+      if (!booking) {
+        return res.status(303).redirect(`/admin/bookings/package-bookings?error=${encodeURIComponent('Booking not found')}`);
+      }
+
+      const { payment_status, accounting_status, customer_name, customer_email, customer_phone } = req.body;
+
+      const updates = {};
+      if (payment_status !== undefined && payment_status !== '') updates.payment_status = payment_status.trim();
+      if (accounting_status !== undefined && accounting_status !== '') updates.accounting_status = accounting_status.trim();
+      if (customer_name !== undefined) updates.customer_name = customer_name.trim() || null;
+      if (customer_email !== undefined) updates.customer_email = customer_email.trim() || null;
+      if (customer_phone !== undefined) updates.customer_phone = customer_phone.trim() || null;
+
+      if (Object.keys(updates).length > 0) {
+        await booking.update(updates);
+      }
+
+      return res.status(303).redirect(`/admin/bookings/package-bookings?success=${encodeURIComponent('Booking updated successfully')}`);
+    } catch (error) {
+      console.error('Error editing package booking:', error);
+      return res.status(303).redirect(`/admin/bookings/package-bookings?error=${encodeURIComponent(error.message || 'Failed to update booking')}`);
+    }
   }
 }
 

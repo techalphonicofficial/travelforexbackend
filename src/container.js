@@ -22,6 +22,9 @@ const PackageCategory = require('./models/PackageCategory');
 const PackageCategoryMapping = require('./models/PackageCategoryMapping');
 const Package = require('./models/Package');
 const PackageBooking = require('./models/PackageBooking');
+const BookingPassenger = require('./models/BookingPassenger');
+const BookingEmailQueue = require('./models/BookingEmailQueue');
+const PassengerFormField = require('./models/PassengerFormField');
 const PackageReturnRequest = require('./models/PackageReturnRequest');
 const Coupon = require('./models/Coupon');
 const CouponRedemption = require('./models/CouponRedemption');
@@ -345,6 +348,12 @@ PackageReturnRequest.belongsTo(User, { foreignKey: 'requested_by_user_id', as: '
 PackageReturnRequest.belongsTo(User, { foreignKey: 'approved_by', as: 'approvedBy' });
 PackageReturnRequest.belongsTo(User, { foreignKey: 'rejected_by', as: 'rejectedBy' });
 
+// BookingPassenger Associations
+PackageBooking.hasMany(BookingPassenger, { foreignKey: 'booking_id', as: 'passengers', onDelete: 'CASCADE' });
+BookingPassenger.belongsTo(PackageBooking, { foreignKey: 'booking_id', as: 'booking' });
+PackageBooking.hasMany(BookingEmailQueue, { foreignKey: 'booking_id', as: 'emailQueue', onDelete: 'CASCADE' });
+BookingEmailQueue.belongsTo(PackageBooking, { foreignKey: 'booking_id', as: 'booking' });
+
 // Accounting Associations
 Voucher.hasOne(JournalEntry, { foreignKey: 'voucher_id', as: 'journalEntry' });
 JournalEntry.belongsTo(Voucher, { foreignKey: 'voucher_id', as: 'voucher' });
@@ -405,6 +414,8 @@ const CustomerService = require('./services/CustomerService');
 const WalletService = require('./services/WalletService');
 const VendorService = require('./services/VendorService');
 const AccountingService = require('./services/AccountingService');
+const BookingEmailService = require('./services/BookingEmailService');
+const BookingEmailScheduler = require('./services/BookingEmailScheduler');
 
 // ===== EXISTING CONTROLLERS =====
 const RoleController = require('./controllers/RoleController');
@@ -496,6 +507,8 @@ const customerService = new CustomerService(customerRepo);
 const accountingService = new AccountingService(accountingRepo);
 const walletService = new WalletService(walletRepo, accountingService);
 const vendorService = new VendorService(packageRepo, walletService);
+const bookingEmailService = new BookingEmailService({ BookingEmailQueue, PackageBooking, Customer, User }, { appSettingRepo });
+const bookingEmailScheduler = new BookingEmailScheduler(bookingEmailService);
 
 // ===== INITIALIZE EXISTING CONTROLLERS =====
 const roleController = new RoleController(roleService);
@@ -519,7 +532,7 @@ const vendorPackageController = new VendorPackageController(vendorService, packa
 });
 const vendorWalletController = new VendorWalletController(walletService);
 const accountingController = new AccountingController(accountingService);
-const apiPackageBookingController = new ApiPackageBookingController({ Package, PackageBooking, PackageReturnRequest, Customer, User, Role, CancellationRule, Coupon, CouponRedemption }, accountingService, sequelize);
+const apiPackageBookingController = new ApiPackageBookingController({ Package, PackageBooking, BookingPassenger, BookingEmailQueue, PackageReturnRequest, Customer, User, Role, CancellationRule, Coupon, CouponRedemption }, accountingService, sequelize, bookingEmailService);
 
 const AdminWalletController = require('./controllers/AdminWalletController');
 const adminWalletController = new AdminWalletController(walletService);
@@ -555,7 +568,7 @@ module.exports = {
     Continent, Country, City,
     Destination, DestinationMapping, DestinationCrowdLevel, DestinationTax,
     Category, DestinationCategory, PackageCategory, PackageCategoryMapping,
-    Package, PackageBooking, PackageReturnRequest, Coupon, CouponRedemption, PackageInclusion, PackageExclusion, PackageDestination,
+    Package, PackageBooking, BookingPassenger, BookingEmailQueue, PassengerFormField, PackageReturnRequest, Coupon, CouponRedemption, PackageInclusion, PackageExclusion, PackageDestination,
     Activity, AppSetting, Theme, Media, VideoReview, Review, TourType, Hotel, HotelBooking,
     Pipeline, PipelineStage, LeadFormField, Lead, LeadFollowUp, CancellationRule,
     Page, PageDetail, Banner, BlogCategory, BlogPost, BlogDetail,
@@ -575,7 +588,7 @@ module.exports = {
   },
   services: {
     userService, authService, roleService, moduleService, permissionService, customerService,
-    walletService, vendorService, accountingService, tripBuilderService
+    walletService, vendorService, accountingService, tripBuilderService, bookingEmailService, bookingEmailScheduler
   },
   controllers: {
     roleController, moduleController, permissionController, userController, crmCustomerController, authController, apiCustomerController, apiBlogController,

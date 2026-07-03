@@ -276,16 +276,11 @@
               </td>
               <td><%= row.created_at ? new Date(row.created_at).toLocaleString('en-IN') : '-' %></td>
               <td class="text-end">
-                <% if (String(row.status || 'new').toLowerCase() !== 'converted') { %>
-                  <form action="/travel/forex-service-requests/<%= row.id %>/convert" method="POST" class="d-inline" onsubmit="return confirm('Convert this forex request to lead and accounting?')">
-                    <button class="btn btn-success fx-action-btn" type="submit">
-                      <i class="bi bi-check2-circle me-1"></i>Convert
-                    </button>
-                  </form>
-                <% } else { %>
+                <% if (String(row.status || 'new').toLowerCase() === 'converted') { %>
                   <span class="fx-muted">Done</span>
                 <% } %>
               </td>
+
             </tr>
           <% }) %>
         </tbody>
