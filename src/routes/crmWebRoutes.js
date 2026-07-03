@@ -4,6 +4,8 @@ const crypto = require('crypto');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const ExcelJS = require('exceljs');
+const csvParser = require('csv-parser');
 const router = express.Router();
 const { isMissingTableError } = require('../utils/databaseErrors');
 const {
@@ -316,6 +318,192 @@ router.get('/leads/create', async (req, res) => {
         });
     } catch (err) { res.status(500).send(err.message); }
 });
+
+// ─────────────────────────────────────────────
+// LEADS EXPORT (Excel)
+// ─────────────────────────────────────────────
+router.get('/leads/export', async (req, res) => {
+    try {
+        const filters = { ...req.query };
+        const leads = await leadRepo.findAll(filters);
+
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'PickTrail CRM';
+        workbook.created = new Date();
+        const sheet = workbook.addWorksheet('Leads', {
+            views: [{ state: 'frozen', ySplit: 1 }]
+        });
+
+        // Header row
+        sheet.columns = [
+            { header: 'ID',          key: 'id',         width: 8  },
+            { header: 'Name',        key: 'name',       width: 25 },
+            { header: 'Email',       key: 'email',      width: 28 },
+            { header: 'Phone',       key: 'phone',      width: 18 },
+            { header: 'Source',      key: 'source',     width: 20 },
+            { header: 'Pipeline',    key: 'pipeline',   width: 20 },
+            { header: 'Stage',       key: 'stage',      width: 20 },
+            { header: 'Assigned To', key: 'assigned',   width: 22 },
+            { header: 'Status',      key: 'status',     width: 12 },
+            { header: 'Notes',       key: 'notes',      width: 40 },
+            { header: 'Created At',  key: 'created_at', width: 20 },
+        ];
+
+        // Style header
+        sheet.getRow(1).eachCell(cell => {
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.border = {
+                bottom: { style: 'thin', color: { argb: 'FFE0E0E0' } }
+            };
+        });
+        sheet.getRow(1).height = 28;
+
+        // Data rows
+        leads.forEach((l, idx) => {
+            const row = sheet.addRow({
+                id:         l.id,
+                name:       l.name,
+                email:      l.email || '',
+                phone:      l.phone || '',
+                source:     l.source || '',
+                pipeline:   l.pipeline ? l.pipeline.name : '',
+                stage:      l.stage    ? l.stage.name    : '',
+                assigned:   l.assignee ? l.assignee.name : '',
+                status:     l.status,
+                notes:      l.notes || '',
+                created_at: l.created_at ? new Date(l.created_at).toLocaleString() : ''
+            });
+            // Alternate row shading
+            if (idx % 2 === 1) {
+                row.eachCell(cell => {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8F9FF' } };
+                });
+            }
+        });
+
+        const pipelineLabel = filters.pipeline_id ? `_pipeline_${filters.pipeline_id}` : '';
+        const filename = `leads${pipelineLabel}_${Date.now()}.xlsx`;
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (err) {
+        console.error('[Export Error]', err);
+        res.status(500).send('Export failed: ' + err.message);
+    }
+});
+
+// ─────────────────────────────────────────────
+// LEADS IMPORT (Excel / CSV)
+// ─────────────────────────────────────────────
+const importStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const dir = 'public/uploads/imports';
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, `import_${Date.now()}${path.extname(file.originalname)}`);
+    }
+});
+const importUpload = multer({
+    storage: importStorage,
+    fileFilter: (req, file, cb) => {
+        const allowed = /xlsx|xls|csv/;
+        const ext = allowed.test(path.extname(file.originalname).toLowerCase());
+        if (ext) return cb(null, true);
+        cb(new Error('Only Excel (.xlsx/.xls) or CSV files are allowed!'));
+    },
+    limits: { fileSize: 10 * 1024 * 1024 } // 10 MB
+});
+
+router.post('/leads/import', (req, res, next) => {
+    importUpload.single('import_file')(req, res, (err) => {
+        if (err) return res.status(400).json({ success: false, message: err.message });
+        next();
+    });
+}, async (req, res) => {
+    if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded.' });
+
+    const filePath = req.file.path;
+    const ext = path.extname(req.file.originalname).toLowerCase();
+    const pipeline_id = req.body.pipeline_id || null;
+    const stage_id    = req.body.stage_id    || null;
+
+    try {
+        let rows = [];
+
+        if (ext === '.csv') {
+            // Parse CSV
+            await new Promise((resolve, reject) => {
+                fs.createReadStream(filePath)
+                    .pipe(csvParser())
+                    .on('data', data => rows.push(data))
+                    .on('end', resolve)
+                    .on('error', reject);
+            });
+        } else {
+            // Parse Excel
+            const workbook = new ExcelJS.Workbook();
+            await workbook.xlsx.readFile(filePath);
+            const sheet = workbook.worksheets[0];
+            const headers = [];
+            sheet.getRow(1).eachCell(cell => headers.push(String(cell.value || '').toLowerCase().trim()));
+            sheet.eachRow((row, rowNumber) => {
+                if (rowNumber === 1) return;
+                const obj = {};
+                row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+                    const key = headers[colNumber - 1];
+                    if (key) obj[key] = cell.value !== null && cell.value !== undefined ? String(cell.value) : '';
+                });
+                rows.push(obj);
+            });
+        }
+
+        // Normalise & insert
+        let created = 0, skipped = 0, errors = [];
+        const transaction = await db.transaction();
+        try {
+            for (const row of rows) {
+                const name = (row['name'] || row['Name'] || '').trim();
+                if (!name) { skipped++; continue; }
+
+                try {
+                    await Lead.create({
+                        name,
+                        email:       (row['email']  || row['Email']  || '').trim() || null,
+                        phone:       (row['phone']  || row['Phone']  || '').trim() || null,
+                        source:      (row['source'] || row['Source'] || 'Import').trim(),
+                        notes:       (row['notes']  || row['Notes']  || '').trim() || null,
+                        pipeline_id: pipeline_id || null,
+                        stage_id:    stage_id    || null,
+                        status:      'active'
+                    }, { transaction });
+                    created++;
+                } catch (rowErr) {
+                    errors.push(`Row (${name}): ${rowErr.message}`);
+                    skipped++;
+                }
+            }
+            await transaction.commit();
+        } catch (txErr) {
+            await transaction.rollback();
+            throw txErr;
+        }
+
+        // Clean up temp file
+        try { fs.unlinkSync(filePath); } catch (_) {}
+
+        res.json({ success: true, created, skipped, errors });
+    } catch (err) {
+        try { fs.unlinkSync(filePath); } catch (_) {}
+        console.error('[Import Error]', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 
 router.get('/leads/:id/edit', async (req, res) => {
     try {

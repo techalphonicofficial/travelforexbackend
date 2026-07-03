@@ -13,6 +13,15 @@
       <button id="viewKanban" class="active" onclick="toggleView('kanban')"><i class="bi bi-kanban-fill"></i></button>
       <button id="viewTable" onclick="toggleView('table')"><i class="bi bi-table"></i></button>
     </div>
+    <div class="dropdown">
+      <button class="btn btn-outline-secondary dropdown-toggle rounded-pill" type="button" data-bs-toggle="dropdown">
+        <i class="bi bi-gear-fill me-1"></i> Actions
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end shadow">
+        <li><a class="dropdown-item" href="#" onclick="exportLeads()"><i class="bi bi-file-earmark-excel me-2 text-success"></i> Export Leads</a></li>
+        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#importModal"><i class="bi bi-upload me-2 text-primary"></i> Import Leads</a></li>
+      </ul>
+    </div>
     <a href="/crm/leads/create" class="btn-add-primary"><i class="bi bi-plus-lg"></i> Add Lead</a>
   </div>
 </div>
@@ -37,6 +46,46 @@
 </div>
 
 <div id="leadsContainer"></div>
+
+<!-- Import Modal -->
+<div class="modal fade" id="importModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Import Leads</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="importForm" onsubmit="handleImport(event)">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Upload File (.xlsx, .csv)</label>
+            <input type="file" class="form-control" id="importFile" accept=".xlsx, .xls, .csv" required>
+            <small class="text-muted">Columns matched by name: Name, Email, Phone, Source, Notes.</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Pipeline (Optional)</label>
+            <select class="form-select" id="importPipelineId" onchange="updateImportStages()">
+              <option value="">-- No Pipeline --</option>
+              <% pipelines.forEach(p => { %>
+                <option value="<%= p.id %>" <%= p.id == selectedPipelineId ? 'selected' : '' %>><%= p.name %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Initial Stage (Optional)</label>
+            <select class="form-select" id="importStageId">
+              <option value="">-- No Stage --</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="importBtn">Import</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
 <style>
   /* Kanban Styles */
@@ -357,6 +406,66 @@
       if (data.success) location.reload();
     }
   }
+
+  // Export & Import
+  function exportLeads() {
+    const pipelineId = new URLSearchParams(window.location.search).get('pipeline_id') || '';
+    window.location.href = `/crm/leads/export?pipeline_id=${pipelineId}`;
+  }
+
+  function updateImportStages() {
+    const pipelineId = document.getElementById('importPipelineId').value;
+    const stageSelect = document.getElementById('importStageId');
+    stageSelect.innerHTML = '<option value="">-- No Stage --</option>';
+    if (pipelineId) {
+      // Find pipeline stages in pipelines array
+      const pipelines = <%- JSON.stringify(pipelines) %>;
+      const pipeline = pipelines.find(p => p.id == pipelineId);
+      if (pipeline && pipeline.stages) {
+        pipeline.stages.forEach(stage => {
+          stageSelect.innerHTML += `<option value="${stage.id}">${stage.name}</option>`;
+        });
+      }
+    }
+  }
+
+  async function handleImport(e) {
+    e.preventDefault();
+    const file = document.getElementById('importFile').files[0];
+    if (!file) return alert('Please select a file to import');
+
+    const btn = document.getElementById('importBtn');
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Importing...';
+    btn.disabled = true;
+
+    const formData = new FormData();
+    formData.append('import_file', file);
+    if (document.getElementById('importPipelineId').value) formData.append('pipeline_id', document.getElementById('importPipelineId').value);
+    if (document.getElementById('importStageId').value) formData.append('stage_id', document.getElementById('importStageId').value);
+
+    try {
+      const res = await fetch('/crm/leads/import', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.success) {
+        let msg = `Import Successful!\nCreated: ${data.created}\nSkipped: ${data.skipped}`;
+        if (data.errors && data.errors.length > 0) msg += `\nErrors: ${data.errors.slice(0,5).join(', ')}${data.errors.length > 5 ? '...' : ''}`;
+        alert(msg);
+        location.reload();
+      } else {
+        alert(data.message || 'Import failed');
+      }
+    } catch (err) {
+      alert('Network error during import');
+    } finally {
+      btn.innerHTML = 'Import';
+      btn.disabled = false;
+    }
+  }
+
+  // Initialize
+  document.addEventListener('DOMContentLoaded', () => {
+    updateImportStages(); // populate stages for selected pipeline on load
+  });
 
   render();
 </script>
