@@ -7,7 +7,7 @@ class RoleService {
   async getAllRoles() {
     return this.roleRepo.findAll();
   }
-
+///sddsdfadsadfsadf
   async getRoleById(id) {
     const role = await this.roleRepo.findById(id);
     if (role) {
