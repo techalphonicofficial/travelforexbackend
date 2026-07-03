@@ -5,6 +5,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const router = express.Router();
+const { isMissingTableError } = require('../utils/databaseErrors');
 const {
     THEME_COLOUR_DEFINITIONS,
     loadThemeColours,
@@ -71,6 +72,34 @@ function parseCancellationRules(value) {
             is_active: row.is_active === true || row.is_active === 'true' || row.is_active === 'on' || row.is_active === 1 || row.is_active === '1'
         };
     });
+}
+
+function parseJsonObject(value) {
+    if (!value) return {};
+    if (typeof value === 'object' && !Array.isArray(value)) return value;
+    try {
+        const parsed = JSON.parse(value);
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch (_) {
+        return {};
+    }
+}
+
+async function findCancellationRules() {
+    try {
+        return await CancellationRule.findAll({
+            order: [
+                ['min_days_before_departure', 'ASC'],
+                ['max_days_before_departure', 'ASC']
+            ]
+        });
+    } catch (err) {
+        if (isMissingTableError(err, 'cancellation_rules')) {
+            console.warn('[CRM Settings] cancellation_rules table is not available; showing an empty rule list.');
+            return [];
+        }
+        throw err;
+    }
 }
 
 function handleUpload(multerMiddleware) {
@@ -447,15 +476,15 @@ router.delete('/follow-ups/:id', async (req, res) => {
 // ─────────────────────────────────────────────
 router.get('/settings', async (req, res) => {
     try {
-        const pipelines = await pipelineRepo.findActive();
+        const pipelines = await pipelineRepo.findActiveForSelection();
         const defaultPipelineId = await appSettingRepo.get('crm_default_pipeline_id');
         const defaultAssigneeId = await appSettingRepo.get('crm_default_assignee_id');
         const assignmentType = await appSettingRepo.get('crm_assignment_type') || 'manual';
         
         // Add categories and mapping
-        const categories = await categoryRepo.findAll();
+        const categories = await categoryRepo.findForSelection();
         const rawMapping = await appSettingRepo.get('crm_category_pipeline_mapping');
-        const categoryPipelineMapping = rawMapping ? JSON.parse(rawMapping) : {};
+        const categoryPipelineMapping = parseJsonObject(rawMapping);
 
         // API Integration settings
         const crmApiKey = await appSettingRepo.get('crm_api_key') || '';
@@ -499,14 +528,9 @@ router.get('/settings', async (req, res) => {
         if (rawTaxTypes) {
             try { tax_types = JSON.parse(rawTaxTypes); } catch (e) { }
         }
-        const cancellationRules = await CancellationRule.findAll({
-            order: [
-                ['min_days_before_departure', 'ASC'],
-                ['max_days_before_departure', 'ASC']
-            ]
-        });
+        const cancellationRules = await findCancellationRules();
 
-        const users = await userRepo.findEmployees();
+        const users = await userRepo.findEmployeesForSelection();
         res.render('crm/settings/index', { 
             title: 'CRM Settings', 
             pipelines, 

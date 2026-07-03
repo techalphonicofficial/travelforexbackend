@@ -1,4 +1,5 @@
 const BaseRepository = require('./BaseRepository');
+const { isMissingTableError } = require('../utils/databaseErrors');
 
 function slugify(value = '') {
   return String(value || 'theme')
@@ -7,12 +8,6 @@ function slugify(value = '') {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 120) || 'theme';
-}
-
-function isMissingThemesTableError(err) {
-  const code = err?.parent?.code || err?.original?.code || err?.code;
-  const message = String(err?.message || '');
-  return code === '42P01' || message.includes('relation "themes" does not exist');
 }
 
 class ThemeRepository extends BaseRepository {
@@ -28,7 +23,7 @@ class ThemeRepository extends BaseRepository {
         ...options
       });
     } catch (err) {
-      if (isMissingThemesTableError(err)) return null;
+      if (isMissingTableError(err, 'themes')) return null;
       throw err;
     }
   }
@@ -39,7 +34,7 @@ class ThemeRepository extends BaseRepository {
         order: [['is_active', 'DESC'], ['updated_at', 'DESC'], ['id', 'DESC']]
       });
     } catch (err) {
-      if (isMissingThemesTableError(err)) return [];
+      if (isMissingTableError(err, 'themes')) return [];
       throw err;
     }
   }
@@ -76,7 +71,7 @@ class ThemeRepository extends BaseRepository {
       return theme;
     } catch (err) {
       await transaction.rollback();
-      if (isMissingThemesTableError(err)) return null;
+      if (isMissingTableError(err, 'themes')) return null;
       throw err;
     }
   }

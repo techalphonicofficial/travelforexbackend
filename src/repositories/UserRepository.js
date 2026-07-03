@@ -90,6 +90,14 @@ class UserRepository extends BaseRepository {
     });
   }
 
+  async findEmployeesForSelection() {
+    return this.model.findAll({
+      attributes: ['id', 'name'],
+      where: { type: 'employee', status: true },
+      order: [['name', 'ASC']]
+    });
+  }
+
   async getNextRoundRobinAssignee(Lead) {
     const employees = await this.findEmployees();
     if (employees.length === 0) return null;

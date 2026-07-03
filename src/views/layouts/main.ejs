@@ -108,6 +108,9 @@
         /* ── Icon Strip ── */
         .icon-strip {
             width: var(--icon-strip-w);
+            height: 100vh;
+            position: sticky;
+            top: 0;
             background: var(--icon-strip-bg);
             display: flex;
             flex-direction: column;
@@ -174,6 +177,9 @@
         /* ── Nav Panel ── */
         .nav-panel {
             width: var(--nav-panel-w);
+            height: 100vh;
+            position: sticky;
+            top: 0;
             background: var(--nav-panel-bg);
             display: flex;
             flex-direction: column;
@@ -296,6 +302,8 @@
             font-size: 0.83rem;
             color: var(--nav-muted);
             margin: 0 0.45rem 0 0;
+            justify-content: flex-start;
+            gap: 0.6rem;
         }
 
         .nav-sub .nav-link-item:hover,
@@ -1368,7 +1376,15 @@
         </main>
     </div>
 
-    <!-- Floating restore button (visible only when icon strip is hidden) -->
+    <!-- Floating restore buttons (visible when a sidebar section is hidden) -->
+    <button id="navPanelRestoreBtn" title="Show navigation" style="
+        display:none; position:fixed; left:var(--icon-strip-w); top:16px;
+        width:28px; height:36px; background:var(--nav-panel-bg); color:var(--nav-text);
+        border:1px solid rgba(79,70,229,0.12); border-left:0; border-radius:0 8px 8px 0;
+        cursor:pointer; font-size:0.75rem; z-index:2000;
+        box-shadow:2px 0 8px rgba(79,70,229,0.12);
+    "><i class="bi bi-chevron-right"></i></button>
+
     <button id="stripRestoreBtn" title="Show sidebar" style="
         display:none; position:fixed; left:0; top:50%; transform:translateY(-50%);
         width:20px; height:48px; background:var(--primary); color:#fff;
@@ -1383,26 +1399,38 @@
 
         // ── Nav panel toggle (chevron < in header)
         const navToggleBtn = document.querySelector('.nav-panel-toggle');
+        const navPanelRestoreBtn = document.getElementById('navPanelRestoreBtn');
         const navPanel = document.querySelector('.nav-panel');
-        let navHidden = false;
-        navToggleBtn.addEventListener('click', () => {
-            navHidden = !navHidden;
+        let navHidden = localStorage.getItem('navPanelHidden') === 'true';
+
+        function setNavState(hide) {
+            if (!navPanel || !navToggleBtn || !navPanelRestoreBtn) return;
+            navHidden = hide;
             navPanel.style.transition = T;
             navPanel.style.width = navHidden ? '0' : 'var(--nav-panel-w)';
             navPanel.style.overflow = navHidden ? 'hidden' : '';
             navPanel.style.opacity = navHidden ? '0' : '1';
+            navPanelRestoreBtn.style.display = navHidden ? 'flex' : 'none';
+            navPanelRestoreBtn.style.alignItems = 'center';
+            navPanelRestoreBtn.style.justifyContent = 'center';
             navToggleBtn.innerHTML = navHidden
                 ? '<i class="bi bi-chevron-right"></i>'
                 : '<i class="bi bi-chevron-left"></i>';
-        });
+            localStorage.setItem('navPanelHidden', String(navHidden));
+        }
+
+        setNavState(navHidden);
+        navToggleBtn?.addEventListener('click', () => setNavState(!navHidden));
+        navPanelRestoreBtn?.addEventListener('click', () => setNavState(false));
 
         // ── Icon strip toggle (≡ button at top of strip)
         const stripToggleBtn = document.getElementById('stripToggleBtn');
         const stripRestoreBtn = document.getElementById('stripRestoreBtn');
         const iconStrip = document.querySelector('.icon-strip');
-        let stripHidden = false;
+        let stripHidden = localStorage.getItem('iconStripHidden') === 'true';
 
         function setStripState(hide) {
+            if (!iconStrip || !stripRestoreBtn) return;
             stripHidden = hide;
             iconStrip.style.transition = T;
             iconStrip.style.width = hide ? '0' : 'var(--icon-strip-w)';
@@ -1411,10 +1439,15 @@
             stripRestoreBtn.style.display = hide ? 'flex' : 'none';
             stripRestoreBtn.style.alignItems = 'center';
             stripRestoreBtn.style.justifyContent = 'center';
+            if (navPanelRestoreBtn) {
+                navPanelRestoreBtn.style.left = hide ? '0' : 'var(--icon-strip-w)';
+            }
+            localStorage.setItem('iconStripHidden', String(stripHidden));
         }
 
-        stripToggleBtn.addEventListener('click', () => setStripState(true));
-        stripRestoreBtn.addEventListener('click', () => setStripState(false));
+        setStripState(stripHidden);
+        stripToggleBtn?.addEventListener('click', () => setStripState(true));
+        stripRestoreBtn?.addEventListener('click', () => setStripState(false));
     </script>
 </body>
 

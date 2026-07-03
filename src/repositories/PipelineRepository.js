@@ -29,6 +29,14 @@ class PipelineRepository {
         });
     }
 
+    async findActiveForSelection() {
+        return this.Pipeline.findAll({
+            attributes: ['id', 'name'],
+            where: { is_active: true },
+            order: [['name', 'ASC']]
+        });
+    }
+
     async create(data, stages = []) {
         const pipeline = await this.Pipeline.create(data);
         if (stages.length) {

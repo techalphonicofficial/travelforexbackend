@@ -15,19 +15,27 @@ class CategoryRepository extends BaseRepository {
             ]
         });
     }
- async findhome() {
-    return this.model.findAll({
-        where: {
-            show_in_home: {
-                [Op.eq]: true
-            }
-        },
-        order: [
-            ['sort_order', 'ASC'],
-            ['name', 'ASC']
-        ]
-    });
-}
+
+    async findForSelection() {
+        return this.model.findAll({
+            attributes: ['id', 'name'],
+            order: [['name', 'ASC']]
+        });
+    }
+
+    async findhome() {
+        return this.model.findAll({
+            where: {
+                show_in_home: {
+                    [Op.eq]: true
+                }
+            },
+            order: [
+                ['sort_order', 'ASC'],
+                ['name', 'ASC']
+            ]
+        });
+    }
 
     async findTourTypes() {
         return this.model.findAll({
