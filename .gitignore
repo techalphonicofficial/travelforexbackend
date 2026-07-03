@@ -8,4 +8,3 @@ build/
 *.zip
 public/uploads/
 laravel_extracted/
-.src/database.js
