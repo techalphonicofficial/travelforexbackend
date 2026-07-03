@@ -14,7 +14,7 @@ const sequelize = new Sequelize(
         dialectOptions: {
             connectTimeout: 30000
         },
-
+//sfasdfasdfsadf
         pool: {
             max: 10,
             min: 2,
