@@ -876,7 +876,22 @@
   }
 
   function removeSection(btn) {
-    btn.closest('.section-item').remove();
+    const section = btn.closest('.section-item');
+    const headingInput = section.querySelector('input[name*="[title]"]');
+    const blockName = headingInput && headingInput.value.trim()
+      ? ` "${headingInput.value.trim()}"`
+      : '';
+
+    if (!window.confirm(`Are you sure you want to delete this content block${blockName}?`)) {
+      return;
+    }
+
+    section.querySelectorAll('.rich-editor').forEach(textarea => {
+      if (textarea.ckeditorInstance) {
+        textarea.ckeditorInstance.destroy().catch(err => console.error(err));
+      }
+    });
+    section.remove();
     if (!document.querySelector('.section-item')) {
       document.getElementById('sectionsContainer').innerHTML = '<div id="noSectionsMsg" class="text-center py-5 rounded-4 bg-light border-dashed"><i class="bi bi-box-seam fs-1 text-muted opacity-25"></i><p class="mt-2 text-muted">No blocks added.</p></div>';
     }
