@@ -774,17 +774,21 @@
       return (value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     }
 
-    function updateTotalDays() {
-      let total = 0;
+    function updateDayRanges() {
+      let currentDay = 1;
       destinations.forEach(dest => {
-        total += Math.max(parseInt(dest.nights, 10) || 1, 1);
+        const totalDays = Math.max(parseInt(dest.nights, 10) || 1, 1);
+        dest.startDay = currentDay;
+        dest.endDay = currentDay + totalDays - 1;
+        currentDay = dest.endDay + 1;
       });
-      document.getElementById('fDays').value = total;
+      document.getElementById('fDays').value = currentDay - 1;
     }
 
     function renderDestinations() {
       const container = document.getElementById('stayList');
       if (!container) return;
+      updateDayRanges();
 
       if (destinations.length === 0) {
         container.innerHTML = '<div class="alert alert-info">No destinations added. Click "Add Destination" to start building your itinerary.</div>';
@@ -812,7 +816,7 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-bold">Day Range</label>
-                            <div class="days-badge" id="days_badge_${idx}"><i class="bi bi-sun"></i> ${totalDays} Days</div>
+                            <div class="days-badge" id="days_badge_${idx}"><i class="bi bi-sun"></i> Day ${dest.startDay} - ${dest.endDay}</div>
                         </div>
                     </div>
                     <div class="mt-3">
@@ -829,7 +833,6 @@
         attachDestinationEvents(idx);
         renderDayTabs(idx);
       });
-      updateTotalDays();
     }
 
     function attachDestinationEvents(idx) {
@@ -882,10 +885,11 @@
 
       for (let i = 1; i <= totalDays; i++) {
         const actCount = (dest.activities[i] || []).length;
+        const serialDay = dest.startDay + i - 1;
         tabsHtml += `
                 <div class="day-tab-btn ${i === 1 ? 'active' : ''}" onclick="showDay(${destIdx}, ${i})">
                     <div class="d-lbl">DAY</div>
-                    <div class="d-num">${i}</div>
+                    <div class="d-num">${serialDay}</div>
                     ${actCount > 0 ? `<span class="act-count-badge" style="display:block">${actCount}</span>` : ''}
                 </div>
             `;
