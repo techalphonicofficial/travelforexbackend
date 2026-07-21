@@ -1061,6 +1061,41 @@ router.get('/packages', async (req, res) => {
     }
 });
 
+router.get('/packages/hotel-options', async (req, res) => {
+    try {
+        const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+        const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 50);
+        const selectedId = parseInt(req.query.selected_id, 10);
+        const attributes = ['id', 'name', 'image_url', 'star_rating', 'guest_rating', 'price_per_night'];
+        const { count, rows } = await Hotel.findAndCountAll({
+            attributes,
+            order: [['name', 'ASC'], ['id', 'ASC']],
+            limit,
+            offset: (page - 1) * limit
+        });
+        const hotels = rows.map(hotel => hotel.get({ plain: true }));
+
+        if (page === 1 && Number.isInteger(selectedId) && !hotels.some(hotel => hotel.id === selectedId)) {
+            const selectedHotel = await Hotel.findByPk(selectedId, { attributes });
+            if (selectedHotel) hotels.unshift(selectedHotel.get({ plain: true }));
+        }
+
+        res.json({
+            success: true,
+            hotels,
+            pagination: {
+                page,
+                limit,
+                total: count,
+                hasMore: page * limit < count
+            }
+        });
+    } catch (err) {
+        console.error('Hotel options error:', err);
+        res.status(500).json({ success: false, message: 'Unable to load hotels.' });
+    }
+});
+
 router.get('/packages/create', async (req, res) => {
     try {
 
@@ -1068,7 +1103,6 @@ router.get('/packages/create', async (req, res) => {
         const categories = await categoryRepo.findAll();
         const packageCategories = await PackageCategory.findAll({ order: [['title', 'ASC']] });
         const activities = await Activity.findAll({ order: [['name', 'ASC']] });
-        const hotels = await Hotel.findAll({ order: [['name', 'ASC']] });
         const taxTypes = await getTaxTypes();
         res.render('travel/packages/create', {
             title: 'Create Package',
@@ -1077,7 +1111,6 @@ router.get('/packages/create', async (req, res) => {
             categories,
             packageCategories,
             activities,
-            hotels,
             taxTypes
         });
     } catch (err) {
@@ -1121,7 +1154,6 @@ router.get('/packages/:id/edit', async (req, res) => {
 
         const destinations = await Destination.findAll({ order: [['name', 'ASC']] });
         const activities = await Activity.findAll({ order: [['name', 'ASC']] });
-        const hotels = await Hotel.findAll({ order: [['name', 'ASC']] });
         const packageCategories = await PackageCategory.findAll({ order: [['title', 'ASC']] });
         const taxTypes = await getTaxTypes();
 
@@ -1130,7 +1162,6 @@ router.get('/packages/:id/edit', async (req, res) => {
             pkg: plainPkg,
             destinations: destinations,
             activities: activities,
-            hotels: hotels,
             packageCategories,
             taxTypes
         });

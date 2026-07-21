@@ -428,7 +428,7 @@
                 <div class="mb-3">
                     <label class="form-label">Hotel</label>
                     <select class="form-select" id="modalHotelSelect"></select>
-                    <div class="form-text" id="modalHotelHelp">Hotels are filtered by the selected destination.</div>
+                    <div class="form-text" id="modalHotelHelp">Hotels from all destinations load in small chunks.</div>
                 </div>
                 <div class="mb-3">
                     <div class="d-flex gap-2 align-items-center p-2 rounded-3 border bg-light" id="modalHotelPreview">
@@ -621,7 +621,10 @@
         const destinationsData = <%- JSON.stringify(destinations).replace(/</g, '\\u003c') %>;
         const categoriesData = <%- JSON.stringify(categories).replace(/</g, '\\u003c') %>;
         const activitiesData = <%- JSON.stringify(activities).replace(/</g, '\\u003c') %>;
-        const hotelsData = <%- JSON.stringify(typeof hotels !== 'undefined' ? hotels : []).replace(/</g, '\\u003c') %>;
+        let hotelsData = [];
+        let hotelCatalogPage = 0;
+        let hotelCatalogHasMore = true;
+        let hotelCatalogLoading = false;
 
         let destinations = [];
         let inclusions = [];
@@ -853,14 +856,48 @@
         `).join('');
         }
 
-        function getHotelsForDestination(destIdx) {
-            const destId = destinations[destIdx]?.destinationId;
-            if (!destId) return [];
-            return hotelsData.filter(hotel => String(hotel.destination_id) === String(destId));
-        }
-
         function getHotelCatalogItem(hotelId) {
             return hotelsData.find(hotel => String(hotel.id) === String(hotelId));
+        }
+
+        async function loadHotelChunk({ reset = false, selectedHotelId = '' } = {}) {
+            if (hotelCatalogLoading || (!reset && !hotelCatalogHasMore)) return;
+            if (reset) {
+                hotelsData = [];
+                hotelCatalogPage = 0;
+                hotelCatalogHasMore = true;
+            }
+
+            hotelCatalogLoading = true;
+            const nextPage = hotelCatalogPage + 1;
+            try {
+                const params = new URLSearchParams({ page: nextPage, limit: 20 });
+                if (nextPage === 1 && selectedHotelId) params.set('selected_id', selectedHotelId);
+                const response = await fetch(`/travel/packages/hotel-options?${params.toString()}`);
+                const result = await response.json();
+                if (!response.ok || !result.success) throw new Error(result.message || 'Unable to load hotels');
+
+                const knownIds = new Set(hotelsData.map(hotel => String(hotel.id)));
+                result.hotels.forEach(hotel => {
+                    if (!knownIds.has(String(hotel.id))) hotelsData.push(hotel);
+                });
+                hotelCatalogPage = nextPage;
+                hotelCatalogHasMore = Boolean(result.pagination?.hasMore);
+            } finally {
+                hotelCatalogLoading = false;
+            }
+        }
+
+        function renderHotelSelectOptions(selectedHotelId = '') {
+            const select = document.getElementById('modalHotelSelect');
+            if (!select) return;
+            select.disabled = false;
+            select.dataset.selectedHotelId = selectedHotelId;
+            select.innerHTML = `
+                <option value="">Select Hotel</option>
+                ${hotelsData.map(hotel => `<option value="${hotel.id}" ${String(selectedHotelId) === String(hotel.id) ? 'selected' : ''}>${escapeHtml(hotel.name)}</option>`).join('')}
+                ${hotelCatalogHasMore ? '<option value="__load_more__">Load more hotels...</option>' : ''}
+            `;
         }
 
         function formatMoney(value) {
@@ -906,33 +943,23 @@
         `).join('');
         }
 
-        function populateHotelSelect(destIdx, selectedHotelId = '') {
+        async function populateHotelSelect(selectedHotelId = '') {
             const select = document.getElementById('modalHotelSelect');
             const help = document.getElementById('modalHotelHelp');
-            const hotels = getHotelsForDestination(destIdx);
-
             if (!select) return;
-
-            if (!destinations[destIdx]?.destinationId) {
-                select.innerHTML = '<option value="">Select destination first</option>';
-                select.disabled = true;
-                if (help) help.textContent = 'Select a destination before adding hotels.';
-                return;
+            select.innerHTML = '<option value="">Loading hotels...</option>';
+            select.disabled = true;
+            if (help) help.textContent = 'Loading all hotels in small chunks.';
+            try {
+                await loadHotelChunk({ reset: true, selectedHotelId });
+                renderHotelSelectOptions(selectedHotelId);
+                if (help) help.textContent = hotelCatalogHasMore
+                    ? 'All destinations are included. Choose “Load more hotels...” for the next chunk.'
+                    : 'Showing hotels from all destinations.';
+            } catch (error) {
+                select.innerHTML = '<option value="">Unable to load hotels</option>';
+                if (help) help.textContent = error.message;
             }
-
-            if (!hotels.length) {
-                select.innerHTML = '<option value="">No hotels available for this destination</option>';
-                select.disabled = true;
-                if (help) help.innerHTML = 'No hotel found for this destination. Add hotels from <a href="/travel/hotels">Travel Hotels</a>.';
-                return;
-            }
-
-            select.disabled = false;
-            if (help) help.textContent = 'Hotels are filtered by the selected destination.';
-            select.innerHTML = `
-                <option value="">Select Hotel</option>
-                ${hotels.map(hotel => `<option value="${hotel.id}" ${String(selectedHotelId) === String(hotel.id) ? 'selected' : ''}>${escapeHtml(hotel.name)}</option>`).join('')}
-            `;
         }
 
         function updateHotelPreview() {
@@ -965,7 +992,7 @@
             `;
         }
 
-        function openHotelModal(destIdx, dayNum, hotelId = null) {
+        async function openHotelModal(destIdx, dayNum, hotelId = null) {
             const dest = destinations[destIdx];
             if (!dest || !dest.destinationId) {
                 showNotification('Please select destination before adding hotel', true);
@@ -979,7 +1006,8 @@
 
             const existingHotel = hotelId ? dest.hotels.find(hotel => String(hotel.id) === String(hotelId)) : null;
 
-            populateHotelSelect(destIdx, existingHotel?.hotelId || '');
+            document.getElementById('hotelModal').classList.add('active');
+            await populateHotelSelect(existingHotel?.hotelId || '');
             document.getElementById('modalHotelNights').value = existingHotel?.nights || dest.nights || 1;
             document.getElementById('modalHotelRooms').value = existingHotel?.rooms || 1;
             document.getElementById('modalHotelNotes').value = existingHotel?.notes || '';
@@ -990,7 +1018,6 @@
             document.getElementById('confirmHotelBtn').innerText = existingHotel ? 'Save Changes' : 'Add Hotel';
 
             updateHotelPreview();
-            document.getElementById('hotelModal').classList.add('active');
         }
 
         function addHotelFromModal() {
@@ -1498,7 +1525,23 @@
             document.getElementById('hotelModal').classList.remove('active');
         });
         document.getElementById('confirmHotelBtn')?.addEventListener('click', addHotelFromModal);
-        document.getElementById('modalHotelSelect')?.addEventListener('change', updateHotelPreview);
+        document.getElementById('modalHotelSelect')?.addEventListener('change', async (event) => {
+            const select = event.currentTarget;
+            if (select.value === '__load_more__') {
+                const selectedHotelId = select.dataset.selectedHotelId || '';
+                select.disabled = true;
+                try {
+                    await loadHotelChunk();
+                    renderHotelSelectOptions(selectedHotelId);
+                } catch (error) {
+                    showNotification(error.message, true);
+                    renderHotelSelectOptions(selectedHotelId);
+                }
+                return;
+            }
+            select.dataset.selectedHotelId = select.value;
+            updateHotelPreview();
+        });
 
         document.getElementById('newInclusion')?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') addInclusion();

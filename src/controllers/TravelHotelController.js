@@ -126,6 +126,42 @@ class TravelHotelController {
         };
     }
 
+    async getHotelCityOptions(selectedDestinationId = null) {
+        const destinations = await this.Destination.findAll({ order: [['name', 'ASC']] });
+        const { DestinationMapping, City } = this.getLocationModels();
+
+        if (!DestinationMapping || !City) {
+            return destinations.map(destination => ({
+                id: destination.id,
+                name: destination.name
+            }));
+        }
+
+        const mappings = await DestinationMapping.findAll({
+            include: [{ model: City, as: 'city', required: true }],
+            order: [['id', 'ASC']]
+        });
+        const destinationIds = new Set(destinations.map(destination => destination.id));
+        const optionsByCity = new Map();
+
+        mappings.forEach(mapping => {
+            const plain = mapping.get({ plain: true });
+            if (!destinationIds.has(plain.destination_id) || !plain.city) return;
+
+            const existing = optionsByCity.get(plain.city_id);
+            const shouldUseCurrentDestination = Number(plain.destination_id) === Number(selectedDestinationId);
+            if (!existing || shouldUseCurrentDestination) {
+                optionsByCity.set(plain.city_id, {
+                    id: plain.destination_id,
+                    name: plain.city.name
+                });
+            }
+        });
+
+        return [...optionsByCity.values()]
+            .sort((a, b) => a.name.localeCompare(b.name));
+    }
+
     destinationMatchesLocation(destination, location, filters) {
         const country = this.normalizeFilter(location.country || destination.country).toLowerCase();
         const city = this.normalizeFilter(location.city || destination.name).toLowerCase();
@@ -375,8 +411,8 @@ class TravelHotelController {
 
     async create(req, res) {
         try {
-            const destinations = await this.Destination.findAll({ order: [['name', 'ASC']] });
-            res.render('travel/hotels/form', { title: 'Add Hotel', hotel: null, gallery: [], destinations, user: req.session.user });
+            const cityOptions = await this.getHotelCityOptions();
+            res.render('travel/hotels/form', { title: 'Add Hotel', hotel: null, gallery: [], cityOptions, user: req.session.user });
         } catch (error) {
             console.error(error);
             res.status(500).send('Internal Server Error');
@@ -400,14 +436,14 @@ class TravelHotelController {
     async edit(req, res) {
         try {
             const hotel = await this.Hotel.findByPk(req.params.id);
-            const destinations = await this.Destination.findAll({ order: [['name', 'ASC']] });
             if (!hotel) return res.status(404).send('Not Found');
+            const cityOptions = await this.getHotelCityOptions(hotel.destination_id);
             const gallery = await this.fetchHotelGallery(hotel.id);
             res.render('travel/hotels/form', {
                 title: 'Edit Hotel',
                 hotel: hotel.get({ plain: true }),
                 gallery: gallery.map(item => item.get({ plain: true })),
-                destinations,
+                cityOptions,
                 user: req.session.user
             });
         } catch (error) {

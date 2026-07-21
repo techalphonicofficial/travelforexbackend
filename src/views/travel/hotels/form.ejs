@@ -42,11 +42,11 @@
                             <input type="text" name="name" class="form-control" value="<%= hotel ? hotel.name : '' %>" required>
                         </div>
                         <div class="col-md-6 form-group">
-                            <label>Destination</label>
+                            <label>City</label>
                             <select name="destination_id" class="form-control select2" required>
-                                <option value="">Select Destination...</option>
-                                <% destinations.forEach(d => { %>
-                                    <option value="<%= d.id %>" <%= hotel && hotel.destination_id == d.id ? 'selected' : '' %>><%= d.name %></option>
+                                <option value="">Select City...</option>
+                                <% cityOptions.forEach(city => { %>
+                                    <option value="<%= city.id %>" <%= hotel && hotel.destination_id == city.id ? 'selected' : '' %>><%= city.name %></option>
                                 <% }) %>
                             </select>
                         </div>
