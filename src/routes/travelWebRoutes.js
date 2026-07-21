@@ -136,6 +136,7 @@ function normalizePackageHotels(hotels) {
                 starRating: parseInt(hotel.starRating || hotel.star_rating, 10) || 0,
                 guestRating: parseFloat(hotel.guestRating || hotel.guest_rating) || 0,
                 pricePerNight: parseFloat(hotel.pricePerNight || hotel.price_per_night) || 0,
+                dayNumber: Math.max(parseInt(hotel.dayNumber || hotel.day_number, 10) || 1, 1),
                 nights: parseInt(hotel.nights, 10) || 1,
                 rooms: parseInt(hotel.rooms, 10) || 1,
                 notes: String(hotel.notes || '').trim().slice(0, 500)
@@ -1286,8 +1287,7 @@ router.get('/packages/:id', async (req, res) => {
         const plainPkg = pkg.get({ plain: true });
         let packageDay = 1;
         plainPkg.destinations = (plainPkg.destinations || []).map(pd => {
-            const nights = parseInt(pd.nights) || 0;
-            const totalDays = Math.max(nights + 1, 1);
+            const totalDays = Math.max(parseInt(pd.nights, 10) || 1, 1);
             const activitiesByDay = pd.activities || {};
             const hotels = getPackageHotelsFromActivities(activitiesByDay);
             const days = [];
@@ -1296,6 +1296,7 @@ router.get('/packages/:id', async (req, res) => {
                 const dayActivities = activitiesByDay[dayOffset] || activitiesByDay[String(dayOffset)] || [];
                 days.push({
                     day_number: packageDay++,
+                    hotels: hotels.filter(hotel => Number(hotel.dayNumber || 1) === dayOffset),
                     activities: Array.isArray(dayActivities) ? dayActivities : []
                 });
             }
@@ -1389,7 +1390,7 @@ router.post('/packages/activity-image', handleUpload(upload.single('activity_ima
 });
 
 router.post('/packages/save', async (req, res) => {
-    const { id, name, duration, price, description, show_in_home_page, main_image, main_image_alt, destinations, inclusions, exclusions, package_categories } = req.body;
+    const { id, name, duration, departure_city, price, description, show_in_home_page, main_image, main_image_alt, destinations, inclusions, exclusions, package_categories } = req.body;
     const is_customizable = req.body.is_customizable === true || req.body.is_customizable === 'true' || req.body.is_customizable === 'on' || req.body.is_customizable === 1 || req.body.is_customizable === '1';
     const slug = (req.body.slug || name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
@@ -1413,6 +1414,7 @@ router.post('/packages/save', async (req, res) => {
                     name,
                     slug,
                     duration_days: duration,
+                    departure_city: String(departure_city || '').trim().slice(0, 150) || null,
                     price: price || 0,
                     discount_percentage: discountPercentage,
                     tax_type: selectedTaxType || null,
@@ -1435,6 +1437,7 @@ router.post('/packages/save', async (req, res) => {
                     name,
                     slug,
                     duration_days: duration,
+                    departure_city: String(departure_city || '').trim().slice(0, 150) || null,
                     price: price || 0,
                     discount_percentage: discountPercentage,
                     tax_type: selectedTaxType || null,
@@ -1692,6 +1695,13 @@ router.get('/hotels/:id/edit', async (req, res) => {
     return travelHotelController.edit(req, res);
 });
 router.post('/hotels/:id', handleUpload(upload.fields([{ name: 'gallery_files', maxCount: 20 }])), (req, res) => travelHotelController.update(req, res));
+router.delete('/hotels/bulk', async (req, res) => {
+    const mode = await appSettingRepo.get('hotel_source_mode') || 'manual';
+    if (mode === 'third_party') {
+        return res.status(403).json({ success: false, message: 'Bulk deletion is disabled while 3rd Party API mode is active.' });
+    }
+    return travelHotelController.bulkDestroy(req, res);
+});
 router.delete('/hotels/:id', (req, res) => travelHotelController.destroy(req, res));
 
 // ─────────────────────────────────────────────

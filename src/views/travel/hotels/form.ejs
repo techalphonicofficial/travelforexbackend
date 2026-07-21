@@ -35,7 +35,7 @@
     <div class="container-fluid">
         <div class="card shadow-sm border-0">
             <div class="card-body">
-                <form action="/travel/hotels/<%= hotel ? hotel.id : 'save' %>" method="POST" enctype="multipart/form-data">
+                <form id="hotelForm" action="/travel/hotels/<%= hotel ? hotel.id : 'save' %>" method="POST" enctype="multipart/form-data">
                     <div class="row">
                         <div class="col-md-6 form-group">
                             <label>Hotel Name</label>
@@ -120,6 +120,15 @@
                         <div class="text-muted small mb-2">Upload multiple images or paste multiple image/video URLs. The primary item is used as the hotel cover image.</div>
 
                         <% if (hotelGallery.length) { %>
+                            <div class="d-flex flex-wrap align-items-center justify-content-between mb-2 p-2 border rounded" style="background:#fff7f7; gap:.75rem;">
+                                <label class="mb-0 font-weight-bold" style="cursor:pointer;">
+                                    <input type="checkbox" id="selectAllMedia">
+                                    Select all media
+                                </label>
+                                <button type="button" id="markSelectedMediaBtn" class="btn btn-sm btn-danger" disabled>
+                                    <i class="fas fa-trash mr-1"></i> Delete selected (<span id="selectedMediaCount">0</span>)
+                                </button>
+                            </div>
                             <div class="row mb-3">
                                 <% hotelGallery.forEach(item => { %>
                                     <div class="col-md-3 mb-3">
@@ -137,7 +146,7 @@
                                                     Primary
                                                 </label>
                                                 <label class="mb-0 small text-danger">
-                                                    <input type="checkbox" name="remove_media_ids" value="<%= item.id %>">
+                                                    <input type="checkbox" class="remove-media-checkbox" name="remove_media_ids" value="<%= item.id %>">
                                                     Remove
                                                 </label>
                                             </div>
@@ -179,5 +188,35 @@
         $('#source_type').on('change', toggleProviderField);
         toggleProviderField();
         $('.select2').select2({ theme: 'bootstrap4' });
+
+        const selectAllMedia = document.getElementById('selectAllMedia');
+        const mediaCheckboxes = Array.from(document.querySelectorAll('.remove-media-checkbox'));
+        const selectedMediaCount = document.getElementById('selectedMediaCount');
+        const markSelectedMediaBtn = document.getElementById('markSelectedMediaBtn');
+
+        function updateMediaSelection() {
+            if (!selectAllMedia) return;
+            const checkedCount = mediaCheckboxes.filter(checkbox => checkbox.checked).length;
+            selectAllMedia.checked = mediaCheckboxes.length > 0 && checkedCount === mediaCheckboxes.length;
+            selectAllMedia.indeterminate = checkedCount > 0 && checkedCount < mediaCheckboxes.length;
+            selectedMediaCount.textContent = checkedCount;
+            markSelectedMediaBtn.disabled = checkedCount === 0;
+        }
+
+        if (selectAllMedia) {
+            selectAllMedia.addEventListener('change', function() {
+                mediaCheckboxes.forEach(checkbox => { checkbox.checked = this.checked; });
+                updateMediaSelection();
+            });
+            mediaCheckboxes.forEach(checkbox => checkbox.addEventListener('change', updateMediaSelection));
+            markSelectedMediaBtn.addEventListener('click', function() {
+                const checkedCount = mediaCheckboxes.filter(checkbox => checkbox.checked).length;
+                if (!checkedCount) return;
+                if (confirm(`Delete ${checkedCount} selected media item${checkedCount === 1 ? '' : 's'}?`)) {
+                    document.getElementById('hotelForm').requestSubmit();
+                }
+            });
+            updateMediaSelection();
+        }
     });
 </script>

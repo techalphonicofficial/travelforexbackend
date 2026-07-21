@@ -23,6 +23,10 @@ const Package = sequelize.define('Package', {
         allowNull: false,
         defaultValue: 0
     },
+    departure_city: {
+        type: DataTypes.STRING(150),
+        allowNull: true
+    },
     price: {
         type: DataTypes.INTEGER,
         allowNull: true

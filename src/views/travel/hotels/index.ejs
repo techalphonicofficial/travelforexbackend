@@ -388,6 +388,25 @@
         opacity: 0.45;
     }
 
+    .hotel-bulk-bar {
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.75rem 1rem;
+        background: #fff7f7;
+        border-bottom: 1px solid #fecaca;
+        color: #991b1b;
+        font-weight: 700;
+    }
+
+    .hotel-row-checkbox,
+    #selectAllHotels {
+        width: 17px;
+        height: 17px;
+        cursor: pointer;
+    }
+
     .hotel-pagination {
         display: flex;
         align-items: center;
@@ -655,10 +674,20 @@
                     </div>
                 </div>
 
+                <div id="hotelBulkBar" class="hotel-bulk-bar">
+                    <span><span id="selectedHotelCount">0</span> hotel(s) selected</span>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="deleteSelectedHotels()">
+                        <i class="fas fa-trash mr-1"></i> Delete Selected
+                    </button>
+                </div>
+
                 <div class="hotel-table-wrap">
                     <table id="dataTable" class="table hotel-table">
                         <thead>
                             <tr>
+                                <th style="width:42px; text-align:center;">
+                                    <input type="checkbox" id="selectAllHotels" aria-label="Select all hotels on this page" <%= hotelSourceMode === 'third_party' ? 'disabled' : '' %>>
+                                </th>
                                 <th>ID</th>
                                 <th>Media</th>
                                 <th>Name</th>
@@ -679,6 +708,9 @@
                             <% if (hotels.length) { %>
                                 <% hotels.forEach(hotel => { %>
                                     <tr>
+                                        <td style="text-align:center;">
+                                            <input type="checkbox" class="hotel-row-checkbox" value="<%= hotel.id %>" aria-label="Select hotel <%= hotel.id %>" <%= hotelSourceMode === 'third_party' ? 'disabled' : '' %>>
+                                        </td>
                                         <td class="hotel-id">#<%= hotel.id %></td>
                                         <td>
                                             <%
@@ -758,7 +790,7 @@
                                 <% }) %>
                             <% } else { %>
                                 <tr>
-                                    <td colspan="14" class="text-center text-muted py-5">
+                                    <td colspan="15" class="text-center text-muted py-5">
                                         <i class="fas fa-hotel mb-2" style="font-size: 2rem; opacity: 0.35;"></i>
                                         <div class="font-weight-bold">No hotels found.</div>
                                     </td>
@@ -861,4 +893,51 @@
             alert('Error deleting hotel.');
         }
     }
+
+    function selectedHotelIds() {
+        return Array.from(document.querySelectorAll('.hotel-row-checkbox:checked')).map(checkbox => checkbox.value);
+    }
+
+    function updateHotelSelection() {
+        const checkboxes = Array.from(document.querySelectorAll('.hotel-row-checkbox:not(:disabled)'));
+        const selectedIds = selectedHotelIds();
+        const selectAll = document.getElementById('selectAllHotels');
+        const bulkBar = document.getElementById('hotelBulkBar');
+
+        document.getElementById('selectedHotelCount').textContent = selectedIds.length;
+        bulkBar.style.display = selectedIds.length ? 'flex' : 'none';
+        selectAll.checked = checkboxes.length > 0 && selectedIds.length === checkboxes.length;
+        selectAll.indeterminate = selectedIds.length > 0 && selectedIds.length < checkboxes.length;
+    }
+
+    async function deleteSelectedHotels() {
+        const ids = selectedHotelIds();
+        if (!ids.length || !confirm(`Delete ${ids.length} selected hotel${ids.length === 1 ? '' : 's'} and their media? This cannot be undone.`)) return;
+
+        try {
+            const res = await fetch('/travel/hotels/bulk', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.message || 'Delete failed.');
+            location.reload();
+        } catch (error) {
+            alert(error.message || 'Error deleting selected hotels.');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectAll = document.getElementById('selectAllHotels');
+        const checkboxes = document.querySelectorAll('.hotel-row-checkbox');
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(checkbox => {
+                if (!checkbox.disabled) checkbox.checked = this.checked;
+            });
+            updateHotelSelection();
+        });
+        checkboxes.forEach(checkbox => checkbox.addEventListener('change', updateHotelSelection));
+        updateHotelSelection();
+    });
 </script>

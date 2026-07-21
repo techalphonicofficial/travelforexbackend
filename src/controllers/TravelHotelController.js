@@ -444,6 +444,45 @@ class TravelHotelController {
             res.status(500).json({ success: false });
         }
     }
+
+    async bulkDestroy(req, res) {
+        const ids = this.asArray(req.body.ids)
+            .map(id => parseInt(id, 10))
+            .filter(id => Number.isInteger(id) && id > 0);
+        const uniqueIds = [...new Set(ids)];
+
+        if (!uniqueIds.length) {
+            return res.status(400).json({ success: false, message: 'Select at least one hotel.' });
+        }
+
+        const transaction = await this.Hotel.sequelize.transaction();
+        try {
+            const Op = this.Hotel.sequelize.Sequelize.Op;
+            const Media = this.mediaModel();
+
+            if (Media) {
+                await Media.destroy({
+                    where: {
+                        entity_type: 'hotel',
+                        entity_id: { [Op.in]: uniqueIds }
+                    },
+                    transaction
+                });
+            }
+
+            const deleted = await this.Hotel.destroy({
+                where: { id: { [Op.in]: uniqueIds } },
+                transaction
+            });
+
+            await transaction.commit();
+            return res.json({ success: true, deleted });
+        } catch (error) {
+            await transaction.rollback();
+            console.error(error);
+            return res.status(500).json({ success: false, message: 'Unable to delete selected hotels.' });
+        }
+    }
 }
 
 module.exports = TravelHotelController;

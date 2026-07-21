@@ -462,9 +462,26 @@
             <option value="Morning to Noon">Morning to Noon</option>
           </select>
         </div>
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label">Duration</label>
+            <input type="text" class="form-control" id="modalActivityDuration" placeholder="e.g. 2 Hours">
+          </div>
+          <div class="col-6">
+            <label class="form-label">Departure City</label>
+            <input type="text" class="form-control" id="modalDepartureCity" placeholder="e.g. New Delhi">
+          </div>
+        </div>
         <div class="mb-3">
           <label class="form-label">Description</label>
-          <textarea class="form-control" id="modalDescription" rows="2"></textarea>
+          <div class="btn-group btn-group-sm mb-1" role="group" aria-label="Description formatting">
+            <button type="button" class="btn btn-outline-secondary" onclick="formatActivityText('bold')"><b>B</b></button>
+            <button type="button" class="btn btn-outline-secondary" onclick="formatActivityText('italic')"><i>I</i></button>
+            <button type="button" class="btn btn-outline-secondary" onclick="formatActivityText('underline')"><u>U</u></button>
+            <button type="button" class="btn btn-outline-secondary" onclick="formatActivityText('insertUnorderedList')"><i class="bi bi-list-ul"></i></button>
+            <button type="button" class="btn btn-outline-secondary" onclick="formatActivityText('insertOrderedList')"><i class="bi bi-list-ol"></i></button>
+          </div>
+          <div class="form-control" id="modalDescription" contenteditable="true" style="min-height:110px; overflow:auto;"></div>
         </div>
         <div class="mb-3">
           <label class="form-label">Activity Image</label>
@@ -572,6 +589,10 @@
               <div class="col-md-12">
                 <label class="form-label fw-bold">Description</label>
                 <textarea class="form-control" id="fDesc" rows="3" placeholder="Package description..."></textarea>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Departure City</label>
+                <input type="text" class="form-control" id="fDepartureCity" placeholder="e.g. New Delhi">
               </div>
               <div class="col-md-4">
                 <label class="form-label fw-bold">Duration (Days)</label>
@@ -753,7 +774,7 @@
     function updateTotalDays() {
       let total = 0;
       destinations.forEach(dest => {
-        total += (parseInt(dest.nights) || 0) + 1;
+        total += Math.max(parseInt(dest.nights, 10) || 1, 1);
       });
       document.getElementById('fDays').value = total;
     }
@@ -770,7 +791,7 @@
       let html = '';
       destinations.forEach((dest, idx) => {
         if (!Array.isArray(dest.hotels)) dest.hotels = [];
-        const totalDays = (dest.nights || 0) + 1;
+        const totalDays = Math.max(parseInt(dest.nights, 10) || 1, 1);
         html += `
                 <div class="tf-row-item" data-dest-idx="${idx}">
                     <div class="tf-row-del" onclick="removeDestination(${idx})"><i class="bi bi-trash3"></i></div>
@@ -783,23 +804,12 @@
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label fw-bold">Nights</label>
-                            <input type="number" class="form-control nights-input" data-idx="${idx}" value="${dest.nights || 2}" min="1">
+                            <label class="form-label fw-bold">Days</label>
+                            <input type="number" class="form-control nights-input" data-idx="${idx}" value="${dest.nights || 1}" min="1">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-bold">Day Range</label>
                             <div class="days-badge" id="days_badge_${idx}"><i class="bi bi-sun"></i> ${totalDays} Days</div>
-                        </div>
-                    </div>
-                    <div class="tf-hotel-section mt-3">
-                        <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-2">
-                            <label class="form-label fw-bold mb-0"><i class="bi bi-building me-1 text-success"></i> Hotels</label>
-                            <button type="button" class="btn btn-sm btn-outline-success" onclick="openHotelModal(${idx})">
-                                <i class="bi bi-plus"></i> Add Hotel
-                            </button>
-                        </div>
-                        <div id="hotelsList-${idx}">
-                            ${renderHotelsList(dest.hotels || [], idx)}
                         </div>
                     </div>
                     <div class="mt-3">
@@ -848,7 +858,7 @@
       const dest = destinations[destIdx];
       if (!dest) return;
 
-      const totalDays = (parseInt(dest.nights) || 0) + 1;
+      const totalDays = Math.max(parseInt(dest.nights, 10) || 1, 1);
 
       // Ensure activities object exists and has keys for all days
       if (!dest.activities) dest.activities = {};
@@ -879,10 +889,16 @@
 
         contentsHtml += `
                 <div class="tf-day-content ${i === 1 ? 'active' : ''}" id="dayContent-${destIdx}-${i}">
-                    <div class="mb-2">
+                    <div class="d-flex gap-2 flex-wrap mb-2">
                         <button class="btn btn-sm btn-outline-primary" onclick="openActivityModal(${destIdx}, ${i})">
                             <i class="bi bi-plus"></i> Add Activity
                         </button>
+                        <button type="button" class="btn btn-sm btn-outline-success" onclick="openHotelModal(${destIdx}, ${i})">
+                            <i class="bi bi-building-add"></i> Add Hotel
+                        </button>
+                    </div>
+                    <div class="tf-hotel-section mb-3" id="hotelsList-${destIdx}-${i}">
+                        ${renderHotelsList((dest.hotels || []).filter(hotel => Number(hotel.dayNumber || 1) === i), destIdx, i)}
                     </div>
                     <div id="activitiesList-${destIdx}-${i}">
                         ${renderActivitiesList(dest.activities[i] || [], destIdx, i)}
@@ -908,10 +924,12 @@
                     <div class="flex-grow-1">
                         <div class="d-flex align-items-center gap-2 flex-wrap">
                             <strong>${escapeHtml(act.name)}</strong>
-                            <span class="time-slot-badge">${escapeHtml(act.duration || 'Full Day')}</span>
+                            <span class="time-slot-badge">${escapeHtml(getActivityTimeSlot(act))}</span>
+                            ${getActivityDuration(act) ? `<span class="hotel-meta-pill"><i class="bi bi-clock"></i> ${escapeHtml(getActivityDuration(act))}</span>` : ''}
+                            ${(act.departureCity || act.departureFrom) ? `<span class="hotel-meta-pill"><i class="bi bi-geo-alt"></i> ${escapeHtml(act.departureCity || act.departureFrom)}</span>` : ''}
                             ${act.price ? `<span class="text-muted small">₹${act.price}</span>` : ''}
                         </div>
-                        ${act.description ? `<div class="text-muted small mt-1">${escapeHtml(act.description)}</div>` : ''}
+                        ${act.description ? `<div class="text-muted small mt-1">${sanitizeRichText(act.description)}</div>` : ''}
                     </div>
                 </div>
                 <div class="d-flex gap-2 align-items-center">
@@ -944,9 +962,9 @@
       return Array.from({ length: rating }, () => '<i class="bi bi-star-fill"></i>').join('');
     }
 
-    function renderHotelsList(hotels, destIdx) {
+    function renderHotelsList(hotels, destIdx, dayNum) {
       if (!hotels || hotels.length === 0) {
-        return '<div class="hotel-empty">No hotel added for this stay yet.</div>';
+        return '<div class="hotel-empty">No hotel added for this day yet.</div>';
       }
 
       return hotels.map(hotel => `
@@ -968,7 +986,7 @@
                     </div>
                 </div>
                 <div class="d-flex gap-2 align-items-center">
-                    <i class="bi bi-pencil text-primary" style="cursor:pointer" onclick="openHotelModal(${destIdx}, '${hotel.id}')"></i>
+                    <i class="bi bi-pencil text-primary" style="cursor:pointer" onclick="openHotelModal(${destIdx}, ${dayNum}, '${hotel.id}')"></i>
                     <i class="bi bi-trash3 text-danger" style="cursor:pointer" onclick="removeHotel(${destIdx}, '${hotel.id}')"></i>
                 </div>
             </div>
@@ -1034,7 +1052,7 @@
       `;
     }
 
-    function openHotelModal(destIdx, hotelId = null) {
+    function openHotelModal(destIdx, dayNum, hotelId = null) {
       const dest = destinations[destIdx];
       if (!dest || !dest.destinationId) {
         showNotification('Please select destination before adding hotel', true);
@@ -1042,7 +1060,7 @@
       }
 
       currentDestIdx = destIdx;
-      currentDayNum = null;
+      currentDayNum = dayNum;
       editingHotelId = hotelId;
       if (!Array.isArray(dest.hotels)) dest.hotels = [];
 
@@ -1074,7 +1092,7 @@
       if (!dest) return;
       if (!Array.isArray(dest.hotels)) dest.hotels = [];
 
-      const duplicate = dest.hotels.find(item => String(item.hotelId) === String(hotel.id) && String(item.id) !== String(editingHotelId));
+      const duplicate = dest.hotels.find(item => Number(item.dayNumber || 1) === Number(currentDayNum) && String(item.hotelId) === String(hotel.id) && String(item.id) !== String(editingHotelId));
       if (duplicate) {
         showNotification('This hotel is already added for this stay', true);
         return;
@@ -1089,6 +1107,7 @@
         starRating: parseInt(hotel.star_rating, 10) || 0,
         guestRating: parseFloat(hotel.guest_rating) || 0,
         pricePerNight: parseFloat(hotel.price_per_night) || 0,
+        dayNumber: currentDayNum,
         nights: parseInt(document.getElementById('modalHotelNights').value, 10) || 1,
         rooms: parseInt(document.getElementById('modalHotelRooms').value, 10) || 1,
         notes: document.getElementById('modalHotelNotes').value.trim()
@@ -1120,7 +1139,7 @@
     function showDay(destIdx, dayNum) {
       const dest = destinations[destIdx];
       if (!dest) return;
-      const totalDays = (parseInt(dest.nights) || 0) + 1;
+      const totalDays = Math.max(parseInt(dest.nights, 10) || 1, 1);
 
       const tabsContainer = document.getElementById(`dayTabs-${destIdx}`);
       if (tabsContainer) {
@@ -1141,6 +1160,34 @@
 
     let editingActivityId = null;
 
+    function formatActivityText(command) {
+      document.getElementById('modalDescription').focus();
+      document.execCommand(command, false, null);
+    }
+
+    function sanitizeRichText(value) {
+      const template = document.createElement('template');
+      template.innerHTML = String(value || '');
+      const allowed = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'UL', 'OL', 'LI', 'P', 'DIV', 'BR']);
+      Array.from(template.content.querySelectorAll('*')).forEach(node => {
+        if (!allowed.has(node.tagName)) {
+          node.replaceWith(...node.childNodes);
+          return;
+        }
+        Array.from(node.attributes).forEach(attribute => node.removeAttribute(attribute.name));
+      });
+      return template.innerHTML.trim();
+    }
+
+    function getActivityTimeSlot(activity) {
+      const legacySlots = ['Full Day', 'Morning', 'Noon', 'Evening', 'Morning to Noon'];
+      return activity.timeSlot || activity.time_slot || (legacySlots.includes(activity.duration) ? activity.duration : 'Full Day');
+    }
+
+    function getActivityDuration(activity) {
+      return activity.timeSlot || activity.time_slot ? (activity.duration || '') : '';
+    }
+
     function openActivityModal(destIdx, dayNum) {
       currentDestIdx = destIdx;
       currentDayNum = dayNum;
@@ -1148,7 +1195,9 @@
 
       document.getElementById('modalActivityName').value = '';
       document.getElementById('modalTimeSlot').value = 'Full Day';
-      document.getElementById('modalDescription').value = '';
+      document.getElementById('modalActivityDuration').value = '';
+      document.getElementById('modalDepartureCity').value = '';
+      document.getElementById('modalDescription').innerHTML = '';
 
       // Reset image preview and hidden input
       document.getElementById('modalActivityImage').value = '';
@@ -1171,8 +1220,10 @@
       if (!act) return;
 
       document.getElementById('modalActivityName').value = act.name || '';
-      document.getElementById('modalTimeSlot').value = act.duration || 'Full Day';
-      document.getElementById('modalDescription').value = act.description || '';
+      document.getElementById('modalTimeSlot').value = getActivityTimeSlot(act);
+      document.getElementById('modalActivityDuration').value = getActivityDuration(act);
+      document.getElementById('modalDepartureCity').value = act.departureCity || act.departure_city || act.departureFrom || act.departure_from || '';
+      document.getElementById('modalDescription').innerHTML = sanitizeRichText(act.description || '');
 
       // Set image preview and hidden input
       document.getElementById('modalActivityImage').value = act.image || '';
@@ -1234,8 +1285,10 @@
         return;
       }
 
-      const duration = document.getElementById('modalTimeSlot').value;
-      const description = document.getElementById('modalDescription').value.trim();
+      const timeSlot = document.getElementById('modalTimeSlot').value;
+      const duration = document.getElementById('modalActivityDuration').value.trim();
+      const departureCity = document.getElementById('modalDepartureCity').value.trim();
+      const description = sanitizeRichText(document.getElementById('modalDescription').innerHTML);
       const image = document.getElementById('modalActivityImage').value;
 
       if (editingActivityId) {
@@ -1244,7 +1297,10 @@
         const act = activities.find(a => a.id === editingActivityId);
         if (act) {
           act.name = name;
+          act.timeSlot = timeSlot;
           act.duration = duration;
+          act.departureCity = departureCity;
+          delete act.departureFrom;
           act.description = description;
           act.image = image;
         }
@@ -1254,7 +1310,9 @@
         const newActivity = {
           id: generateId(),
           name: name,
+          timeSlot: timeSlot,
           duration: duration,
+          departureCity: departureCity,
           description: description,
           price: 0,
           image: image
@@ -1408,6 +1466,7 @@
       const showInHomePage = !!document.getElementById('showInHomePage')?.checked;
       const isCustomizable = !!document.getElementById('fIsCustomizable')?.checked;
       const duration = parseInt(document.getElementById('fDays').value) || 0;
+      const departureCity = document.getElementById('fDepartureCity')?.value.trim() || '';
       const price = parseInt(document.getElementById('fPrice').value) || 0;
       const discountPercentage = parseFloat(document.getElementById('fDiscountPercentage')?.value) || 0;
       const taxType = document.getElementById('fTaxType')?.value || '';
@@ -1430,6 +1489,7 @@
         show_in_home_page: showInHomePage,
         is_customizable: isCustomizable,
         duration: duration,
+        departure_city: departureCity,
         price: price,
         discount_percentage: discountPercentage,
         tax_type: taxType,
@@ -1478,6 +1538,7 @@
         if (PKG_DATA.slug) document.getElementById('fSlug').dataset.touched = 'true';
       }
       if (document.getElementById('fDesc')) document.getElementById('fDesc').value = PKG_DATA.description || '';
+      if (document.getElementById('fDepartureCity')) document.getElementById('fDepartureCity').value = PKG_DATA.departure_city || '';
       if (document.getElementById('fPrice')) document.getElementById('fPrice').value = PKG_DATA.price || '';
       if (document.getElementById('fDiscountPercentage')) document.getElementById('fDiscountPercentage').value = PKG_DATA.discount_percentage || 0;
       if (document.getElementById('showInHomePage')) document.getElementById('showInHomePage').checked = !!PKG_DATA.show_in_home_page;

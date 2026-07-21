@@ -1,3 +1,8 @@
+<%
+  const safeRichText = value => String(value || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/&lt;(\/?)(strong|b|em|i|u|ul|ol|li|p|div|br)\s*\/?&gt;/gi, '<$1$2>');
+%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -651,6 +656,10 @@
             <strong><%= pkg.duration_days || 0 %> Days</strong>
           </div>
           <div class="stat">
+            <span>Departure City</span>
+            <strong><%= pkg.departure_city || 'Not set' %></strong>
+          </div>
+          <div class="stat">
             <span>Stops</span>
             <strong><%= stops.length %> Destination<%= stops.length === 1 ? '' : 's' %></strong>
           </div>
@@ -728,10 +737,10 @@
               <div id="dest-<%= pd.destination.id %>" class="destination-block">
                 <div class="destination-head">
                   <h3><%= pd.destination.name %></h3>
-                  <span class="night-pill"><i class="bi bi-moon-stars"></i> <%= pd.nights %> Nights</span>
+                  <span class="night-pill"><i class="bi bi-sun"></i> <%= pd.nights %> Days</span>
                 </div>
 
-                <% const stayHotels = Array.isArray(pd.hotels) ? pd.hotels : []; %>
+                <% const stayHotels = Array.isArray(pd.hotels) ? pd.hotels.filter(hotel => !hotel.dayNumber) : []; %>
                 <% if (stayHotels.length) { %>
                   <div class="hotel-stays">
                     <% stayHotels.forEach(hotel => { %>
@@ -772,14 +781,34 @@
                         <div><span>Day</span><%= day.day_number %></div>
                       </div>
                       <div>
+                        <% if (day.hotels && day.hotels.length) { %>
+                          <div class="hotel-stays">
+                            <% day.hotels.forEach(hotel => { %>
+                              <article class="hotel-card">
+                                <% if (hotel.image) { %>
+                                  <img src="<%= hotel.image %>" alt="<%= hotel.name || 'Hotel' %>">
+                                <% } else { %>
+                                  <div class="hotel-placeholder"><i class="bi bi-building"></i></div>
+                                <% } %>
+                                <div>
+                                  <h4><%= hotel.name || 'Hotel Stay' %></h4>
+                                  <p><%= hotel.rooms || 1 %> room<%= Number(hotel.rooms || 1) === 1 ? '' : 's' %><% if (hotel.pricePerNight) { %> · Rs. <%= Number(hotel.pricePerNight).toLocaleString('en-IN') %>/night<% } %></p>
+                                  <% if (hotel.notes) { %><p><%= hotel.notes %></p><% } %>
+                                </div>
+                              </article>
+                            <% }) %>
+                          </div>
+                        <% } %>
                         <% if (day.activities && day.activities.length) { %>
                           <div class="activity-list">
                             <% day.activities.forEach(act => { %>
                               <div class="activity">
                                 <div>
-                                  <span class="time-badge <%= (act.time_slot || act.duration || '').toLowerCase().replace(/\s/g, '') %>">
-                                    <%= act.time_slot || act.duration || 'Full Day' %>
+                                  <span class="time-badge <%= (act.timeSlot || act.time_slot || 'Full Day').toLowerCase().replace(/\s/g, '') %>">
+                                    <%= act.timeSlot || act.time_slot || 'Full Day' %>
                                   </span>
+                                  <% if (act.duration && (act.timeSlot || act.time_slot)) { %><span class="time-badge"><i class="bi bi-clock"></i> <%= act.duration %></span><% } %>
+                                  <% if (act.departureCity || act.departure_city || act.departureFrom || act.departure_from) { %><span class="time-badge"><i class="bi bi-geo-alt"></i> Departure: <%= act.departureCity || act.departure_city || act.departureFrom || act.departure_from %></span><% } %>
                                 </div>
                                 <div class="d-flex gap-3 align-items-start">
                                   <% if (act.image) { %>
@@ -788,7 +817,7 @@
                                   <div>
                                     <h4><%= act.title || act.name || 'Activity' %></h4>
                                     <% if (act.description) { %>
-                                      <p><%= act.description %></p>
+                                      <div class="activity-rich-text"><%- safeRichText(act.description) %></div>
                                     <% } %>
                                   </div>
                                 </div>
