@@ -1066,7 +1066,7 @@ router.get('/packages/hotel-options', async (req, res) => {
         const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
         const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 50);
         const selectedId = parseInt(req.query.selected_id, 10);
-        const attributes = ['id', 'name', 'image_url', 'star_rating', 'guest_rating', 'price_per_night'];
+        const attributes = ['id', 'destination_id', 'name', 'image_url', 'star_rating', 'guest_rating', 'price_per_night'];
         const { count, rows } = await Hotel.findAndCountAll({
             attributes,
             order: [['name', 'ASC'], ['id', 'ASC']],
