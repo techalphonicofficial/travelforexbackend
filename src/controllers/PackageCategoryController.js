@@ -13,6 +13,26 @@ class PackageCategoryController {
         }
     }
 
+    async getWithParent(req, res) {
+        try {
+            const rows = await this.packageCategoryRepo.findAll();
+            const data = rows.map(row => {
+                const category = row.get ? row.get({ plain: true }) : { ...row };
+                const parent = category.category || null;
+                delete category.category;
+
+                return {
+                    ...category,
+                    parent
+                };
+            });
+
+            res.json({ success: true, data });
+        } catch (err) {
+            res.status(500).json({ success: false, message: err.message });
+        }
+    }
+
     async getById(req, res) {
         try {
             const data = await this.packageCategoryRepo.findById(req.params.id);

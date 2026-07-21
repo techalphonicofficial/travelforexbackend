@@ -40,6 +40,17 @@ function handleUpload(multerMiddleware) {
     };
 }
 
+/**
+ * @swagger
+ * /api/v1/package-categories/get-package-category:
+ *   get:
+ *     summary: Get package categories with their parent category nested inside
+ *     tags: [Package Categories]
+ *     responses:
+ *       200:
+ *         description: Package category list
+ */
+router.get('/get-package-category', (req, res) => packageCategoryController.getWithParent(req, res));
 router.get('/', (req, res) => packageCategoryController.getAll(req, res));
 router.get('/:id', (req, res) => packageCategoryController.getById(req, res));
 router.post('/', handleUpload(upload.single('feature_image_file')), (req, res) => packageCategoryController.create(req, res));
