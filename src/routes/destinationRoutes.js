@@ -274,6 +274,22 @@ router.post('/', async (req, res) => {
     }
 });
 
+router.post('/bulk-delete', async (req, res) => {
+    try {
+        const ids = Array.isArray(req.body.ids)
+            ? [...new Set(req.body.ids.map(Number).filter(Number.isInteger))]
+            : [];
+        if (!ids.length) {
+            return res.status(400).json({ success: false, message: 'Select at least one destination.' });
+        }
+
+        const deletedCount = await destinationRepo.deleteMany(ids);
+        res.json({ success: true, message: 'Deleted successfully', deletedCount });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 router.put('/:id', async (req, res) => {
     try {
         const data = await destinationRepo.update(req.params.id, req.body);
@@ -286,7 +302,8 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
     try {
-        await destinationRepo.delete(req.params.id);
+        const deleted = await destinationRepo.delete(req.params.id);
+        if (!deleted) return res.status(404).json({ success: false, message: 'Destination not found' });
         res.json({ success: true, message: 'Deleted successfully' });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });

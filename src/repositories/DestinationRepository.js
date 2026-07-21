@@ -172,6 +172,10 @@ class DestinationRepository extends BaseRepository {
             ]
         });
     }
+
+    async deleteMany(ids) {
+        return this.model.destroy({ where: { id: ids } });
+    }
 }
 
 module.exports = DestinationRepository;
