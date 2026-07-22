@@ -13,7 +13,7 @@ const { repositories: { hotelRepo } } = require('../container');
  *         name: search
  *         schema:
  *           type: string
- *         description: Search by hotel name, provider, destination, city, or country
+ *         description: Search by hotel name, provider, city, or country
  *       - in: query
  *         name: country
  *         schema:
@@ -23,12 +23,12 @@ const { repositories: { hotelRepo } } = require('../container');
  *         name: city
  *         schema:
  *           type: string
- *         description: Filter by city or destination name
+ *         description: Filter by city name
  *       - in: query
- *         name: destination_id
+ *         name: city_id
  *         schema:
  *           type: integer
- *         description: Filter by destination ID
+ *         description: Filter by city ID
  *       - in: query
  *         name: page
  *         schema:
@@ -49,8 +49,8 @@ router.get('/', async (req, res) => {
             search: req.query.search,
             country: req.query.country,
             city: req.query.city,
-            destination_id: req.query.destination_id,
-            destinationId: req.query.destinationId,
+            city_id: req.query.city_id,
+            cityId: req.query.cityId,
             page: req.query.page,
             limit: req.query.limit
         });

@@ -43,11 +43,14 @@
                         </div>
                         <div class="col-md-6 form-group">
                             <label>City</label>
-                            <select name="city_id" id="hotelCitySelect" class="form-control" required style="width:100%">
-                                <% if (selectedCity) { %>
-                                    <option value="<%= selectedCity.id %>" selected><%= selectedCity.name %><%= selectedCity.country ? ` — ${selectedCity.country.name}` : '' %></option>
-                                <% } %>
-                            </select>
+                            <div class="position-relative" id="hotelCityPicker">
+                                <input type="text" id="hotelCitySearch" class="form-control"
+                                    value="<%= selectedCity ? `${selectedCity.name}${selectedCity.country ? ` — ${selectedCity.country.name}` : ''}` : '' %>"
+                                    placeholder="Search city or country..." autocomplete="off">
+                                <input type="hidden" name="city_id" id="hotelCityId" value="<%= selectedCity ? selectedCity.id : '' %>">
+                                <div id="hotelCityResults" class="list-group position-absolute w-100 shadow"
+                                    style="display:none;z-index:2050;top:calc(100% + 4px);max-height:280px;overflow-y:auto;background:#fff;border:1px solid #dbe3ef;border-radius:8px"></div>
+                            </div>
                             <small class="form-text text-muted">Search by city or country. Scroll to load more cities.</small>
                         </div>
                     </div>
@@ -177,54 +180,125 @@
 
 <script>
     function toggleProviderField() {
-        if ($('#source_type').val() === 'third_party') {
-            $('#provider_name_group').show();
-        } else {
-            $('#provider_name_group').hide();
-        }
+        const sourceType = document.getElementById('source_type');
+        const providerGroup = document.getElementById('provider_name_group');
+        if (providerGroup) providerGroup.style.display = sourceType?.value === 'third_party' ? '' : 'none';
     }
 
-    $(function() {
-        $('#source_type').on('change', toggleProviderField);
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('source_type')?.addEventListener('change', toggleProviderField);
         toggleProviderField();
-        $('#hotelCitySelect').select2({
-            theme: 'bootstrap4',
-            placeholder: 'Search city or country...',
-            allowClear: true,
-            minimumInputLength: 0,
-            ajax: {
-                url: '/travel/api/v1/cities/paginated',
-                dataType: 'json',
-                delay: 250,
-                data: function(params) {
-                    return {
-                        search: params.term || '',
-                        page: params.page || 1,
-                        limit: 20
-                    };
-                },
-                processResults: function(response, params) {
-                    params.page = params.page || 1;
-                    const rows = response && response.success && response.data
-                        ? response.data.rows || []
-                        : [];
-                    const total = response && response.data ? Number(response.data.count) || 0 : 0;
 
-                    return {
-                        results: rows.map(function(city) {
-                            const country = city.country && city.country.name ? city.country.name : 'Country not set';
-                            return {
-                                id: city.id,
-                                text: city.name + ' — ' + country
-                            };
-                        }),
-                        pagination: {
-                            more: params.page * 20 < total
-                        }
-                    };
-                },
-                cache: true
+        const cityPicker = document.getElementById('hotelCityPicker');
+        const citySearch = document.getElementById('hotelCitySearch');
+        const cityId = document.getElementById('hotelCityId');
+        const cityResults = document.getElementById('hotelCityResults');
+        const hotelForm = document.getElementById('hotelForm');
+        let cityPage = 0;
+        let cityQuery = '';
+        let cityHasMore = true;
+        let cityLoading = false;
+        let citySearchTimer = null;
+        let cityRequestController = null;
+
+        function showCityMessage(message) {
+            cityResults.innerHTML = '';
+            const item = document.createElement('div');
+            item.className = 'list-group-item text-muted small py-3';
+            item.textContent = message;
+            cityResults.appendChild(item);
+            cityResults.style.display = 'block';
+        }
+
+        function appendCity(city) {
+            const country = city.country?.name || 'Country not set';
+            const option = document.createElement('button');
+            option.type = 'button';
+            option.className = 'list-group-item list-group-item-action py-2 px-3 text-start fw-semibold';
+            option.textContent = `${city.name} — ${country}`;
+            option.addEventListener('click', function() {
+                cityId.value = city.id;
+                citySearch.value = `${city.name} — ${country}`;
+                citySearch.setCustomValidity('');
+                cityResults.style.display = 'none';
+            });
+            cityResults.appendChild(option);
+        }
+
+        async function loadCities(reset = false) {
+            if (reset && cityRequestController) {
+                cityRequestController.abort();
+                cityLoading = false;
             }
+            if (cityLoading || (!reset && !cityHasMore)) return;
+            if (reset) {
+                cityPage = 0;
+                cityHasMore = true;
+                cityResults.innerHTML = '';
+            }
+
+            cityLoading = true;
+            const requestController = new AbortController();
+            cityRequestController = requestController;
+            const nextPage = cityPage + 1;
+            if (nextPage === 1) showCityMessage('Loading cities...');
+
+            try {
+                const params = new URLSearchParams({ page: nextPage, limit: 20, search: cityQuery });
+                const response = await fetch(`/travel/api/v1/cities/paginated?${params.toString()}`, {
+                    signal: requestController.signal
+                });
+                const result = await response.json();
+                if (!response.ok || !result.success) throw new Error(result.message || 'Unable to load cities');
+
+                const rows = result.data?.rows || [];
+                const total = Number(result.data?.count) || 0;
+                if (nextPage === 1) cityResults.innerHTML = '';
+                rows.forEach(appendCity);
+                cityPage = nextPage;
+                cityHasMore = cityPage * 20 < total;
+
+                if (!rows.length && nextPage === 1) showCityMessage('No matching cities found.');
+                else cityResults.style.display = 'block';
+            } catch (error) {
+                if (error.name === 'AbortError') return;
+                showCityMessage(error.message || 'Unable to load cities.');
+            } finally {
+                if (cityRequestController === requestController) {
+                    cityLoading = false;
+                    cityRequestController = null;
+                }
+            }
+        }
+
+        citySearch?.addEventListener('focus', function() {
+            cityQuery = citySearch.value.includes(' — ') ? '' : citySearch.value.trim();
+            loadCities(true);
+        });
+
+        citySearch?.addEventListener('input', function() {
+            cityId.value = '';
+            citySearch.setCustomValidity('');
+            cityQuery = citySearch.value.trim();
+            clearTimeout(citySearchTimer);
+            citySearchTimer = setTimeout(() => loadCities(true), 250);
+        });
+
+        cityResults?.addEventListener('scroll', function() {
+            const nearBottom = cityResults.scrollTop + cityResults.clientHeight >= cityResults.scrollHeight - 40;
+            if (nearBottom) loadCities(false);
+        });
+
+        document.addEventListener('click', function(event) {
+            if (cityPicker && !cityPicker.contains(event.target)) cityResults.style.display = 'none';
+        });
+
+        hotelForm?.addEventListener('submit', function(event) {
+            if (cityId.value) return;
+            event.preventDefault();
+            citySearch.setCustomValidity('Please select a city from the search results.');
+            citySearch.reportValidity();
+            citySearch.focus();
         });
 
         const selectAllMedia = document.getElementById('selectAllMedia');
