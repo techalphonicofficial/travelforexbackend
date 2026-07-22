@@ -79,6 +79,39 @@ function handleUpload(multerMiddleware) {
     };
 }
 
+function slugifyDestinationName(name) {
+    return String(name || '')
+        .trim()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 220) || 'destination';
+}
+
+async function ensureUniqueDestinationSlug(name, currentId = null, transaction = null) {
+    const baseSlug = slugifyDestinationName(name);
+    let slug = baseSlug;
+    let suffix = 2;
+
+    while (true) {
+        // Include soft-deleted rows because the database unique index includes them too.
+        const existing = await Destination.findOne({
+            where: { slug },
+            paranoid: false,
+            transaction
+        });
+
+        if (!existing || (currentId && Number(existing.id) === Number(currentId))) {
+            return slug;
+        }
+
+        slug = `${baseSlug}-${suffix}`;
+        suffix += 1;
+    }
+}
+
 const DEFAULT_TAX_TYPES = [
     { name: 'GST', percent: 5 },
     { name: 'IGST', percent: 18 },
@@ -755,6 +788,10 @@ router.post('/destinations/save', handleUpload(upload.single('feature_image_file
     if (categories && !Array.isArray(categories)) categories = [categories];
 
     const { id, name, title, type, meta_title, meta_description, meta_keyword, schema, feature_image_alt, country } = req.body;
+    const cleanName = String(name || '').trim();
+    if (!cleanName) {
+        return res.status(400).json({ success: false, message: 'Destination name is required.' });
+    }
     const state = req.body.state || null;
     const taxRuleType = req.body.tax_rule_type || 'exempt';
     const gstRate = req.body.gst_rate || 0.00;
@@ -766,8 +803,6 @@ router.post('/destinations/save', handleUpload(upload.single('feature_image_file
     const is_customizable = req.body.is_customizable === 'true' || req.body.is_customizable === true || req.body.is_customizable === 'on' || req.body.customize === 'true' || req.body.customize === true || req.body.customize === 'on';
     const customize = is_customizable;
 
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    
     let feature_image = req.body.existing_feature_image || null;
     if (req.file) {
         feature_image = `/uploads/destinations/${req.file.filename}`;
@@ -786,6 +821,7 @@ router.post('/destinations/save', handleUpload(upload.single('feature_image_file
         const transaction = await db.transaction();
         try {
             let dest;
+            const slug = await ensureUniqueDestinationSlug(cleanName, id || null, transaction);
 
             let activities = [];
             if (req.body.activities_data) {
@@ -796,9 +832,14 @@ router.post('/destinations/save', handleUpload(upload.single('feature_image_file
                 }
             }
 
-            const updateData = { name, title, type, slug, meta_title, meta_description, meta_keyword, schema, is_trending, is_visa_free, customize, is_customizable, feature_image, feature_image_alt, country, state, tax_rule_type: taxRuleType, gst_rate: gstRate, tcs_rate: 0.00, gst_amount: destinationAmount || 0.00, tags, activities_data: activities };
+            const updateData = { name: cleanName, title, type, slug, meta_title, meta_description, meta_keyword, schema, is_trending, is_visa_free, customize, is_customizable, feature_image, feature_image_alt, country, state, tax_rule_type: taxRuleType, gst_rate: gstRate, tcs_rate: 0.00, gst_amount: destinationAmount || 0.00, tags, activities_data: activities };
             if (id) {
-                dest = await Destination.findByPk(id);
+                dest = await Destination.findByPk(id, { transaction });
+                if (!dest) {
+                    const notFoundError = new Error('Destination not found.');
+                    notFoundError.statusCode = 404;
+                    throw notFoundError;
+                }
                 await dest.update(updateData, { transaction });
                 await DestinationCategory.destroy({ where: { destination_id: id }, transaction });
             } else {
@@ -832,7 +873,26 @@ router.post('/destinations/save', handleUpload(upload.single('feature_image_file
             throw err;
         }
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        console.error('Destination save failed:', err);
+        if (err && err.name === 'SequelizeUniqueConstraintError') {
+            return res.status(409).json({
+                success: false,
+                message: 'A destination with the same URL slug already exists. Please try a different name.'
+            });
+        }
+        if (err && err.name === 'SequelizeValidationError') {
+            const details = Array.isArray(err.errors)
+                ? err.errors.map(item => item.message).filter(Boolean).join(', ')
+                : '';
+            return res.status(400).json({
+                success: false,
+                message: details || 'Please check the destination details and try again.'
+            });
+        }
+        res.status(err.statusCode || 500).json({
+            success: false,
+            message: err.statusCode ? err.message : 'Unable to save destination. Please try again.'
+        });
     }
 });
 
