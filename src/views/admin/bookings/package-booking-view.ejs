@@ -1,0 +1,89 @@
+<%- contentFor('body') %>
+
+<%
+  const raw = booking.raw_payload || {};
+  const passengers = Array.isArray(booking.passengers) ? booking.passengers : [];
+  const hotels = Array.isArray(raw.hotels) ? raw.hotels : [];
+  const route = Array.isArray(raw.route) ? raw.route : [];
+  const money = value => `INR ${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const dateText = value => value ? new Date(`${String(value).substring(0,10)}T00:00:00`).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : 'N/A';
+  const customerUser = booking.customer && booking.customer.user ? booking.customer.user : {};
+%>
+
+<style>
+  .bv-shell{max-width:1180px;margin:0 auto;padding:14px 12px 32px;font-size:13px;color:#1d2939;}
+  .bv-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:14px;}
+  .bv-title{font-size:20px;font-weight:800;letter-spacing:-.025em;margin:0}.bv-sub{font-size:12px;color:#667085;margin-top:4px;}
+  .bv-actions{display:flex;gap:7px;flex-wrap:wrap}.bv-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 11px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;color:#344054;text-decoration:none;font-size:12px;font-weight:750;}
+  .bv-btn:hover{color:#4f46e5;border-color:#a5b4fc;text-decoration:none}.bv-btn-primary{background:#4f46e5;border-color:#4f46e5;color:#fff}.bv-btn-primary:hover{background:#4338ca;color:#fff;}
+  .bv-banner{display:grid;grid-template-columns:1.2fr repeat(3,.65fr);gap:1px;background:#e4e7ec;border:1px solid #e4e7ec;border-radius:12px;overflow:hidden;margin-bottom:14px;}
+  .bv-banner-item{background:#fff;padding:14px}.bv-label{display:block;color:#667085;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}.bv-value{font-size:13px;font-weight:800;color:#101828;overflow-wrap:anywhere;}
+  .bv-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.bv-card{background:#fff;border:1px solid #e4e7ec;border-radius:12px;overflow:hidden;box-shadow:0 3px 12px rgba(16,24,40,.035)}
+  .bv-card-wide{grid-column:1/-1}.bv-card-head{padding:12px 14px;border-bottom:1px solid #eaecf0;font-size:13px;font-weight:800}.bv-card-body{padding:14px}.bv-data-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.bv-data{padding:9px 10px;background:#f8fafc;border-radius:8px;min-width:0}.bv-data-wide{grid-column:1/-1}
+  .bv-money{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #f0f2f5}.bv-money:last-child{border:0}.bv-money span{color:#667085}.bv-money strong{text-align:right}.bv-money-total{font-size:14px;color:#067647!important;}
+  .bv-table-wrap{overflow:auto}.bv-table{width:100%;border-collapse:collapse}.bv-table th{padding:8px 9px;background:#f8fafc;color:#667085;font-size:10px;text-transform:uppercase;letter-spacing:.05em;text-align:left;white-space:nowrap}.bv-table td{padding:9px;border-top:1px solid #eaecf0;font-size:12px;vertical-align:top}.bv-empty{padding:14px;color:#667085;text-align:center}.bv-status{display:inline-flex;padding:4px 8px;border-radius:999px;background:#eef2ff;color:#4338ca;font-size:10px;font-weight:800;text-transform:capitalize;}
+  .bv-alert{padding:9px 12px;margin-bottom:12px;border:1px solid #a7f3d0;border-radius:8px;background:#ecfdf5;color:#067647;font-size:12px;font-weight:700;}
+  @media(max-width:850px){.bv-banner{grid-template-columns:1fr 1fr}.bv-grid{grid-template-columns:1fr}.bv-card-wide{grid-column:auto}}
+  @media(max-width:600px){.bv-head{flex-direction:column}.bv-banner,.bv-data-grid{grid-template-columns:1fr}.bv-data-wide{grid-column:auto}.bv-actions{width:100%}.bv-btn{flex:1;justify-content:center}}
+</style>
+
+<div class="bv-shell">
+  <% if (typeof query !== 'undefined' && query && query.success) { %><div class="bv-alert"><i class="bi bi-check-circle mr-1"></i> Booking updated successfully.</div><% } %>
+  <div class="bv-head">
+    <div><h1 class="bv-title">Package booking</h1><div class="bv-sub"><%= booking.booking_reference %> · Created <%= dateText(booking.created_at) %></div></div>
+    <div class="bv-actions">
+      <a class="bv-btn" href="/admin/bookings/package-bookings"><i class="bi bi-arrow-left"></i> Back</a>
+      <a class="bv-btn" href="/admin/bookings/package-bookings/<%= booking.id %>/edit"><i class="bi bi-pencil-square"></i> Edit</a>
+      <a class="bv-btn bv-btn-primary" href="/admin/bookings/package-bookings/<%= booking.id %>/download"><i class="bi bi-download"></i> Download</a>
+    </div>
+  </div>
+
+  <div class="bv-banner">
+    <div class="bv-banner-item"><span class="bv-label">Package</span><span class="bv-value"><%= booking.package_name || 'N/A' %></span></div>
+    <div class="bv-banner-item"><span class="bv-label">Status</span><span class="bv-status"><%= String(booking.payment_status || 'pending').replace(/_/g,' ') %></span></div>
+    <div class="bv-banner-item"><span class="bv-label">Total</span><span class="bv-value"><%= money(booking.package_total) %></span></div>
+    <div class="bv-banner-item"><span class="bv-label">Remaining</span><span class="bv-value"><%= money(booking.remaining_amount) %></span></div>
+  </div>
+
+  <div class="bv-grid">
+    <section class="bv-card">
+      <div class="bv-card-head">Customer & travel</div>
+      <div class="bv-card-body bv-data-grid">
+        <div class="bv-data"><span class="bv-label">Customer</span><span class="bv-value"><%= booking.customer_name || customerUser.name || 'N/A' %></span></div>
+        <div class="bv-data"><span class="bv-label">Phone</span><span class="bv-value"><%= booking.customer_phone || (booking.customer && booking.customer.phone) || 'N/A' %></span></div>
+        <div class="bv-data bv-data-wide"><span class="bv-label">Email</span><span class="bv-value"><%= booking.customer_email || customerUser.email || 'N/A' %></span></div>
+        <div class="bv-data"><span class="bv-label">From</span><span class="bv-value"><%= dateText(booking.from_date || raw.from_date || raw.start_date) %></span></div>
+        <div class="bv-data"><span class="bv-label">To</span><span class="bv-value"><%= dateText(booking.to_date || raw.to_date || raw.end_date) %></span></div>
+        <div class="bv-data bv-data-wide"><span class="bv-label">Departure</span><span class="bv-value"><%= dateText(booking.departure_date || raw.departure_date) %></span></div>
+        <% if (route.length) { %><div class="bv-data bv-data-wide"><span class="bv-label">Route</span><span class="bv-value"><%= route.join(' → ') %></span></div><% } %>
+      </div>
+    </section>
+
+    <section class="bv-card">
+      <div class="bv-card-head">Payment summary</div>
+      <div class="bv-card-body">
+        <div class="bv-money"><span>Base package amount</span><strong><%= money(Number(booking.package_base_amount || 0) - Number(booking.hotel_amount || 0)) %></strong></div>
+        <div class="bv-money"><span>Hotel amount</span><strong><%= money(booking.hotel_amount) %></strong></div>
+        <div class="bv-money"><span>GST <%= Number(booking.tax_percent || 0) %>%</span><strong><%= money(booking.tax_amount) %></strong></div>
+        <div class="bv-money"><span>Total</span><strong class="bv-money-total"><%= money(booking.package_total) %></strong></div>
+        <div class="bv-money"><span>Received</span><strong><%= money(booking.paid_amount) %></strong></div>
+        <div class="bv-money"><span>Remaining</span><strong><%= money(booking.remaining_amount) %></strong></div>
+        <div class="bv-money"><span>Accounting</span><strong><%= String(booking.accounting_status || 'pending').replace(/_/g,' ') %></strong></div>
+      </div>
+    </section>
+
+    <section class="bv-card bv-card-wide">
+      <div class="bv-card-head">Passengers (<%= passengers.length %>)</div>
+      <% if (passengers.length) { %><div class="bv-table-wrap"><table class="bv-table"><thead><tr><th>Name</th><th>Age</th><th>Gender</th><th>DOB</th><th>Passport</th><th>Expiry</th></tr></thead><tbody>
+        <% passengers.forEach(passenger => { %><tr><td><strong><%= passenger.full_name %></strong><%= passenger.is_lead ? ' · Lead' : '' %></td><td><%= passenger.age || '—' %></td><td><%= passenger.gender || '—' %></td><td><%= dateText(passenger.dob) %></td><td><%= passenger.passport_no || '—' %></td><td><%= dateText(passenger.passport_expiry) %></td></tr><% }) %>
+      </tbody></table></div><% } else { %><div class="bv-empty">No passenger details available.</div><% } %>
+    </section>
+
+    <section class="bv-card bv-card-wide">
+      <div class="bv-card-head">Hotels (<%= hotels.length %>)</div>
+      <% if (hotels.length) { %><div class="bv-table-wrap"><table class="bv-table"><thead><tr><th>Hotel</th><th>Destination</th><th>Rooms</th><th>Nights</th></tr></thead><tbody>
+        <% hotels.forEach(hotel => { %><tr><td><strong><%= hotel.name || 'Hotel' %></strong></td><td><%= hotel.destination_name || '—' %></td><td><%= hotel.rooms || 1 %></td><td><%= hotel.nights || 1 %></td></tr><% }) %>
+      </tbody></table></div><% } else { %><div class="bv-empty">No hotel details available.</div><% } %>
+    </section>
+  </div>
+</div>

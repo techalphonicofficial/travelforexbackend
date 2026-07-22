@@ -1092,8 +1092,11 @@ class AdminBookingController {
     // Edit Package Booking Page
     async editPackageBooking(req, res) {
         try {
-            const PackageBooking = this.bookingRepo.PackageBooking;
-            const booking = await PackageBooking.findByPk(req.params.booking_id);
+            const sequelize = this.bookingRepo.CustomTrip.sequelize;
+            const PackageBooking = sequelize.models.PackageBooking;
+            const booking = await PackageBooking.findByPk(req.params.booking_id, {
+                include: [{ association: 'passengers', required: false }]
+            });
             if (!booking) {
                 return res.status(404).send('Booking not found');
             }
@@ -1116,6 +1119,109 @@ class AdminBookingController {
             });
         } catch (error) {
             console.error('Error fetching package booking for edit:', error);
+            res.status(500).send('Internal Server Error');
+        }
+    }
+
+    async viewPackageBooking(req, res) {
+        try {
+            const sequelize = this.bookingRepo.CustomTrip.sequelize;
+            const PackageBooking = sequelize.models.PackageBooking;
+            const booking = await PackageBooking.findByPk(req.params.booking_id, {
+                include: [
+                    { association: 'package', required: false },
+                    { association: 'vendor', required: false, attributes: ['id', 'name', 'email'] },
+                    { association: 'customer', required: false, include: [{ association: 'user', required: false, attributes: ['id', 'name', 'email'] }] },
+                    { association: 'passengers', required: false }
+                ]
+            });
+            if (!booking) return res.status(404).send('Booking not found');
+
+            return res.render('admin/bookings/package-booking-view', {
+                title: `Booking ${booking.booking_reference}`,
+                booking,
+                query: req.query,
+                user: req.session.user
+            });
+        } catch (error) {
+            console.error('Error viewing package booking:', error);
+            res.status(500).send('Internal Server Error');
+        }
+    }
+
+    async downloadPackageBooking(req, res) {
+        try {
+            const sequelize = this.bookingRepo.CustomTrip.sequelize;
+            const PackageBooking = sequelize.models.PackageBooking;
+            const booking = await PackageBooking.findByPk(req.params.booking_id, {
+                include: [
+                    { association: 'package', required: false },
+                    { association: 'vendor', required: false, attributes: ['id', 'name', 'email'] },
+                    { association: 'customer', required: false, include: [{ association: 'user', required: false, attributes: ['id', 'name', 'email'] }] },
+                    { association: 'passengers', required: false }
+                ]
+            });
+            if (!booking) return res.status(404).send('Booking not found');
+
+            const safeReference = String(booking.booking_reference || 'package-booking').replace(/[^a-zA-Z0-9_-]/g, '-');
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.setHeader('Content-Disposition', `attachment; filename="${safeReference}.html"`);
+            return res.render('admin/bookings/package-booking-document', {
+                layout: false,
+                booking,
+                generatedAt: new Date()
+            });
+        } catch (error) {
+            console.error('Error downloading package booking:', error);
+            res.status(500).send('Internal Server Error');
+        }
+    }
+
+    async updatePackageBooking(req, res) {
+        try {
+            const sequelize = this.bookingRepo.CustomTrip.sequelize;
+            const PackageBooking = sequelize.models.PackageBooking;
+            const Customer = this.bookingRepo.Customer;
+            const User = sequelize.models.User;
+            const booking = await PackageBooking.findByPk(req.params.booking_id);
+            if (!booking) return res.status(404).send('Booking not found');
+
+            const { customer_id, payment_status, from_date, to_date, departure_date } = req.body;
+            const allowedStatuses = ['pending', 'payment_initiated', 'partial_paid', 'paid', 'payment_verified', 'failed', 'refunded', 'cancelled'];
+            if (!allowedStatuses.includes(payment_status)) {
+                return res.status(400).send('Invalid payment status');
+            }
+            const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+            if (![from_date, to_date, departure_date].every(value => datePattern.test(String(value || '')))) {
+                return res.status(400).send('Travel dates are required');
+            }
+            if (to_date < from_date || departure_date > to_date) {
+                return res.status(400).send('Invalid travel date range');
+            }
+
+            const customer = await Customer.findByPk(customer_id, {
+                include: [{ model: User, as: 'user', required: false }]
+            });
+            if (!customer) return res.status(400).send('Invalid customer');
+
+            const customerUser = customer.user || {};
+            const rawPayload = { ...(booking.raw_payload || {}), from_date, to_date, departure_date };
+            await booking.update({
+                customer_id: customer.id,
+                customer_name: customerUser.name || booking.customer_name,
+                customer_email: customerUser.email || booking.customer_email,
+                customer_phone: customer.phone || customerUser.phone_number || booking.customer_phone,
+                payment_status,
+                from_date,
+                to_date,
+                departure_date,
+                payment_verified_at: ['paid', 'payment_verified'].includes(payment_status) ? (booking.payment_verified_at || new Date()) : booking.payment_verified_at,
+                raw_payload: rawPayload
+            });
+
+            return res.redirect(`/admin/bookings/package-bookings/${booking.id}?success=updated`);
+        } catch (error) {
+            console.error('Error updating package booking:', error);
             res.status(500).send('Internal Server Error');
         }
     }

@@ -249,7 +249,6 @@ const findDepartureDate = (raw = {}) => {
               const refundDisabledTitle = !canProcessRefundAction
                 ? 'Only admin or manager can process package refunds'
                 : (!canAccount ? 'Accounting must be recorded first' : (returnClosed ? 'Package return is already closed' : 'Nothing available to refund'));
-              const downloadName = `${String(booking.booking_reference || 'package-booking').replace(/[^a-zA-Z0-9_-]/g, '-')}-summary.html`;
             %>
             <tr>
               <td>
@@ -329,13 +328,9 @@ const findDepartureDate = (raw = {}) => {
               </td>
               <td>
                 <div class="pb-row-actions">
-                  <button type="button" class="pb-action pb-action-view" data-bs-toggle="modal" data-bs-target="#bookingSummaryModal<%= modalKey %>">
-                    <i class="bi bi-eye"></i> View
-                  </button>
+                  <a href="/admin/bookings/package-bookings/<%= booking.id %>" class="pb-action pb-action-view"><i class="bi bi-eye"></i> View</a>
                   <a href="/admin/bookings/package-bookings/<%= booking.id %>/edit" class="pb-action pb-action-edit"><i class="bi bi-pencil-square"></i> Edit</a>
-                  <button type="button" class="pb-action pb-action-download pb-download-booking" data-summary-id="bookingSummaryContent<%= modalKey %>" data-filename="<%= downloadName %>">
-                    <i class="bi bi-download"></i> Download
-                  </button>
+                  <a href="/admin/bookings/package-bookings/<%= booking.id %>/download" class="pb-action pb-action-download"><i class="bi bi-download"></i> Download</a>
                   <% if (canPayRemaining) { %>
                     <button type="button" class="pb-action pb-action-pay" data-bs-toggle="modal" data-bs-target="#payRemainingModal<%= modalKey %>">
                       <i class="bi bi-cash-coin"></i> Pay Remaining
@@ -486,9 +481,7 @@ const findDepartureDate = (raw = {}) => {
                       </div>
                       <div class="modal-footer">
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary pb-download-booking" data-summary-id="bookingSummaryContent<%= modalKey %>" data-filename="<%= downloadName %>">
-                          <i class="bi bi-download"></i> Download Booking
-                        </button>
+                        <a href="/admin/bookings/package-bookings/<%= booking.id %>/download" class="btn btn-primary"><i class="bi bi-download"></i> Download Booking</a>
                       </div>
                     </div>
                   </div>
@@ -686,75 +679,6 @@ const findDepartureDate = (raw = {}) => {
 </div>
 
 <script>
-  document.querySelectorAll('.pb-download-booking').forEach((button) => {
-    button.addEventListener('click', () => {
-      const summaryId = button.getAttribute('data-summary-id');
-      const summary = summaryId ? document.getElementById(summaryId) : null;
-      if (!summary) {
-        alert('Booking summary is not available for download.');
-        return;
-      }
-
-      const filename = button.getAttribute('data-filename') || 'package-booking-summary.html';
-      const documentTitle = summary.querySelector('.pb-summary-title')?.textContent?.trim() || 'Package Booking Summary';
-      const html = `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${documentTitle}</title>
-  <style>
-    body{font-family:Arial,sans-serif;margin:0;background:#f8fafc;color:#111827;}
-    .download-shell{max-width:1100px;margin:0 auto;padding:28px;}
-    .download-header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px;border-bottom:1px solid #dbe3ef;padding-bottom:14px;}
-    .download-title{font-size:20px;font-weight:900;margin:0;}
-    .download-date{font-size:12px;color:#64748b;margin-top:4px;}
-    .pb-summary{display:grid;gap:14px;}
-    .pb-summary-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;border:1px solid #dbe3ef;background:#fff;border-radius:8px;padding:14px;}
-    .pb-summary-title{font-size:18px;font-weight:900;color:#111827;margin:0;}
-    .pb-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;}
-    .pb-summary-card{border:1px solid #dbe3ef;border-radius:8px;background:#fff;padding:14px;}
-    .pb-summary-card-wide{grid-column:1/-1;}
-    .pb-summary-label{font-size:11px;font-weight:900;text-transform:uppercase;color:#64748b;letter-spacing:.03em;}
-    .pb-summary-value{font-size:15px;font-weight:900;color:#111827;margin-top:5px;}
-    .pb-summary-muted{font-size:12px;color:#64748b;line-height:1.45;margin-top:3px;}
-    .pb-pill{display:inline-flex;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:800;text-transform:capitalize;margin-left:4px;}
-    .pb-summary-table{width:100%;border-collapse:collapse;border:1px solid #dbe3ef;border-radius:8px;overflow:hidden;margin-top:8px;}
-    .pb-summary-table th{background:#f8fafc;color:#475569;text-transform:uppercase;font-size:11px;letter-spacing:.03em;padding:10px;border-bottom:1px solid #dbe3ef;text-align:left;}
-    .pb-summary-table td{padding:10px;border-bottom:1px solid #edf2f7;font-size:12px;color:#334155;vertical-align:top;}
-    .pb-summary-table tfoot td{background:#f8fafc;font-weight:900;color:#111827;}
-    a{color:#2563eb;text-decoration:none;}
-    .text-center{text-align:center;}
-    .text-muted{color:#64748b;}
-    .py-4{padding-top:18px;padding-bottom:18px;}
-    @media print{body{background:#fff}.download-shell{padding:0}.pb-summary-card,.pb-summary-head{break-inside:avoid}}
-  </style>
-</head>
-<body>
-  <main class="download-shell">
-    <div class="download-header">
-      <div>
-        <h1 class="download-title">Package Booking Summary</h1>
-        <div class="download-date">Downloaded ${new Date().toLocaleString('en-IN')}</div>
-      </div>
-    </div>
-    ${summary.innerHTML}
-  </main>
-</body>
-</html>`;
-
-      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename.endsWith('.html') ? filename : `${filename}.html`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-    });
-  });
-
   document.querySelectorAll('.pb-admin-action-form').forEach((form) => {
     form.addEventListener('submit', async (event) => {
       event.preventDefault();

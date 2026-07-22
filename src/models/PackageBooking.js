@@ -56,7 +56,24 @@ const PackageBooking = sequelize.define('PackageBooking', {
     type: DataTypes.STRING(30),
     allowNull: true
   },
+  from_date: {
+    type: DataTypes.DATEONLY,
+    allowNull: true
+  },
+  to_date: {
+    type: DataTypes.DATEONLY,
+    allowNull: true
+  },
+  departure_date: {
+    type: DataTypes.DATEONLY,
+    allowNull: true
+  },
   package_base_amount: {
+    type: DataTypes.DECIMAL(12, 2),
+    allowNull: false,
+    defaultValue: 0.00
+  },
+  hotel_amount: {
     type: DataTypes.DECIMAL(12, 2),
     allowNull: false,
     defaultValue: 0.00

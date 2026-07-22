@@ -328,7 +328,12 @@ class AdminTripBuilderController {
                 });
             });
 
-        return hotels;
+        const uniqueHotels = new Map();
+        hotels.forEach(hotel => {
+            const key = [hotel.destination_id, String(hotel.name || '').trim().toLowerCase(), hotel.nights, hotel.rooms, hotel.price_per_night].join('|');
+            if (!uniqueHotels.has(key)) uniqueHotels.set(key, hotel);
+        });
+        return [...uniqueHotels.values()];
     }
 
     calculatePackageQuote(packageRow, adults, partialConfig, paymentMode = 'partial') {
@@ -378,6 +383,40 @@ class AdminTripBuilderController {
             vendorSplitBasis: packageRow.vendor_id
                 ? (hotelEstimatedAmount > 0 ? 'hotel_estimated_amount' : 'package_base_amount')
                 : 'no_vendor'
+        };
+    }
+
+    applyAdminPackageAmounts(quote, baseBookingAmount, paidAmount, gstPercent = 0, hotelAmount = 0) {
+        const systemCalculatedTotal = quote.packageTotal;
+        const serviceBaseAmount = this.money(baseBookingAmount);
+        const normalizedHotelAmount = this.money(hotelAmount);
+        const baseAmount = this.money(serviceBaseAmount + normalizedHotelAmount);
+        const normalizedGstPercent = Math.min(Math.max(this.money(gstPercent), 0), 100);
+        const taxAmount = this.money(baseAmount * normalizedGstPercent / 100);
+        const packageTotal = this.money(baseAmount + taxAmount);
+        const payableNow = this.money(paidAmount);
+        const remainingAmount = this.money(Math.max(packageTotal - payableNow, 0));
+        const vendorAmount = normalizedHotelAmount;
+
+        return {
+            ...quote,
+            systemCalculatedTotal,
+            serviceBaseAmount,
+            hotelAmount: normalizedHotelAmount,
+            baseAmount,
+            taxPercent: normalizedGstPercent,
+            taxType: normalizedGstPercent > 0 ? 'GST' : null,
+            taxAmount,
+            packageTotal,
+            payableNow,
+            remainingAmount,
+            remainingPercentage: packageTotal > 0 ? this.money((remainingAmount / packageTotal) * 100) : 0,
+            paymentMode: remainingAmount > 0 ? 'partial' : 'full',
+            partialBookingEnabled: remainingAmount > 0,
+            partialBookingPercentage: packageTotal > 0 ? this.money((payableNow / packageTotal) * 100) : 0,
+            vendorAmount,
+            platformAmount: serviceBaseAmount,
+            vendorSplitBasis: normalizedHotelAmount > 0 ? 'manual_hotel_amount' : 'package_base_amount'
         };
     }
 
@@ -475,13 +514,23 @@ class AdminTripBuilderController {
         let transaction = null;
 
         try {
-            const { customer_id, package_id, adults, inquiry_id, payment_mode, passengers } = req.body || {};
+            const { customer_id, package_id, adults, inquiry_id, payment_mode, passengers, booking_amount, base_amount, hotel_amount, paid_amount, apply_gst, gst_percent, from_date, to_date, departure_date } = req.body || {};
             if (!customer_id) {
                 return res.status(400).json({ success: false, message: 'Please select a customer.' });
             }
             const packageId = parseInt(package_id, 10);
             if (!Number.isInteger(packageId) || packageId <= 0) {
                 return res.status(400).json({ success: false, message: 'Please select a package.' });
+            }
+            const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+            if (![from_date, to_date, departure_date].every(value => datePattern.test(String(value || '')))) {
+                return res.status(400).json({ success: false, message: 'From date, to date and departure date are required.' });
+            }
+            if (to_date < from_date) {
+                return res.status(400).json({ success: false, message: 'To date cannot be before from date.' });
+            }
+            if (departure_date > to_date) {
+                return res.status(400).json({ success: false, message: 'Departure date cannot be after the trip end date.' });
             }
 
             const sequelize = this.bookingRepo.CustomTrip.sequelize;
@@ -513,7 +562,45 @@ class AdminTripBuilderController {
             }
 
             const partialConfig = await this.getPartialBookingConfig();
-            const quote = this.calculatePackageQuote(packageRow, adults, partialConfig, payment_mode);
+            const calculatedQuote = this.calculatePackageQuote(packageRow, adults, partialConfig, payment_mode);
+            const hasBaseAmount = base_amount !== undefined && base_amount !== null && base_amount !== '';
+            const requestedGstPercent = apply_gst === true || apply_gst === 'true' || apply_gst === 1 || apply_gst === '1'
+                ? Number(gst_percent)
+                : 0;
+            const requestedBaseAmount = hasBaseAmount
+                ? Number(base_amount)
+                : (booking_amount === undefined || booking_amount === null || booking_amount === ''
+                    ? calculatedQuote.baseAmount
+                    : Number(booking_amount) / (1 + calculatedQuote.taxPercent / 100));
+            const requestedHotelAmount = hotel_amount === undefined || hotel_amount === null || hotel_amount === ''
+                ? calculatedQuote.hotelEstimatedAmount
+                : Number(hotel_amount);
+            const requestedPaidAmount = paid_amount === undefined || paid_amount === null || paid_amount === ''
+                ? calculatedQuote.payableNow
+                : Number(paid_amount);
+            if (!Number.isFinite(requestedBaseAmount) || requestedBaseAmount <= 0) {
+                await transaction.rollback();
+                transaction = null;
+                return res.status(400).json({ success: false, message: 'Base booking amount must be greater than zero.' });
+            }
+            if (!Number.isFinite(requestedHotelAmount) || requestedHotelAmount < 0) {
+                await transaction.rollback();
+                transaction = null;
+                return res.status(400).json({ success: false, message: 'Hotel amount cannot be negative.' });
+            }
+            if (!Number.isFinite(requestedGstPercent) || requestedGstPercent < 0 || requestedGstPercent > 100) {
+                await transaction.rollback();
+                transaction = null;
+                return res.status(400).json({ success: false, message: 'GST percentage must be between 0 and 100.' });
+            }
+            const taxableAmount = requestedBaseAmount + requestedHotelAmount;
+            const requestedTotal = this.money(taxableAmount + (taxableAmount * requestedGstPercent / 100));
+            if (!Number.isFinite(requestedPaidAmount) || requestedPaidAmount < 0 || requestedPaidAmount > requestedTotal) {
+                await transaction.rollback();
+                transaction = null;
+                return res.status(400).json({ success: false, message: 'Received amount must be between zero and the total booking amount.' });
+            }
+            const quote = this.applyAdminPackageAmounts(calculatedQuote, requestedBaseAmount, requestedPaidAmount, requestedGstPercent, requestedHotelAmount);
             if (quote.packageTotal <= 0) {
                 await transaction.rollback();
                 transaction = null;
@@ -528,6 +615,9 @@ class AdminTripBuilderController {
                 inquiry_id: inquiry_id || null,
                 adults: quote.adultCount,
                 payment_mode: quote.paymentMode,
+                from_date,
+                to_date,
+                departure_date,
                 route,
                 hotels: quote.hotels,
                 hotel_count: quote.hotels.length,
@@ -541,6 +631,10 @@ class AdminTripBuilderController {
                     discount_percentage: Number(packageRow.discount_percentage || 0)
                 },
                 pricing: {
+                    system_calculated_total: quote.systemCalculatedTotal,
+                    manually_overridden: this.money(quote.systemCalculatedTotal) !== this.money(quote.packageTotal),
+                    service_base_amount: quote.serviceBaseAmount,
+                    hotel_amount: quote.hotelAmount,
                     gross_base_amount: quote.grossBaseAmount,
                     hotel_estimated_amount: quote.hotelEstimatedAmount,
                     discount_amount: quote.discountAmount,
@@ -570,8 +664,12 @@ class AdminTripBuilderController {
                 customer_name: customerUser.name || null,
                 customer_email: customerUser.email || null,
                 customer_phone: customer.phone || customerUser.phone_number || null,
+                from_date,
+                to_date,
+                departure_date,
                 package_base_amount: quote.baseAmount,
-                tax_type: packageRow.tax_type || null,
+                hotel_amount: quote.hotelAmount,
+                tax_type: quote.taxType,
                 tax_percent: quote.taxPercent,
                 tax_amount: quote.taxAmount,
                 package_total: quote.packageTotal,
@@ -584,7 +682,7 @@ class AdminTripBuilderController {
                 vendor_split_basis: quote.vendorSplitBasis,
                 partial_booking_enabled: quote.partialBookingEnabled,
                 partial_booking_percentage: quote.partialBookingPercentage,
-                payment_status: quote.remainingAmount > 0 ? 'partial_paid' : 'payment_verified',
+                payment_status: quote.payableNow <= 0 ? 'pending' : (quote.remainingAmount > 0 ? 'partial_paid' : 'payment_verified'),
                 payment_verified_at: quote.payableNow > 0 ? new Date() : null,
                 accounting_status: 'pending',
                 page_url: '/admin/bookings/create',

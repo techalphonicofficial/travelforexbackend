@@ -1,70 +1,92 @@
 <%- contentFor('body') %>
 
-<div class="content-header">
-    <div class="container-fluid">
-        <div class="row align-items-center mb-2">
-            <div class="col-sm-6">
-                <h1 class="m-0 text-dark">Edit Booking</h1>
-            </div>
-            <div class="col-sm-6">
-                <ol class="breadcrumb float-sm-right">
-                    <li class="breadcrumb-item"><a href="/dashboard">Home</a></li>
-                    <li class="breadcrumb-item"><a href="/admin/bookings">Bookings</a></li>
-                    <li class="breadcrumb-item active">Edit</li>
-                </ol>
-            </div>
-        </div>
+<%
+  const raw = booking.raw_payload || {};
+  const dateValue = value => value ? String(value).substring(0, 10) : '';
+  const fromDate = dateValue(booking.from_date || raw.from_date || raw.start_date);
+  const toDate = dateValue(booking.to_date || raw.to_date || raw.end_date);
+  const departureDate = dateValue(booking.departure_date || raw.departure_date || fromDate);
+  const money = value => `INR ${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+%>
+
+<style>
+  .be-shell{max-width:1120px;margin:0 auto;padding:14px 12px 32px;font-size:13px;color:#1d2939;}
+  .be-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;}
+  .be-title{font-size:20px;font-weight:800;letter-spacing:-.025em;margin:0;}
+  .be-sub{font-size:12px;color:#667085;margin-top:3px;}
+  .be-actions{display:flex;gap:7px;flex-wrap:wrap;}
+  .be-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid #d0d5dd;border-radius:8px;padding:8px 11px;background:#fff;color:#344054;text-decoration:none;font-size:12px;font-weight:700;}
+  .be-btn:hover{color:#4f46e5;border-color:#a5b4fc;text-decoration:none;}
+  .be-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,.75fr);gap:14px;align-items:start;}
+  .be-card{background:#fff;border:1px solid #e4e7ec;border-radius:12px;box-shadow:0 4px 14px rgba(16,24,40,.04);overflow:hidden;}
+  .be-card-head{padding:13px 16px;border-bottom:1px solid #eaecf0;font-size:14px;font-weight:800;}
+  .be-body{padding:16px;}
+  .be-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;}
+  .be-wide{grid-column:1/-1;}
+  .be-label{display:block;margin-bottom:5px;color:#475467;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;}
+  .be-control{width:100%;min-height:40px;border:1px solid #d0d5dd;border-radius:8px;padding:8px 10px;background:#fff;color:#101828;font-size:13px;outline:none;}
+  .be-control:focus{border-color:#818cf8;box-shadow:0 0 0 3px rgba(99,102,241,.11);}
+  .be-help{font-size:11px;color:#667085;margin-top:5px;}
+  .be-footer{display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;border-top:1px solid #eaecf0;background:#fcfcfd;}
+  .be-save{border:0;border-radius:8px;padding:9px 15px;background:#4f46e5;color:#fff;font-size:12px;font-weight:800;}
+  .be-stat{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #f0f2f5;}
+  .be-stat:last-child{border:0}.be-stat span{color:#667085}.be-stat strong{text-align:right;color:#101828;}
+  .be-ref{display:inline-flex;border-radius:999px;padding:5px 9px;background:#eef2ff;color:#4338ca;font-weight:800;font-size:11px;}
+  @media(max-width:900px){.be-grid{grid-template-columns:1fr}.be-head{align-items:flex-start;flex-direction:column;}}
+  @media(max-width:600px){.be-form-grid{grid-template-columns:1fr}.be-wide{grid-column:auto}.be-actions{width:100%}.be-btn{flex:1;justify-content:center;}}
+</style>
+
+<div class="be-shell">
+  <div class="be-head">
+    <div><h1 class="be-title">Edit package booking</h1><div class="be-sub"><span class="be-ref"><%= booking.booking_reference %></span></div></div>
+    <div class="be-actions">
+      <a class="be-btn" href="/admin/bookings/package-bookings"><i class="bi bi-arrow-left"></i> Back</a>
+      <a class="be-btn" href="/admin/bookings/package-bookings/<%= booking.id %>"><i class="bi bi-eye"></i> View</a>
+      <a class="be-btn" href="/admin/bookings/package-bookings/<%= booking.id %>/download"><i class="bi bi-download"></i> Download</a>
     </div>
+  </div>
+
+  <div class="be-grid">
+    <form class="be-card" action="/admin/bookings/package-bookings/<%= booking.id %>" method="POST">
+      <div class="be-card-head">Editable booking details</div>
+      <div class="be-body be-form-grid">
+        <div class="be-wide">
+          <label class="be-label" for="customer_id">Customer</label>
+          <select id="customer_id" name="customer_id" class="be-control select2" required>
+            <option value="">Select customer</option>
+            <% customers.forEach(customer => { const customerUser = customer.user || {}; %>
+              <option value="<%= customer.id %>" <%= String(booking.customer_id || '') === String(customer.id) ? 'selected' : '' %>><%= customerUser.name || 'Customer' %><%= customerUser.email ? ` — ${customerUser.email}` : '' %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div><label class="be-label" for="from_date">From date</label><input id="from_date" name="from_date" type="date" class="be-control" value="<%= fromDate %>" required></div>
+        <div><label class="be-label" for="to_date">To date</label><input id="to_date" name="to_date" type="date" class="be-control" value="<%= toDate %>" required></div>
+        <div><label class="be-label" for="departure_date">Departure date</label><input id="departure_date" name="departure_date" type="date" class="be-control" value="<%= departureDate %>" required></div>
+        <div>
+          <label class="be-label" for="payment_status">Payment status</label>
+          <select id="payment_status" name="payment_status" class="be-control" required>
+            <% [['pending','Pending'],['payment_initiated','Payment initiated'],['partial_paid','Partially paid'],['paid','Paid'],['payment_verified','Payment verified'],['failed','Failed'],['refunded','Refunded'],['cancelled','Cancelled']].forEach(([value,label]) => { %>
+              <option value="<%= value %>" <%= booking.payment_status === value ? 'selected' : '' %>><%= label %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="be-wide be-help">Financial amounts are read-only here to keep accounting entries consistent. Use “Pay Remaining” from the booking list to record additional payment.</div>
+      </div>
+      <div class="be-footer"><a class="be-btn" href="/admin/bookings/package-bookings/<%= booking.id %>">Cancel</a><button class="be-save" type="submit"><i class="bi bi-check2"></i> Save changes</button></div>
+    </form>
+
+    <aside class="be-card">
+      <div class="be-card-head">Financial summary</div>
+      <div class="be-body">
+        <div class="be-stat"><span>Package</span><strong><%= booking.package_name || 'N/A' %></strong></div>
+        <div class="be-stat"><span>Base package amount</span><strong><%= money(Number(booking.package_base_amount || 0) - Number(booking.hotel_amount || 0)) %></strong></div>
+        <div class="be-stat"><span>Hotel amount</span><strong><%= money(booking.hotel_amount) %></strong></div>
+        <div class="be-stat"><span>GST (<%= Number(booking.tax_percent || 0) %>%)</span><strong><%= money(booking.tax_amount) %></strong></div>
+        <div class="be-stat"><span>Total</span><strong><%= money(booking.package_total) %></strong></div>
+        <div class="be-stat"><span>Received</span><strong><%= money(booking.paid_amount) %></strong></div>
+        <div class="be-stat"><span>Remaining</span><strong><%= money(booking.remaining_amount) %></strong></div>
+        <div class="be-stat"><span>Passengers</span><strong><%= Array.isArray(booking.passengers) ? booking.passengers.length : 0 %></strong></div>
+      </div>
+    </aside>
+  </div>
 </div>
-
-<section class="content">
-    <div class="container-fluid">
-        <div class="card card-primary card-outline shadow">
-            <div class="card-header">
-                <h3 class="card-title">Update Details for <%= booking.booking_reference %></h3>
-            </div>
-            <form action="/admin/bookings/package-bookings/<%= booking.id %>" method="POST">
-                <div class="card-body">
-                    <div class="form-group">
-                        <label>Customer Name</label>
-                        <select name="customer_id" class="form-control select2" required>
-                            <option value="" <%= !booking.customer_id ? 'selected' : '' %>>Select Customer</option>
-                            <% customers.forEach(c => { %>
-                                <option value="<%= c.id %>" <%= booking.customer_id === c.id ? 'selected' : '' %>><%= c.user ? c.user.name : 'Unknown' %> (<%= c.user ? c.user.email : 'Unknown' %>)</option>
-                            <% }) %>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Total Amount (₹)</label>
-                        <input type="number" step="0.01" class="form-control" name="total_amount" value="<%= parseFloat(booking.total_amount).toFixed(2) %>" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Payment Status</label>
-                        <select class="form-control" name="payment_status" required>
-                            <option value="pending" <%= booking.payment_status === 'pending' ? 'selected' : '' %>>Pending</option>
-                            <option value="paid" <%= booking.payment_status === 'paid' ? 'selected' : '' %>>Paid</option>
-                            <option value="failed" <%= booking.payment_status === 'failed' ? 'selected' : '' %>>Failed</option>
-                            <option value="refunded" <%= booking.payment_status === 'refunded' ? 'selected' : '' %>>Refunded</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Booking Status</label>
-                        <select class="form-control" name="booking_status" required>
-                            <option value="pending" <%= booking.booking_status === 'pending' ? 'selected' : '' %>>Pending</option>
-                            <option value="confirmed" <%= booking.booking_status === 'confirmed' ? 'selected' : '' %>>Confirmed</option>
-                            <option value="cancelled" <%= booking.booking_status === 'cancelled' ? 'selected' : '' %>>Cancelled</option>
-                            <option value="completed" <%= booking.booking_status === 'completed' ? 'selected' : '' %>>Completed</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="card-footer text-right">
-                    <a href="/admin/bookings/<%= booking.id %>" class="btn btn-default">Cancel</a>
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</section>

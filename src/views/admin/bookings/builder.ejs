@@ -123,6 +123,66 @@ body {
     letter-spacing: -1px;
     margin: 1rem 0;
 }
+.travel-date-card {
+    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+    border: 1px solid #dbe4f0;
+    border-radius: 16px;
+    padding: 1rem 1rem 0;
+    margin-bottom: 1.5rem;
+}
+.travel-date-card .form-label, .pricing-editor .form-label {
+    color: #334155;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: .035em;
+    text-transform: uppercase;
+}
+.pricing-editor {
+    background: #f8fafc;
+    border: 1px solid #dbe4f0;
+    border-radius: 16px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+.pricing-editor .form-control {
+    min-height: 48px;
+    border-radius: 10px;
+    border-color: #cbd5e1;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+.pricing-editor .input-group-text {
+    border-radius: 10px 0 0 10px;
+    border-color: #cbd5e1;
+    background: #fff;
+    color: #64748b;
+    font-weight: 800;
+}
+.gst-control { display: grid; grid-template-columns: minmax(0, 1fr) 105px; gap: .75rem; align-items: end; }
+.gst-toggle {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    padding: 0 .8rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    background: #fff;
+    font-weight: 700;
+    color: #334155;
+}
+.amount-total-strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .85rem 1rem;
+    margin-top: 1rem;
+    border-radius: 12px;
+    background: #ecfdf5;
+    color: #065f46;
+}
+.amount-total-strip strong { font-size: 1.15rem; }
 
 .day-card { 
     border-left: 4px solid #4f46e5; 
@@ -389,29 +449,133 @@ body {
     color: #64748b;
     margin-top: 0.15rem;
 }
+/* Refined booking workspace */
+:root {
+    --booking-ink: #172033;
+    --booking-muted: #667085;
+    --booking-border: #e4e7ec;
+    --booking-surface: #ffffff;
+    --booking-soft: #f8fafc;
+    --booking-primary: #4f46e5;
+    --booking-primary-dark: #3730a3;
+    --booking-success: #079455;
+}
+body { background: #f5f7fb; color: var(--booking-ink); font-size: 13px; }
+.booking-shell { max-width: 1580px; margin: 0 auto; }
+.booking-page-heading { font-size: 1.45rem; font-weight: 780; letter-spacing: -.035em; color: var(--booking-ink); }
+.booking-page-heading-icon {
+    width: 42px; height: 42px; display: inline-flex; align-items: center; justify-content: center;
+    margin-right: .65rem; border-radius: 12px; background: #eef2ff; color: var(--booking-primary); font-size: 1rem;
+}
+.booking-page-copy { margin: .3rem 0 0 3.45rem; color: var(--booking-muted); font-size: .78rem; }
+.glass-card, .summary-card { border: 1px solid var(--booking-border); border-radius: 16px; box-shadow: 0 8px 28px rgba(16, 24, 40, .06); }
+.card-header-custom {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    background: var(--booking-surface); color: var(--booking-ink); border-radius: 16px 16px 0 0 !important;
+    padding: 1.25rem 1.5rem !important; border-bottom: 1px solid var(--booking-border); box-shadow: none;
+}
+.card-header-custom h3 { font-size: .95rem; letter-spacing: -.02em; }
+.card-header-custom .header-icon {
+    width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 10px; color: var(--booking-primary); background: #eef2ff;
+}
+.card-header-custom .header-copy { color: var(--booking-muted); font-size: .8rem; margin-top: .15rem; }
+.form-label { color: #475467; font-size: .76rem; font-weight: 700; letter-spacing: .045em; }
+.form-control, .select2-container--default .select2-selection--multiple, .select2-container--default .select2-selection--single {
+    border: 1px solid #d0d5dd; border-radius: 10px; background: #fff; min-height: 48px; box-shadow: 0 1px 2px rgba(16, 24, 40, .03);
+    font-size: 13px;
+}
+.form-control:focus, .select2-container--focus .select2-selection--multiple {
+    border-color: #818cf8 !important; box-shadow: 0 0 0 3px rgba(99, 102, 241, .12) !important;
+}
+.travel-date-card { background: #fbfcfe; border-color: var(--booking-border); border-radius: 12px; padding: 1.1rem 1.1rem .15rem; }
+.schedule-icon {
+    width: 38px; height: 38px; flex: 0 0 38px; display: inline-flex; align-items: center; justify-content: center;
+    color: var(--booking-primary); background: #eef2ff; border-radius: 10px;
+}
+.payment-mode-control label { border-radius: 10px; background: #fff; min-height: 48px; font-size: .9rem; }
+.payment-mode-control input:checked + label { background: #eef2ff; border-color: #6366f1; color: var(--booking-primary-dark); box-shadow: 0 0 0 3px rgba(99, 102, 241, .1); }
+.package-preview { border-radius: 14px; border-color: var(--booking-border); background: #f8fafc; }
+.package-preview-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.package-preview-item { border: 1px solid var(--booking-border); border-radius: 10px; box-shadow: none; padding: .75rem; }
+.package-preview-item span { font-size: .65rem; }
+.package-preview-item strong { font-size: .78rem; line-height: 1.4; }
+.preview-disclosure { margin-top: .8rem; border: 1px solid var(--booking-border); border-radius: 10px; background: #fff; overflow: hidden; }
+.preview-disclosure summary {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .85rem 1rem;
+    color: #344054; font-size: .84rem; font-weight: 750; cursor: pointer; list-style: none;
+}
+.preview-disclosure summary::-webkit-details-marker { display: none; }
+.preview-disclosure summary::after { content: '\f078'; font-family: 'Font Awesome 5 Free'; font-weight: 900; color: #667085; font-size: .7rem; transition: transform .2s; }
+.preview-disclosure[open] summary::after { transform: rotate(180deg); }
+.preview-disclosure-body { padding: 0 .85rem .85rem; border-top: 1px solid #f0f2f5; }
+.preview-copy { color: #667085; font-size: .82rem; line-height: 1.6; }
+.hotel-preview-list.compact { margin-top: .75rem; }
+.hotel-preview-list.compact .hotel-preview-row { padding: .7rem .75rem; border-radius: 9px; }
+.hotel-preview-list.compact .hotel-preview-row strong { font-size: .83rem; }
+.hotel-preview-list.compact .hotel-preview-row small { font-size: .76rem; }
+.summary-card { top: 1rem; padding: 1.25rem; }
+.summary-header { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding-bottom: 1rem; border-bottom: 1px solid var(--booking-border); }
+.summary-title { border: 0; padding: 0; margin: 0; font-size: .95rem; letter-spacing: -.02em; }
+.summary-status { border-radius: 999px !important; padding: .45rem .7rem !important; font-size: .72rem; }
+.summary-meta { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; margin-top: 1rem; }
+.summary-meta-item { min-width: 0; padding: .75rem; border-radius: 10px; background: #f8fafc; border: 1px solid #eef2f6; }
+.summary-meta-item.wide { grid-column: 1 / -1; }
+.summary-meta-label { display: block; margin-bottom: .3rem; color: var(--booking-muted); font-size: .68rem; font-weight: 750; text-transform: uppercase; letter-spacing: .06em; }
+.summary-meta-value { display: block; color: var(--booking-ink); font-size: .85rem; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
+.summary-total {
+    margin-top: 1rem; padding: 1rem; border-radius: 12px; color: #fff;
+    background: linear-gradient(135deg, #111827 0%, #27324a 100%);
+}
+.summary-total-label { color: #cbd5e1; font-size: .7rem; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+.price-display { margin: .35rem 0 0; color: #6ee7b7; font-size: 1.65rem; letter-spacing: -.045em; }
+.pricing-editor { margin-top: .8rem; border-radius: 12px; background: #fff; border-color: var(--booking-border); }
+.gst-toggle { border-color: #d0d5dd; border-radius: 9px; }
+.amount-total-strip { padding: .75rem .85rem; border: 1px solid #a7f3d0; border-radius: 9px; }
+.summary-muted-box { margin-top: .8rem; border-color: var(--booking-border); border-radius: 10px; background: #fafbfc; }
+.btn-primary-custom { border-radius: 10px; background: var(--booking-primary); box-shadow: 0 2px 6px rgba(79, 70, 229, .22); font-weight: 700; }
+.btn-primary-custom:hover { background: #4338ca; transform: translateY(-1px); box-shadow: 0 5px 12px rgba(79, 70, 229, .24); }
+.btn-primary-custom:disabled { background: #c7c9d1; box-shadow: none; cursor: not-allowed; transform: none; }
+@media (max-width: 1199.98px) {
+    .summary-card { position: static; margin-top: 1.25rem; }
+    .package-preview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 767.98px) {
+    .booking-page-heading { font-size: 1.35rem; }
+    .booking-page-copy { margin-left: 0; }
+    .card-header-custom { padding: 1rem !important; }
+    .card-body.p-md-5 { padding: 1rem !important; }
+    .package-preview-grid, .summary-meta { grid-template-columns: 1fr; }
+    .summary-meta-item.wide { grid-column: auto; }
+    .gst-control { grid-template-columns: 1fr 100px; }
+}
 </style>
 
 <div class="content-header">
-    <div class="container-fluid">
-        <div class="row mb-4 mt-2 align-items-center">
-            <div class="col-sm-6">
-                <h1 class="m-0 text-dark" style="font-weight: 800; letter-spacing: -0.5px;"><i class="fas fa-suitcase-rolling text-primary mr-2"></i> Create Package Booking</h1>
-                <p class="text-muted mb-0 mt-1">Select an existing customer and package, then confirm the booking amount.</p>
+    <div class="container-fluid booking-shell">
+        <div class="row mb-3 mt-2 align-items-center">
+            <div class="col-12">
+                <h1 class="booking-page-heading m-0"><span class="booking-page-heading-icon"><i class="fas fa-suitcase-rolling"></i></span>Create Package Booking</h1>
+                <p class="booking-page-copy">Build a confirmed package booking with travel dates, passengers and payment details.</p>
             </div>
         </div>
     </div>
 </div>
 
 <section class="content">
-    <div class="container-fluid">
-        <div class="row">
+    <div class="container-fluid booking-shell">
+        <div class="row align-items-start">
             <!-- Left Column: Builder -->
-            <div class="col-md-8">
+            <div class="col-xl-8 col-lg-7">
                 
                 <!-- STEP 1: INITIALIZE TRIP -->
                 <div id="step-1" class="glass-card builder-step active p-0 overflow-hidden">
                     <div class="card-header card-header-custom">
-                        <h3 class="card-title mb-0"><i class="fas fa-box-open mr-2"></i> Package Booking</h3>
+                        <div class="d-flex align-items-center">
+                            <span class="header-icon mr-3"><i class="fas fa-box-open"></i></span>
+                            <div><h3 class="card-title mb-0">Package details</h3><div class="header-copy">Customer, schedule and package selection</div></div>
+                        </div>
+                        <span class="badge badge-light px-3 py-2" style="border-radius:999px;color:#475467;">Step 1 of 1</span>
                     </div>
                     <div class="card-body p-4 p-md-5">
                         <%
@@ -488,6 +652,11 @@ body {
                                 const parsedAdults = parseInt(inquiry.total_travellers, 10);
                                 if (!isNaN(parsedAdults) && parsedAdults > 0) adultVal = parsedAdults;
                             }
+                            let packageDepartureVal = '';
+                            if (typeof inquiry !== 'undefined' && inquiry && inquiry.departure_date) {
+                                const departure = new Date(inquiry.departure_date);
+                                if (!isNaN(departure.getTime())) packageDepartureVal = departure.toISOString().substring(0, 10);
+                            }
                         %>
                         <form id="initTripForm">
                             <% if (typeof inquiry !== 'undefined' && inquiry) { %>
@@ -532,6 +701,27 @@ body {
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                            <div class="travel-date-card">
+                                <div class="d-flex align-items-center mb-3">
+                                    <span class="schedule-icon mr-2"><i class="fas fa-calendar-alt"></i></span>
+                                    <div><strong class="d-block">Travel Schedule</strong><small class="text-muted">Confirm stay period and actual departure date.</small></div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4"><div class="form-group mb-3">
+                                        <label class="form-label" for="bookingFromDate">From Date *</label>
+                                        <input type="date" id="bookingFromDate" class="form-control" value="<%= packageDepartureVal %>" required>
+                                    </div></div>
+                                    <div class="col-md-4"><div class="form-group mb-3">
+                                        <label class="form-label" for="bookingToDate">To Date *</label>
+                                        <input type="date" id="bookingToDate" class="form-control" required>
+                                    </div></div>
+                                    <div class="col-md-4"><div class="form-group mb-3">
+                                        <label class="form-label" for="bookingDepartureDate">Departure Date *</label>
+                                        <input type="date" id="bookingDepartureDate" class="form-control" value="<%= packageDepartureVal %>" required>
+                                    </div></div>
+                                </div>
+                                <small id="travelDateError" class="text-danger d-block mb-3"></small>
                             </div>
                             <div class="form-group mb-4">
                                 <label class="form-label">Package</label>
@@ -600,33 +790,73 @@ body {
             </div>
 
             <!-- Right Column: Live Price & Confirm -->
-            <div class="col-md-4">
+            <div class="col-xl-4 col-lg-5">
                 <div class="summary-card">
-                    <h4 class="summary-title"><i class="fas fa-receipt text-primary mr-2"></i> Booking Summary</h4>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="text-muted font-weight-bold">Status</span>
-                        <span id="tripStatus" class="badge badge-warning px-3 py-2" style="border-radius: 8px;">Select Package</span>
+                    <div class="summary-header">
+                        <h4 class="summary-title"><i class="fas fa-receipt text-primary mr-2"></i>Booking Summary</h4>
+                        <span id="tripStatus" class="badge badge-warning summary-status">Select Package</span>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="text-muted font-weight-bold">Customer</span>
-                        <span id="summaryCustomer" class="text-right font-weight-bold text-dark">Not selected</span>
+                    <div class="summary-meta">
+                        <div class="summary-meta-item wide">
+                            <span class="summary-meta-label">Customer</span>
+                            <span id="summaryCustomer" class="summary-meta-value">Not selected</span>
+                        </div>
+                        <div class="summary-meta-item wide">
+                            <span class="summary-meta-label">Package</span>
+                            <span id="summaryPackage" class="summary-meta-value">Not selected</span>
+                        </div>
+                        <div class="summary-meta-item">
+                            <span class="summary-meta-label">Travellers</span>
+                            <span id="summaryAdults" class="summary-meta-value">1 Adult</span>
+                        </div>
+                        <div class="summary-meta-item">
+                            <span class="summary-meta-label">Duration</span>
+                            <span id="summaryDurationBadge" class="summary-meta-value">0 Days</span>
+                        </div>
+                        <div class="summary-meta-item wide">
+                            <span class="summary-meta-label">Travel dates</span>
+                            <span id="summaryTravelDates" class="summary-meta-value">Not selected</span>
+                        </div>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="text-muted font-weight-bold">Package</span>
-                        <span id="summaryPackage" class="text-right font-weight-bold text-dark">Not selected</span>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="text-muted font-weight-bold">Adults</span>
-                        <span id="summaryAdults" class="badge badge-light px-3 py-2" style="border-radius: 8px;">1</span>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="text-muted font-weight-bold">Duration</span>
-                        <span id="summaryDurationBadge" class="badge badge-info px-3 py-2" style="border-radius: 8px; background-color: #3b82f6;">0 Days</span>
-                    </div>
-                    
-                    <div class="mt-4 pt-3" style="border-top: 2px dashed #e2e8f0;">
-                        <span class="text-muted font-weight-bold text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Total Package Price</span>
+                    <div class="summary-total">
+                        <span class="summary-total-label">Total booking value</span>
                         <h2 id="livePrice" class="price-display">INR 0.00</h2>
+                    </div>
+
+                    <div class="pricing-editor">
+                        <div class="form-group mb-3">
+                            <label for="manualBookingAmount" class="form-label">Base Booking Amount</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend"><span class="input-group-text">INR</span></div>
+                                <input type="number" class="form-control" id="manualBookingAmount" min="0.01" step="0.01" placeholder="Agreed base amount" disabled>
+                            </div>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="manualHotelAmount" class="form-label">Hotel Amount</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend"><span class="input-group-text">INR</span></div>
+                                <input type="number" class="form-control" id="manualHotelAmount" min="0" step="0.01" placeholder="Total hotel cost" disabled>
+                            </div>
+                        </div>
+                        <div class="gst-control">
+                            <div>
+                                <label class="form-label d-block">Tax</label>
+                                <label class="gst-toggle mb-0" for="applyBookingGst"><input type="checkbox" id="applyBookingGst" disabled><span>Apply GST</span></label>
+                            </div>
+                            <div>
+                                <label class="form-label" for="bookingGstPercent">GST %</label>
+                                <input type="number" class="form-control" id="bookingGstPercent" min="0" max="100" step="0.01" value="0" disabled>
+                            </div>
+                        </div>
+                        <div class="form-group mt-3 mb-0">
+                            <label for="manualPaidAmount" class="form-label">Amount Received Now</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend"><span class="input-group-text">INR</span></div>
+                                <input type="number" class="form-control" id="manualPaidAmount" min="0" step="0.01" placeholder="Actual amount received" disabled>
+                            </div>
+                        </div>
+                        <div class="amount-total-strip"><span>Total after GST</span><strong id="pricingEditorTotal">INR 0.00</strong></div>
+                        <small id="manualAmountError" class="text-danger d-block mt-2"></small>
                     </div>
 
                     <div id="destBreakdownContainer" class="summary-muted-box">
@@ -857,6 +1087,9 @@ function getBookingSelections() {
         packageId: document.getElementById('packageId') ? document.getElementById('packageId').value : '',
         adults: Math.max(parseInt(document.getElementById('adultCount') ? document.getElementById('adultCount').value : '1', 10) || 1, 1),
         paymentMode: paymentModeInput ? paymentModeInput.value : 'partial',
+        fromDate: document.getElementById('bookingFromDate')?.value || '',
+        toDate: document.getElementById('bookingToDate')?.value || '',
+        departureDate: document.getElementById('bookingDepartureDate')?.value || '',
         inquiryId: document.getElementById('inquiryId') ? document.getElementById('inquiryId').value : null
     };
 }
@@ -875,8 +1108,90 @@ function setConfirmButtonState() {
     const btn = document.getElementById('btnConfirmBooking');
     if (!btn) return;
     const selections = getBookingSelections();
-    const canConfirm = Boolean(selections.customerId && selections.packageId && currentPackageQuote && Number(currentPackageQuote.amounts?.package_total || 0) > 0);
+    const baseAmount = Number(document.getElementById('manualBookingAmount')?.value || 0);
+    const hotelAmount = Number(document.getElementById('manualHotelAmount')?.value || 0);
+    const applyGst = Boolean(document.getElementById('applyBookingGst')?.checked);
+    const gstPercent = applyGst ? Number(document.getElementById('bookingGstPercent')?.value || 0) : 0;
+    const subtotal = baseAmount + hotelAmount;
+    const bookingAmount = subtotal + (subtotal * gstPercent / 100);
+    const paidAmount = Number(document.getElementById('manualPaidAmount')?.value || 0);
+    const validDates = Boolean(selections.fromDate && selections.toDate && selections.departureDate && selections.toDate >= selections.fromDate && selections.departureDate <= selections.toDate);
+    const validAmounts = Number.isFinite(baseAmount) && baseAmount > 0 && Number.isFinite(hotelAmount) && hotelAmount >= 0 && Number.isFinite(gstPercent) && gstPercent >= 0 && gstPercent <= 100 && Number.isFinite(paidAmount) && paidAmount >= 0 && paidAmount <= bookingAmount;
+    const canConfirm = Boolean(selections.customerId && selections.packageId && currentPackageQuote && validDates && validAmounts);
     btn.disabled = !canConfirm;
+}
+
+function formatTravellerCount(value) {
+    const count = Math.max(Number(value || 1), 1);
+    return `${count} ${count === 1 ? 'Adult' : 'Adults'}`;
+}
+
+function formatDisplayDate(value) {
+    if (!value) return '';
+    const date = new Date(`${value}T00:00:00`);
+    return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function refreshManualAmountSummary() {
+    if (!currentPackageQuote) return;
+    const bookingInput = document.getElementById('manualBookingAmount');
+    const hotelInput = document.getElementById('manualHotelAmount');
+    const paidInput = document.getElementById('manualPaidAmount');
+    const applyGstInput = document.getElementById('applyBookingGst');
+    const gstInput = document.getElementById('bookingGstPercent');
+    const error = document.getElementById('manualAmountError');
+    const base = Number(bookingInput?.value || 0);
+    const hotel = Number(hotelInput?.value || 0);
+    const gstPercent = applyGstInput?.checked ? Number(gstInput?.value || 0) : 0;
+    const subtotal = base + hotel;
+    const gstAmount = subtotal * gstPercent / 100;
+    const total = subtotal + gstAmount;
+    const paid = Number(paidInput?.value || 0);
+    const valid = Number.isFinite(base) && base > 0 && Number.isFinite(hotel) && hotel >= 0 && Number.isFinite(gstPercent) && gstPercent >= 0 && gstPercent <= 100 && Number.isFinite(paid) && paid >= 0 && paid <= total;
+
+    if (error) {
+        error.textContent = paid > total ? 'Received amount cannot be greater than final booking amount.' : (!valid ? 'Enter valid booking and received amounts.' : '');
+    }
+    document.getElementById('livePrice').textContent = formatMoney(valid ? total : 0);
+    document.getElementById('pricingEditorTotal').textContent = formatMoney(valid ? total : 0);
+    if (gstInput) gstInput.disabled = !applyGstInput?.checked || bookingInput.disabled;
+    const finalAmount = document.getElementById('summaryFinalAmount');
+    const summaryHotel = document.getElementById('summaryHotelAmount');
+    const summaryGst = document.getElementById('summaryGstAmount');
+    const payNow = document.getElementById('summaryPayNow');
+    const leftAmount = document.getElementById('summaryLeftAmount');
+    if (finalAmount) finalAmount.textContent = formatMoney(valid ? total : 0);
+    if (summaryHotel) summaryHotel.textContent = formatMoney(valid ? hotel : 0);
+    if (summaryGst) summaryGst.textContent = formatMoney(valid ? gstAmount : 0);
+    if (payNow) payNow.textContent = formatMoney(valid ? paid : 0);
+    if (leftAmount) leftAmount.textContent = formatMoney(valid ? Math.max(total - paid, 0) : 0);
+    setConfirmButtonState();
+}
+
+function updateTravelDateSummary() {
+    const selections = getBookingSelections();
+    const summary = document.getElementById('summaryTravelDates');
+    if (summary) {
+        summary.innerHTML = selections.fromDate && selections.toDate
+            ? `${escapeHtml(formatDisplayDate(selections.fromDate))} &ndash; ${escapeHtml(formatDisplayDate(selections.toDate))}<br><small class="text-muted">Departure: ${escapeHtml(formatDisplayDate(selections.departureDate) || 'Not selected')}</small>`
+            : 'Not selected';
+    }
+    const toInput = document.getElementById('bookingToDate');
+    const departureInput = document.getElementById('bookingDepartureDate');
+    const error = document.getElementById('travelDateError');
+    if (toInput) toInput.min = selections.fromDate || '';
+    if (departureInput) {
+        departureInput.removeAttribute('min');
+        departureInput.max = selections.toDate || '';
+    }
+    if (error) {
+        error.textContent = selections.fromDate && selections.toDate && selections.toDate < selections.fromDate
+            ? 'To date cannot be before from date.'
+            : (selections.departureDate && selections.toDate && selections.departureDate > selections.toDate
+                ? 'Departure date cannot be after the trip end date.'
+                : '');
+    }
+    setConfirmButtonState();
 }
 
 function resetPackageQuote(message) {
@@ -888,8 +1203,20 @@ function resetPackageQuote(message) {
     }
     document.getElementById('summaryPackage').textContent = 'Not selected';
     document.getElementById('summaryDurationBadge').textContent = '0 Days';
-    document.getElementById('summaryAdults').textContent = getBookingSelections().adults;
+    document.getElementById('summaryAdults').textContent = formatTravellerCount(getBookingSelections().adults);
     document.getElementById('livePrice').textContent = formatMoney(0);
+    const bookingAmountInput = document.getElementById('manualBookingAmount');
+    const hotelAmountInput = document.getElementById('manualHotelAmount');
+    const paidAmountInput = document.getElementById('manualPaidAmount');
+    const applyGstInput = document.getElementById('applyBookingGst');
+    const gstInput = document.getElementById('bookingGstPercent');
+    if (bookingAmountInput) { bookingAmountInput.value = ''; bookingAmountInput.disabled = true; }
+    if (hotelAmountInput) { hotelAmountInput.value = ''; hotelAmountInput.disabled = true; }
+    if (paidAmountInput) { paidAmountInput.value = ''; paidAmountInput.disabled = true; }
+    if (applyGstInput) { applyGstInput.checked = false; applyGstInput.disabled = true; }
+    if (gstInput) { gstInput.value = '0'; gstInput.disabled = true; }
+    document.getElementById('pricingEditorTotal').textContent = formatMoney(0);
+    if (document.getElementById('manualAmountError')) document.getElementById('manualAmountError').textContent = '';
     document.getElementById('destBreakdownContainer').innerHTML = 'Select a package to calculate booking amounts.';
     document.getElementById('tripStatus').textContent = 'Select Package';
     setConfirmButtonState();
@@ -901,21 +1228,25 @@ function renderPackageQuote(quote) {
     const amounts = quote.amounts || {};
     const hotels = Array.isArray(quote.hotels) ? quote.hotels : [];
     const route = Array.isArray(quote.route) && quote.route.length ? quote.route.join(' to ') : 'No route added';
-    const inclusions = Array.isArray(quote.inclusions) ? quote.inclusions.slice(0, 4) : [];
-    const exclusions = Array.isArray(quote.exclusions) ? quote.exclusions.slice(0, 3) : [];
+    const inclusions = Array.isArray(quote.inclusions) ? quote.inclusions : [];
+    const exclusions = Array.isArray(quote.exclusions) ? quote.exclusions : [];
     const preview = document.getElementById('packagePreview');
     const hotelsHtml = hotels.length ? `
-        <div class="hotel-preview-list">
-            ${hotels.map(hotel => `
-                <div class="hotel-preview-row">
-                    <div>
-                        <strong>${escapeHtml(hotel.name || 'Hotel')}</strong>
-                        <small>${escapeHtml(hotel.destination_name || 'Stay')} - ${Number(hotel.rooms || 1)} room(s), ${Number(hotel.nights || 1)} night(s)</small>
-                    </div>
-                    <strong>${formatMoney(hotel.estimated_amount)}</strong>
+        <details class="preview-disclosure">
+            <summary><span><i class="fas fa-hotel text-primary mr-2"></i>Hotels included</span><span class="badge badge-light">${hotels.length}</span></summary>
+            <div class="preview-disclosure-body">
+                <div class="hotel-preview-list compact">
+                    ${hotels.map(hotel => `
+                        <div class="hotel-preview-row">
+                            <div>
+                                <strong>${escapeHtml(hotel.name || 'Hotel')}</strong>
+                                <small>${escapeHtml(hotel.destination_name || 'Stay')} - ${Number(hotel.rooms || 1)} room(s), ${Number(hotel.nights || 1)} night(s)</small>
+                            </div>
+                        </div>
+                    `).join('')}
                 </div>
-            `).join('')}
-        </div>
+            </div>
+        </details>
     ` : '';
 
     if (preview) {
@@ -944,7 +1275,7 @@ function renderPackageQuote(quote) {
                 </div>
                 <div class="package-preview-item">
                     <span>Hotels Included</span>
-                    <strong>${Number(amounts.hotel_count || 0)} - ${formatMoney(amounts.hotel_estimated_amount)}</strong>
+                    <strong>${Number(amounts.hotel_count || 0)}</strong>
                 </div>
                 <div class="package-preview-item">
                     <span>Payment Mode</span>
@@ -952,26 +1283,53 @@ function renderPackageQuote(quote) {
                 </div>
             </div>
             ${hotelsHtml}
-            ${pkg.description ? `<div class="mt-3 text-muted">${escapeHtml(String(pkg.description).slice(0, 260))}</div>` : ''}
-            ${inclusions.length ? `<div class="mt-3"><strong>Inclusions:</strong> ${inclusions.map(escapeHtml).join(', ')}</div>` : ''}
-            ${exclusions.length ? `<div class="mt-2 text-muted"><strong>Exclusions:</strong> ${exclusions.map(escapeHtml).join(', ')}</div>` : ''}
+            ${pkg.description ? `<details class="preview-disclosure"><summary><span>Package overview</span></summary><div class="preview-disclosure-body preview-copy pt-3">${escapeHtml(String(pkg.description))}</div></details>` : ''}
+            ${inclusions.length ? `<details class="preview-disclosure"><summary><span>Inclusions</span><span class="badge badge-light">${inclusions.length}</span></summary><div class="preview-disclosure-body preview-copy pt-3">${inclusions.map(escapeHtml).join('<br>')}</div></details>` : ''}
+            ${exclusions.length ? `<details class="preview-disclosure"><summary><span>Exclusions</span><span class="badge badge-light">${exclusions.length}</span></summary><div class="preview-disclosure-body preview-copy pt-3">${exclusions.map(escapeHtml).join('<br>')}</div></details>` : ''}
         `;
     }
 
     document.getElementById('summaryPackage').textContent = pkg.name || 'Package';
     document.getElementById('summaryDurationBadge').textContent = `${Number(pkg.duration_days || 0)} Days`;
-    document.getElementById('summaryAdults').textContent = amounts.adults || getBookingSelections().adults;
-    document.getElementById('livePrice').textContent = formatMoney(amounts.package_total);
+    document.getElementById('summaryAdults').textContent = formatTravellerCount(amounts.adults || getBookingSelections().adults);
+    const fromDateInput = document.getElementById('bookingFromDate');
+    const toDateInput = document.getElementById('bookingToDate');
+    const departureDateInput = document.getElementById('bookingDepartureDate');
+    if (fromDateInput?.value) {
+        if (!departureDateInput.value) departureDateInput.value = fromDateInput.value;
+        if (!toDateInput.value && Number(pkg.duration_days || 0) > 0) {
+            const endDate = new Date(`${fromDateInput.value}T00:00:00`);
+            endDate.setDate(endDate.getDate() + Math.max(Number(pkg.duration_days) - 1, 0));
+            toDateInput.value = endDate.toISOString().substring(0, 10);
+        }
+    }
+    const bookingAmountInput = document.getElementById('manualBookingAmount');
+    const hotelAmountInput = document.getElementById('manualHotelAmount');
+    const paidAmountInput = document.getElementById('manualPaidAmount');
+    const applyGstInput = document.getElementById('applyBookingGst');
+    const gstInput = document.getElementById('bookingGstPercent');
+    bookingAmountInput.disabled = false;
+    hotelAmountInput.disabled = false;
+    paidAmountInput.disabled = false;
+    applyGstInput.disabled = false;
+    applyGstInput.checked = Number(amounts.tax_percent || 0) > 0;
+    gstInput.value = Number(amounts.tax_percent || 0).toFixed(2);
+    gstInput.disabled = !applyGstInput.checked;
+    bookingAmountInput.value = Number(amounts.package_base_amount || amounts.package_total || 0).toFixed(2);
+    hotelAmountInput.value = Number(amounts.hotel_estimated_amount || 0).toFixed(2);
+    paidAmountInput.value = Number(amounts.payable_now || 0).toFixed(2);
     document.getElementById('tripStatus').textContent = 'Ready';
     document.getElementById('destBreakdownContainer').innerHTML = `
-        <div class="summary-line"><span>Base</span><strong>${formatMoney(amounts.package_base_amount)}</strong></div>
-        <div class="summary-line"><span>Hotel Cost Included</span><strong>${formatMoney(amounts.hotel_estimated_amount)}</strong></div>
+        <div class="summary-line"><span>Calculated Total</span><strong>${formatMoney(amounts.package_total)}</strong></div>
+        <div class="summary-line"><span>Hotel Amount</span><strong id="summaryHotelAmount"></strong></div>
         ${Number(amounts.discount_amount || 0) > 0 ? `<div class="summary-line"><span>Discount</span><strong>- ${formatMoney(amounts.discount_amount)}</strong></div>` : ''}
-        <div class="summary-line"><span>${escapeHtml(amounts.tax_type || 'GST')} ${Number(amounts.tax_percent || 0)}%</span><strong>${formatMoney(amounts.tax_amount)}</strong></div>
-        <div class="summary-line"><span>Pay Now</span><strong>${formatMoney(amounts.payable_now)}</strong></div>
-        <div class="summary-line"><span>Left Amount</span><strong>${formatMoney(amounts.remaining_amount)}</strong></div>
+        <div class="summary-line"><span>GST Amount</span><strong id="summaryGstAmount"></strong></div>
+        <div class="summary-line"><span>Final Booking Amount</span><strong id="summaryFinalAmount"></strong></div>
+        <div class="summary-line"><span>Received Now</span><strong id="summaryPayNow"></strong></div>
+        <div class="summary-line"><span>Left Amount</span><strong id="summaryLeftAmount"></strong></div>
     `;
-    setConfirmButtonState();
+    updateTravelDateSummary();
+    refreshManualAmountSummary();
 }
 
 async function fetchPackageQuote(silent = false) {
@@ -1016,22 +1374,35 @@ function initPackageBookingForm() {
     if (!form) return;
 
     updateCustomerSummary();
-    document.getElementById('summaryAdults').textContent = getBookingSelections().adults;
+    document.getElementById('summaryAdults').textContent = formatTravellerCount(getBookingSelections().adults);
 
     const customerSelect = document.getElementById('customerId');
     const packageSelect = document.getElementById('packageId');
     const adultInput = document.getElementById('adultCount');
     const paymentModeInputs = document.querySelectorAll('input[name="paymentMode"]');
+    const bookingAmountInput = document.getElementById('manualBookingAmount');
+    const hotelAmountInput = document.getElementById('manualHotelAmount');
+    const paidAmountInput = document.getElementById('manualPaidAmount');
+    const applyGstInput = document.getElementById('applyBookingGst');
+    const gstInput = document.getElementById('bookingGstPercent');
+    const dateInputs = ['bookingFromDate', 'bookingToDate', 'bookingDepartureDate'].map(id => document.getElementById(id)).filter(Boolean);
 
     if (customerSelect) customerSelect.addEventListener('change', updateCustomerSummary);
     if (packageSelect) packageSelect.addEventListener('change', () => fetchPackageQuote(true));
     paymentModeInputs.forEach(input => input.addEventListener('change', () => {
         if (getBookingSelections().packageId) fetchPackageQuote(true);
     }));
+    if (bookingAmountInput) bookingAmountInput.addEventListener('input', refreshManualAmountSummary);
+    if (hotelAmountInput) hotelAmountInput.addEventListener('input', refreshManualAmountSummary);
+    if (paidAmountInput) paidAmountInput.addEventListener('input', refreshManualAmountSummary);
+    if (applyGstInput) applyGstInput.addEventListener('change', refreshManualAmountSummary);
+    if (gstInput) gstInput.addEventListener('input', refreshManualAmountSummary);
+    dateInputs.forEach(input => input.addEventListener('change', updateTravelDateSummary));
+    updateTravelDateSummary();
     if (adultInput) {
         adultInput.addEventListener('input', () => {
             if (Number(adultInput.value || 0) < 1) adultInput.value = 1;
-            document.getElementById('summaryAdults').textContent = getBookingSelections().adults;
+            document.getElementById('summaryAdults').textContent = formatTravellerCount(getBookingSelections().adults);
             renderPassengerForms();
             if (getBookingSelections().packageId) fetchPackageQuote(true);
         });
@@ -1528,6 +1899,14 @@ async function confirmBooking() {
             alert('Please fetch package details before confirming.');
             return;
         }
+        if (!selections.fromDate || !selections.toDate || !selections.departureDate) {
+            alert('Please select from date, to date and departure date.');
+            return;
+        }
+        if (selections.toDate < selections.fromDate || selections.departureDate > selections.toDate) {
+            alert(selections.toDate < selections.fromDate ? 'To date cannot be before from date.' : 'Departure date cannot be after the trip end date.');
+            return;
+        }
 
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Confirming...';
@@ -1537,6 +1916,14 @@ async function confirmBooking() {
             package_id: selections.packageId,
             adults: selections.adults,
             payment_mode: selections.paymentMode,
+            base_amount: Number(document.getElementById('manualBookingAmount').value),
+            hotel_amount: Number(document.getElementById('manualHotelAmount').value),
+            apply_gst: Boolean(document.getElementById('applyBookingGst').checked),
+            gst_percent: Number(document.getElementById('bookingGstPercent').value || 0),
+            paid_amount: Number(document.getElementById('manualPaidAmount').value),
+            from_date: selections.fromDate,
+            to_date: selections.toDate,
+            departure_date: selections.departureDate,
             inquiry_id: selections.inquiryId,
             passengers: Array.from(document.querySelectorAll('.passenger-form')).map((form, index) => ({
                 full_name: form.querySelector('.p-full-name').value.trim(),
