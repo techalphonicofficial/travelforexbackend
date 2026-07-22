@@ -1111,13 +1111,161 @@ router.delete('/mappings/:id', async (req, res) => {
 // ─────────────────────────────────────────────
 router.get('/packages', async (req, res) => {
     try {
-        const result = await packageRepo.findAll();
+        const result = await packageRepo.findAll({ page: 1, limit: 1000 });
         const packages = result.rows ?? result;
 
         // return res.json(packages);
         res.render('travel/packages/index', { title: 'Packages', packages });
     } catch (err) {
         res.status(500).send(err.message);
+    }
+});
+
+router.post('/packages/reorder', async (req, res) => {
+    const ids = Array.isArray(req.body.ids)
+        ? [...new Set(req.body.ids.map(Number).filter(Number.isInteger))]
+        : [];
+
+    if (!ids.length) {
+        return res.status(400).json({ success: false, message: 'Package order is required.' });
+    }
+
+    const transaction = await db.transaction();
+    try {
+        const packageCount = await Package.count({ where: { id: ids }, transaction });
+        if (packageCount !== ids.length) {
+            await transaction.rollback();
+            return res.status(400).json({ success: false, message: 'One or more packages are invalid.' });
+        }
+
+        for (let index = 0; index < ids.length; index++) {
+            await Package.update(
+                { sort_order: index + 1 },
+                { where: { id: ids[index] }, transaction }
+            );
+        }
+
+        await transaction.commit();
+        res.json({ success: true, message: 'Package order updated successfully.' });
+    } catch (err) {
+        await transaction.rollback();
+        console.error('Package reorder failed:', err);
+        res.status(500).json({ success: false, message: 'Unable to update package order.' });
+    }
+});
+
+router.post('/packages/:id/duplicate', async (req, res) => {
+    try {
+        const source = await Package.findByPk(req.params.id, {
+            include: [
+                { model: PackageDestination, as: 'destinations' },
+                { model: PackageInclusion, as: 'inclusions' },
+                { model: PackageExclusion, as: 'exclusions' },
+                { model: Media, as: 'gallery' },
+                { model: PackageCategory, as: 'package_categories' }
+            ]
+        });
+        if (!source) return res.status(404).json({ success: false, message: 'Package not found.' });
+
+        const transaction = await db.transaction();
+        try {
+            const baseName = `${source.name} Copy`;
+            let duplicateName = baseName;
+            let nameSuffix = 2;
+            while (await Package.count({ where: { name: duplicateName }, transaction })) {
+                duplicateName = `${baseName} ${nameSuffix++}`;
+            }
+
+            const baseSlug = `${source.slug || source.name || 'package'}-copy`
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+            let duplicateSlug = baseSlug;
+            let slugSuffix = 2;
+            while (await Package.count({ where: { slug: duplicateSlug }, transaction })) {
+                duplicateSlug = `${baseSlug}-${slugSuffix++}`;
+            }
+
+            const maxSortOrder = parseInt(await Package.max('sort_order', { transaction }), 10) || 0;
+            const duplicate = await Package.create({
+                name: duplicateName,
+                slug: duplicateSlug,
+                sort_order: maxSortOrder + 1,
+                duration_days: source.duration_days,
+                departure_city: source.departure_city,
+                price: source.price,
+                discount_percentage: source.discount_percentage,
+                tax_type: source.tax_type,
+                tax_percent: source.tax_percent,
+                status: source.status,
+                show_in_home_page: false,
+                is_customizable: source.is_customizable,
+                description: source.description,
+                meta_title: source.meta_title,
+                meta_description: source.meta_description,
+                meta_keyword: source.meta_keyword,
+                schema: source.schema,
+                vendor_id: source.vendor_id,
+                main_image: source.main_image,
+                main_image_alt: source.main_image_alt
+            }, { transaction });
+
+            if (source.destinations?.length) {
+                await PackageDestination.bulkCreate(source.destinations.map(item => ({
+                    package_id: duplicate.id,
+                    destination_id: item.destination_id,
+                    nights: item.nights,
+                    activities: item.activities,
+                    order: item.order
+                })), { transaction });
+            }
+            if (source.inclusions?.length) {
+                await PackageInclusion.bulkCreate(source.inclusions.map(item => ({
+                    package_id: duplicate.id,
+                    text: item.text,
+                    icon: item.icon
+                })), { transaction });
+            }
+            if (source.exclusions?.length) {
+                await PackageExclusion.bulkCreate(source.exclusions.map(item => ({
+                    package_id: duplicate.id,
+                    text: item.text,
+                    icon: item.icon
+                })), { transaction });
+            }
+            if (source.package_categories?.length) {
+                await PackageCategoryMapping.bulkCreate(source.package_categories.map(item => ({
+                    package_id: duplicate.id,
+                    package_category_id: item.id
+                })), { transaction });
+            }
+            if (source.gallery?.length) {
+                await Media.bulkCreate(source.gallery.map(item => ({
+                    entity_type: 'package',
+                    entity_id: duplicate.id,
+                    url: item.url,
+                    alt_text: item.alt_text,
+                    media_type: item.media_type,
+                    key: item.key,
+                    label: item.label,
+                    poster_url: item.poster_url,
+                    is_primary: item.is_primary
+                })), { transaction });
+            }
+
+            await transaction.commit();
+            res.status(201).json({
+                success: true,
+                message: 'Package duplicated successfully.',
+                id: duplicate.id
+            });
+        } catch (err) {
+            await transaction.rollback();
+            throw err;
+        }
+    } catch (err) {
+        console.error('Package duplicate failed:', err);
+        res.status(500).json({ success: false, message: 'Unable to duplicate package.' });
     }
 });
 
@@ -1481,9 +1629,14 @@ router.post('/packages/activity-image', handleUpload(upload.single('activity_ima
 });
 
 router.post('/packages/save', async (req, res) => {
-    const { id, name, duration, departure_city, price, description, show_in_home_page, main_image, main_image_alt, destinations, inclusions, exclusions, package_categories } = req.body;
+    const { id, name, duration, departure_city, price, description, show_in_home_page, main_image, main_image_alt, destinations, inclusions, exclusions, package_categories, meta_title, meta_description, meta_keyword, schema } = req.body;
     const is_customizable = req.body.is_customizable === true || req.body.is_customizable === 'true' || req.body.is_customizable === 'on' || req.body.is_customizable === 1 || req.body.is_customizable === '1';
     const slug = (req.body.slug || name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const requestedSortOrder = parseInt(req.body.sort_order, 10);
+    const textOrNull = value => {
+        if (value === undefined || value === null || value === '') return null;
+        return typeof value === 'object' ? JSON.stringify(value) : String(value);
+    };
 
     try {
         const selectedTaxType = String(req.body.tax_type || '').trim().slice(0, 100);
@@ -1504,6 +1657,7 @@ router.post('/packages/save', async (req, res) => {
                 await pkg.update({
                     name,
                     slug,
+                    sort_order: Number.isInteger(requestedSortOrder) && requestedSortOrder >= 0 ? requestedSortOrder : pkg.sort_order,
                     duration_days: duration,
                     departure_city: String(departure_city || '').trim().slice(0, 150) || null,
                     price: price || 0,
@@ -1511,6 +1665,10 @@ router.post('/packages/save', async (req, res) => {
                     tax_type: selectedTaxType || null,
                     tax_percent: taxPercent,
                     description: description || '',
+                    meta_title: textOrNull(meta_title),
+                    meta_description: textOrNull(meta_description),
+                    meta_keyword: textOrNull(meta_keyword),
+                    schema: textOrNull(schema),
                     main_image: main_image || null,
                     main_image_alt: main_image_alt || null,
                     show_in_home_page: show_in_home_page || false,
@@ -1524,9 +1682,11 @@ router.post('/packages/save', async (req, res) => {
                 await PackageCategoryMapping.destroy({ where: { package_id: id }, transaction });
             } else {
                 // Create new Package
+                const maxSortOrder = parseInt(await Package.max('sort_order', { transaction }), 10) || 0;
                 pkg = await Package.create({
                     name,
                     slug,
+                    sort_order: Number.isInteger(requestedSortOrder) && requestedSortOrder >= 0 ? requestedSortOrder : maxSortOrder + 1,
                     duration_days: duration,
                     departure_city: String(departure_city || '').trim().slice(0, 150) || null,
                     price: price || 0,
@@ -1534,6 +1694,10 @@ router.post('/packages/save', async (req, res) => {
                     tax_type: selectedTaxType || null,
                     tax_percent: taxPercent,
                     description: description || '',
+                    meta_title: textOrNull(meta_title),
+                    meta_description: textOrNull(meta_description),
+                    meta_keyword: textOrNull(meta_keyword),
+                    schema: textOrNull(schema),
                     main_image: main_image || null,
                     main_image_alt: main_image_alt || null,
                     show_in_home_page: show_in_home_page || false,

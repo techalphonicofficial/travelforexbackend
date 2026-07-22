@@ -48,6 +48,7 @@
         <table class="table align-middle mb-0">
           <thead class="bg-light">
             <tr>
+              <th class="ps-3" style="width:90px">Order</th>
               <th class="ps-4">Package Details</th>
 
               <th>Route (Stay Duration)</th>
@@ -57,7 +58,13 @@
           </thead>
           <tbody>
             ${paginated.map(p => `
-              <tr>
+              <tr class="package-sort-row" data-package-id="${p.id}" draggable="true">
+                <td class="ps-3">
+                  <span class="package-drag-handle d-inline-flex align-items-center gap-2 text-muted" style="cursor:grab" title="Drag to reorder">
+                    <i class="bi bi-grip-vertical fs-5"></i>
+                    <span class="badge bg-light text-dark border">${p.sort_order ?? '-'}</span>
+                  </span>
+                </td>
                 <td class="ps-4">
                   <div class="d-flex align-items-center gap-3">
                     <div style="width: 50px; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: #f8fafc; border: 1px solid #eee; flex-shrink: 0;">
@@ -79,6 +86,7 @@
                     <a href="/travel/packages/${p.id}/edit" class="btn-icon btn-icon-edit"><i class="bi bi-pencil"></i></a>
                     <a href="/travel/packages/${p.id}" class="btn-icon btn-icon-view"><i class="bi bi-eye"></i></a>
                     <a href="/travel/packages/${p.id}/reviews" class="btn-icon btn-icon-view" title="Package reviews"><i class="bi bi-star"></i></a>
+                    <button class="btn-icon btn-icon-view" onclick="duplicatePkg('${p.id}')" title="Duplicate package"><i class="bi bi-copy"></i></button>
                     <button class="btn-icon btn-icon-del" onclick="deletePkg('${p.id}')"><i class="bi bi-trash3"></i></button>
                   </div>
                 </td>
@@ -116,6 +124,7 @@
             <div class="d-flex gap-1">
               <a href="/travel/packages/${p.id}/edit" class="btn-icon btn-icon-edit btn-sm"><i class="bi bi-pencil"></i></a>
               <a href="/travel/packages/${p.id}/reviews" class="btn-icon btn-icon-view btn-sm" title="Package reviews"><i class="bi bi-star"></i></a>
+              <button class="btn-icon btn-icon-view btn-sm" onclick="duplicatePkg('${p.id}')" title="Duplicate package"><i class="bi bi-copy"></i></button>
               <button class="btn-icon btn-icon-del btn-sm" onclick="deletePkg('${p.id}')"><i class="bi bi-trash3"></i></button>
             </div>
           </div>
@@ -124,6 +133,7 @@
     `).join('')}</div>`;
     }
     renderPagination();
+    initializeDragAndDrop();
   }
 
   // JS Helpers for dynamic rendering
@@ -161,6 +171,85 @@
     }
     html += `</ul></nav>`;
     document.getElementById('pagination').innerHTML = totalPages > 1 ? html : '';
+  }
+
+  function initializeDragAndDrop() {
+    if (currentView !== 'list') return;
+
+    const isFiltering = !!document.getElementById('searchPkg').value.trim();
+    const rows = document.querySelectorAll('.package-sort-row');
+    let draggedId = null;
+
+    rows.forEach(row => {
+      row.draggable = !isFiltering;
+      const handle = row.querySelector('.package-drag-handle');
+      if (isFiltering && handle) handle.title = 'Clear search to reorder packages';
+
+      row.addEventListener('dragstart', event => {
+        if (isFiltering) return event.preventDefault();
+        draggedId = Number(row.dataset.packageId);
+        row.style.opacity = '0.45';
+        event.dataTransfer.effectAllowed = 'move';
+      });
+
+      row.addEventListener('dragend', () => {
+        row.style.opacity = '';
+        rows.forEach(item => item.style.boxShadow = '');
+      });
+
+      row.addEventListener('dragover', event => {
+        if (!draggedId || Number(row.dataset.packageId) === draggedId) return;
+        event.preventDefault();
+        row.style.boxShadow = 'inset 0 2px 0 #6366f1';
+      });
+
+      row.addEventListener('dragleave', () => { row.style.boxShadow = ''; });
+
+      row.addEventListener('drop', async event => {
+        event.preventDefault();
+        const targetId = Number(row.dataset.packageId);
+        if (!draggedId || draggedId === targetId) return;
+
+        const fromIndex = ALL_DATA.findIndex(item => Number(item.id) === draggedId);
+        const targetIndex = ALL_DATA.findIndex(item => Number(item.id) === targetId);
+        if (fromIndex < 0 || targetIndex < 0) return;
+
+        const [moved] = ALL_DATA.splice(fromIndex, 1);
+        const newTargetIndex = ALL_DATA.findIndex(item => Number(item.id) === targetId);
+        ALL_DATA.splice(newTargetIndex, 0, moved);
+        ALL_DATA.forEach((item, index) => { item.sort_order = index + 1; });
+        filtered = [...ALL_DATA];
+        render();
+
+        try {
+          const response = await fetch('/travel/packages/reorder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: ALL_DATA.map(item => item.id) })
+          });
+          const result = await response.json();
+          if (!response.ok || !result.success) throw new Error(result.message || 'Unable to save order');
+        } catch (error) {
+          alert('Order save failed: ' + error.message);
+          location.reload();
+        }
+      });
+    });
+  }
+
+  async function duplicatePkg(id) {
+    if (!confirm('Duplicate this package with its itinerary and content?')) return;
+    try {
+      const response = await fetch(`/travel/packages/${id}/duplicate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message || 'Unable to duplicate package');
+      window.location.href = `/travel/packages/${result.id}/edit`;
+    } catch (error) {
+      alert('Duplicate failed: ' + error.message);
+    }
   }
 
   async function deletePkg(id) {

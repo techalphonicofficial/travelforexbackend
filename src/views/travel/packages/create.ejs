@@ -493,6 +493,11 @@
                                 <label class="form-label fw-bold">Discount %</label>
                                 <input type="number" class="form-control" id="discountPercentage" placeholder="0" min="0" max="100" step="0.01" value="0">
                             </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Sort Order</label>
+                                <input type="number" class="form-control" id="sortOrder" placeholder="Auto" min="0">
+                                <small class="text-muted">Lower numbers appear first.</small>
+                            </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Tax Type</label>
                                 <select class="form-select" id="taxType">
@@ -555,6 +560,30 @@
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tf-form-card">
+                    <div class="tf-form-header"><i class="bi bi-search text-primary"></i> SEO Settings</div>
+                    <div class="tf-form-body">
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold">Meta Title</label>
+                                <input type="text" class="form-control" id="metaTitle" maxlength="255" placeholder="SEO page title">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold">Meta Description</label>
+                                <textarea class="form-control" id="metaDescription" rows="3" placeholder="SEO page description"></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold">Meta Keywords</label>
+                                <textarea class="form-control" id="metaKeyword" rows="2" placeholder="keyword one, keyword two"></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold">Schema JSON-LD</label>
+                                <textarea class="form-control font-monospace" id="metaSchema" rows="5" placeholder='{"@context":"https://schema.org"}'></textarea>
                             </div>
                         </div>
                     </div>
@@ -1430,6 +1459,7 @@
             const discountPercentage = parseFloat(document.getElementById('discountPercentage')?.value) || 0;
             const taxType = document.getElementById('taxType')?.value || '';
             const taxPercent = parseFloat(document.getElementById('taxPercent')?.value) || 0;
+            const sortOrderValue = document.getElementById('sortOrder')?.value;
 
             if (!packageName) {
                 showNotification('Please enter package name', true);
@@ -1449,7 +1479,12 @@
                 discount_percentage: discountPercentage,
                 tax_type: taxType,
                 tax_percent: taxPercent,
+                sort_order: sortOrderValue === '' ? null : parseInt(sortOrderValue, 10),
                 description: description,
+                meta_title: document.getElementById('metaTitle')?.value.trim() || null,
+                meta_description: document.getElementById('metaDescription')?.value.trim() || null,
+                meta_keyword: document.getElementById('metaKeyword')?.value.trim() || null,
+                schema: document.getElementById('metaSchema')?.value.trim() || null,
                 show_in_home_page: showInHomePage,
                 is_customizable: isCustomizable,
                 package_categories: Array.from(document.querySelectorAll('.package-category-checkbox:checked')).map(cb => cb.value),

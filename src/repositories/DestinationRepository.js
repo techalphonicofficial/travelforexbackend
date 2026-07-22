@@ -173,6 +173,53 @@ class DestinationRepository extends BaseRepository {
         });
     }
 
+    async findRelatedPackagesBySlug(slug, { page = 1, limit = 10 } = {}) {
+        const destination = await this.model.findOne({
+            where: { slug },
+            attributes: ['id', 'name', 'slug']
+        });
+
+        if (!destination) return null;
+
+        const PackageDestination = this.model.sequelize.models.PackageDestination;
+        const safePage = Math.max(parseInt(page, 10) || 1, 1);
+        const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 50);
+        const offset = (safePage - 1) * safeLimit;
+
+        const result = await this.packageModel.findAndCountAll({
+            where: { status: true },
+            include: [
+                {
+                    model: PackageDestination,
+                    as: 'destinations',
+                    required: true,
+                    where: { destination_id: destination.id },
+                    attributes: { exclude: ['activities'] },
+                    include: [{
+                        model: this.model,
+                        as: 'destination',
+                        attributes: ['id', 'name', 'slug', 'country', 'state']
+                    }]
+                },
+                { model: this.mediaModel, as: 'gallery', required: false },
+                { association: 'package_categories', required: false }
+            ],
+            order: [['sort_order', 'ASC'], ['created_at', 'DESC']],
+            limit: safeLimit,
+            offset,
+            distinct: true
+        });
+
+        return {
+            destination,
+            packages: result.rows,
+            total: result.count,
+            currentPage: safePage,
+            totalPages: Math.ceil(result.count / safeLimit),
+            limit: safeLimit
+        };
+    }
+
     async deleteMany(ids) {
         return this.model.destroy({ where: { id: ids } });
     }

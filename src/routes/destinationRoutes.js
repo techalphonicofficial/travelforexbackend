@@ -253,6 +253,64 @@ router.get('/slug/:slug/related-by-country', async (req, res) => {
     }
 });
 
+/**
+ * @openapi
+ * /api/v1/destinations/slug/{slug}/related-packages:
+ *   get:
+ *     summary: Get active packages related to a destination
+ *     tags: [Destinations, Packages]
+ *     parameters:
+ *       - in: path
+ *         name: slug
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Destination slug
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 50
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: Paginated active packages mapped to the destination
+ *       404:
+ *         description: Destination not found
+ */
+router.get('/slug/:slug/related-packages', async (req, res) => {
+    try {
+        const result = await destinationRepo.findRelatedPackagesBySlug(req.params.slug, {
+            page: req.query.page,
+            limit: req.query.limit
+        });
+
+        if (!result) {
+            return res.status(404).json({ success: false, message: 'Destination not found' });
+        }
+
+        res.json({
+            success: true,
+            destination: result.destination,
+            data: result.packages,
+            total: result.total,
+            currentPage: result.currentPage,
+            totalPages: result.totalPages,
+            limit: result.limit
+        });
+    } catch (err) {
+        console.error('Related destination packages failed:', err);
+        res.status(500).json({ success: false, message: 'Unable to load related packages.' });
+    }
+});
+
 router.get('/:id', async (req, res) => {
     try {
         const data = await destinationRepo.findById(req.params.id);

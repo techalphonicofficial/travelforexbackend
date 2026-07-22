@@ -13,6 +13,18 @@ class PackageRepository extends BaseRepository {
         this.reviewModel = reviewModel;
     }
 
+    async create(data) {
+        const payload = { ...data };
+        const requestedSortOrder = parseInt(payload.sort_order, 10);
+        if (!Number.isInteger(requestedSortOrder) || requestedSortOrder < 0) {
+            const maxSortOrder = parseInt(await this.model.max('sort_order'), 10) || 0;
+            payload.sort_order = maxSortOrder + 1;
+        } else {
+            payload.sort_order = requestedSortOrder;
+        }
+        return this.model.create(payload);
+    }
+
     reviewInclude() {
         if (!this.reviewModel) return [];
 
@@ -46,7 +58,7 @@ class PackageRepository extends BaseRepository {
                 { model: this.mediaModel, as: 'gallery' },
                 { association: 'package_categories' }
             ],
-            order: [['created_at', 'DESC']],
+            order: [['sort_order', 'ASC'], ['created_at', 'DESC']],
             limit: parseInt(limit),
             offset: parseInt(offset),
             distinct: true
@@ -178,7 +190,7 @@ class PackageRepository extends BaseRepository {
         return this.model.findAndCountAll({
             where,
             include: includes,
-            order: [['created_at', 'DESC']],
+            order: [['sort_order', 'ASC'], ['created_at', 'DESC']],
             limit: parseInt(limit),
             offset: parseInt(offset),
             distinct: true
@@ -519,7 +531,7 @@ async findBySlug(slug) {
                 },
                 { model: this.mediaModel, as: 'gallery' }
             ],
-            order: [['created_at', 'DESC']]
+            order: [['sort_order', 'ASC'], ['created_at', 'DESC']]
         });
     }
 }

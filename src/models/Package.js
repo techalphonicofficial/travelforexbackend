@@ -18,6 +18,11 @@ const Package = sequelize.define('Package', {
         type: DataTypes.STRING(255),
         allowNull: true
     },
+    sort_order: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+    },
     duration_days: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -60,6 +65,22 @@ const Package = sequelize.define('Package', {
         allowNull: false
     },
     description: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
+    meta_title: {
+        type: DataTypes.STRING(255),
+        allowNull: true
+    },
+    meta_description: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
+    meta_keyword: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
+    schema: {
         type: DataTypes.TEXT,
         allowNull: true
     },

@@ -20,6 +20,18 @@
  *         status:
  *           type: boolean
  *           description: Active status of the package
+ *         sort_order:
+ *           type: integer
+ *           description: Display priority; lower values are returned first
+ *         meta_title:
+ *           type: string
+ *         meta_description:
+ *           type: string
+ *         meta_keyword:
+ *           type: string
+ *         schema:
+ *           type: string
+ *           description: JSON-LD schema markup
  *         show_in_home_page:
  *           type: boolean
  *           description: Whether the package should be displayed on the home page
