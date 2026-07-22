@@ -65,8 +65,12 @@ class PackageRepository extends BaseRepository {
         });
     }
 
-    async filterPackages({ page = 1, limit = 10,  minPrice, maxPrice, duration, startDate, endDate, city, country, continent, destination, category, package_category_slug  }) {
+    async filterPackages({ page = 1, limit = 10, minPrice, maxPrice, duration, startDate, endDate, city, country, continent, destination, category, package_category_slug, package_type, travel_type }) {
         const where = {};
+        const requestedPackageType = String(package_type || travel_type || '').trim().toLowerCase();
+        if (['domestic', 'international'].includes(requestedPackageType)) {
+            where.travel_type = requestedPackageType;
+        }
         if (minPrice || maxPrice) {
             where.price = {};
             if (minPrice) where.price[Op.gte] = minPrice;

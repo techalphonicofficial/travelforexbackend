@@ -129,6 +129,12 @@ const { serializePackageItinerary } = require('../utils/packageItinerary');
  *           type: string
  *         description: Package category slug filter
  *       - in: query
+ *         name: package_type
+ *         schema:
+ *           type: string
+ *           enum: [domestic, international]
+ *         description: Filter packages by Domestic or International type
+ *       - in: query
  *         name: page
  *         schema:
  *           type: integer
@@ -156,9 +162,10 @@ const { serializePackageItinerary } = require('../utils/packageItinerary');
 router.get('/', async (req, res) => {
     try {
         const { page = 1, limit = 10, minPrice, maxPrice, duration, startDate, endDate, city, country, continent, destination, category, package_category_slug } = req.query;
+        const package_type = req.query.package_type || req.query.travel_type;
         let data;
-        if (minPrice || maxPrice || duration || startDate || endDate || city || country || continent || destination || category || package_category_slug) {
-            data = await packageRepo.filterPackages({ page, limit, minPrice, maxPrice, duration, startDate, endDate, city, country, continent, destination, category, package_category_slug });
+        if (minPrice || maxPrice || duration || startDate || endDate || city || country || continent || destination || category || package_category_slug || package_type) {
+            data = await packageRepo.filterPackages({ page, limit, minPrice, maxPrice, duration, startDate, endDate, city, country, continent, destination, category, package_category_slug, package_type });
         } else {
             data = await packageRepo.findAll({ page, limit });
         }
