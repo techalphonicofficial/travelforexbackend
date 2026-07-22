@@ -106,10 +106,12 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
     try {
-        await cityRepo.delete(req.params.id);
-        res.json({ success: true, message: 'Deleted successfully' });
+        const result = await cityRepo.delete(req.params.id);
+        if (!result) return res.status(404).json({ success: false, message: 'City not found' });
+        res.json({ success: true, message: 'Deleted successfully', data: result });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        console.error('City API delete failed:', err);
+        res.status(500).json({ success: false, message: 'Unable to delete city.' });
     }
 });
 

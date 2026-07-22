@@ -23,6 +23,14 @@ const Package = sequelize.define('Package', {
         allowNull: false,
         defaultValue: 0
     },
+    travel_type: {
+        type: DataTypes.ENUM('domestic', 'international'),
+        allowNull: false,
+        defaultValue: 'domestic',
+        validate: {
+            isIn: [['domestic', 'international']]
+        }
+    },
     duration_days: {
         type: DataTypes.INTEGER,
         allowNull: false,

@@ -79,6 +79,63 @@ class CityRepository extends BaseRepository {
             subQuery: false
         });
     }
+
+    async delete(id) {
+        const numericId = parseInt(id, 10);
+        if (!Number.isInteger(numericId) || numericId < 1) return null;
+
+        const transaction = await this.model.sequelize.transaction();
+        try {
+            const city = await this.model.findByPk(numericId, { transaction });
+            if (!city) {
+                await transaction.rollback();
+                return null;
+            }
+
+            const { DestinationMapping, Hotel } = this.model.sequelize.models;
+            const mappingsRemoved = DestinationMapping
+                ? await DestinationMapping.destroy({ where: { city_id: numericId }, transaction })
+                : 0;
+            const hotelsUnlinked = Hotel
+                ? (await Hotel.update({ city_id: null }, { where: { city_id: numericId }, transaction }))[0]
+                : 0;
+
+            await city.destroy({ transaction });
+            await transaction.commit();
+            return { id: numericId, mappingsRemoved, hotelsUnlinked };
+        } catch (error) {
+            await transaction.rollback();
+            throw error;
+        }
+    }
+
+    async deleteMany(ids = []) {
+        const cityIds = [...new Set(ids.map(Number).filter(id => Number.isInteger(id) && id > 0))];
+        if (!cityIds.length) return { deleted: 0, mappingsRemoved: 0, hotelsUnlinked: 0 };
+
+        const transaction = await this.model.sequelize.transaction();
+        try {
+            const Op = this.model.sequelize.Sequelize.Op;
+            const { DestinationMapping, Hotel } = this.model.sequelize.models;
+            const where = { city_id: { [Op.in]: cityIds } };
+            const mappingsRemoved = DestinationMapping
+                ? await DestinationMapping.destroy({ where, transaction })
+                : 0;
+            const hotelsUnlinked = Hotel
+                ? (await Hotel.update({ city_id: null }, { where, transaction }))[0]
+                : 0;
+            const deleted = await this.model.destroy({
+                where: { id: { [Op.in]: cityIds } },
+                transaction
+            });
+
+            await transaction.commit();
+            return { deleted, mappingsRemoved, hotelsUnlinked };
+        } catch (error) {
+            await transaction.rollback();
+            throw error;
+        }
+    }
 }
 
 module.exports = CityRepository;

@@ -476,6 +476,19 @@
                                 <label class="form-label fw-bold">Slug</label>
                                 <input type="text" class="form-control" id="packageSlug" placeholder="6-nights-bali-paradise">
                             </div>
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold d-block">Package Type *</label>
+                                <div class="d-flex flex-wrap gap-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="packageTravelType" id="travelTypeDomestic" value="domestic" checked>
+                                        <label class="form-check-label" for="travelTypeDomestic">Domestic</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="packageTravelType" id="travelTypeInternational" value="international">
+                                        <label class="form-check-label" for="travelTypeInternational">International</label>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="col-md-4">
                                 <label class="form-label fw-bold">Departure City</label>
                                 <input type="text" class="form-control" id="departureCity" placeholder="e.g. New Delhi">
@@ -1480,6 +1493,7 @@
                 tax_type: taxType,
                 tax_percent: taxPercent,
                 sort_order: sortOrderValue === '' ? null : parseInt(sortOrderValue, 10),
+                travel_type: document.querySelector('input[name="packageTravelType"]:checked')?.value || 'domestic',
                 description: description,
                 meta_title: document.getElementById('metaTitle')?.value.trim() || null,
                 meta_description: document.getElementById('metaDescription')?.value.trim() || null,

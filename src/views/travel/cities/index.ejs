@@ -390,10 +390,20 @@
   }
 
   async function executeSingleDelete() {
-    await fetch(`/travel/api/v1/cities/${delId}`, { method: 'DELETE' }); 
-    loadData(true);
-    const modal = bootstrap.Modal.getInstance(document.getElementById('delModal'));
-    if(modal) modal.hide();
+    const deleteButton = document.getElementById('delBtn');
+    deleteButton.disabled = true;
+    try {
+      const response = await fetch(`/travel/api/v1/cities/${delId}`, { method: 'DELETE' });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message || 'Unable to delete city');
+      const modal = bootstrap.Modal.getInstance(document.getElementById('delModal'));
+      if(modal) modal.hide();
+      await loadData(true);
+    } catch (error) {
+      alert('Delete failed: ' + error.message);
+    } finally {
+      deleteButton.disabled = false;
+    }
   }
 
   // BULK DELETE API HOOKS
@@ -464,17 +474,27 @@
 
   async function executeBulkDelete() {
     const ids = Array.from(selectedIds);
-    await fetch(`/travel/api/v1/cities/bulk-delete`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids })
-    });
-    
-    selectedIds.clear();
-    updateBulkActionBar();
-    const modal = bootstrap.Modal.getInstance(document.getElementById('delModal'));
-    if(modal) modal.hide();
-    loadData(true);
+    const deleteButton = document.getElementById('delBtn');
+    deleteButton.disabled = true;
+    try {
+      const response = await fetch(`/travel/api/v1/cities/bulk-delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids })
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message || 'Unable to delete cities');
+
+      selectedIds.clear();
+      updateBulkActionBar();
+      const modal = bootstrap.Modal.getInstance(document.getElementById('delModal'));
+      if(modal) modal.hide();
+      await loadData(true);
+    } catch (error) {
+      alert('Bulk delete failed: ' + error.message);
+    } finally {
+      deleteButton.disabled = false;
+    }
   }
 
   document.addEventListener('DOMContentLoaded', () => {

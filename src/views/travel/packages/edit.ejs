@@ -560,6 +560,19 @@
                 <label class="form-label fw-bold">Slug</label>
                 <input type="text" class="form-control" id="fSlug" placeholder="goa-beach-getaway">
               </div>
+              <div class="col-md-12">
+                <label class="form-label fw-bold d-block">Package Type *</label>
+                <div class="d-flex flex-wrap gap-4">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="fPackageTravelType" id="fTravelTypeDomestic" value="domestic" <%= !pkg || !pkg.travel_type || pkg.travel_type === 'domestic' ? 'checked' : '' %>>
+                    <label class="form-check-label" for="fTravelTypeDomestic">Domestic</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="fPackageTravelType" id="fTravelTypeInternational" value="international" <%= pkg && pkg.travel_type === 'international' ? 'checked' : '' %>>
+                    <label class="form-check-label" for="fTravelTypeInternational">International</label>
+                  </div>
+                </div>
+              </div>
               <div class="col-md-12 d-flex flex-wrap gap-4">
                 <div class="form-check form-switch pt-2 pb-2">
                   <input class="form-check-input" type="checkbox" id="showInHomePage" role="switch">
@@ -1556,6 +1569,7 @@
         tax_type: taxType,
         tax_percent: taxPercent,
         sort_order: sortOrderValue === '' ? null : parseInt(sortOrderValue, 10),
+        travel_type: document.querySelector('input[name="fPackageTravelType"]:checked')?.value || 'domestic',
         meta_title: document.getElementById('fMetaTitle')?.value.trim() || null,
         meta_description: document.getElementById('fMetaDescription')?.value.trim() || null,
         meta_keyword: document.getElementById('fMetaKeyword')?.value.trim() || null,

@@ -23,6 +23,10 @@
  *         sort_order:
  *           type: integer
  *           description: Display priority; lower values are returned first
+ *         travel_type:
+ *           type: string
+ *           enum: [domestic, international]
+ *           description: Whether the package is domestic or international
  *         meta_title:
  *           type: string
  *         meta_description:

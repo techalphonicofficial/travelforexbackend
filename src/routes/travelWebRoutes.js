@@ -693,20 +693,26 @@ router.post('/cities/save', async (req, res) => {
 
 router.delete('/api/v1/cities/:id', async (req, res) => {
     try {
-        await City.destroy({ where: { id: req.params.id } });
-        res.json({ success: true });
+        const result = await cityRepo.delete(req.params.id);
+        if (!result) return res.status(404).json({ success: false, message: 'City not found.' });
+        res.json({ success: true, message: 'City deleted successfully.', ...result });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        console.error('City delete failed:', err);
+        res.status(500).json({ success: false, message: 'Unable to delete city.' });
     }
 });
 
 router.post('/api/v1/cities/bulk-delete', async (req, res) => {
     try {
-        const { ids } = req.body;
-        await City.destroy({ where: { id: ids } });
-        res.json({ success: true });
+        const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
+        if (!ids.length) {
+            return res.status(400).json({ success: false, message: 'Select at least one city.' });
+        }
+        const result = await cityRepo.deleteMany(ids);
+        res.json({ success: true, message: `${result.deleted} cities deleted successfully.`, ...result });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        console.error('City bulk delete failed:', err);
+        res.status(500).json({ success: false, message: 'Unable to delete selected cities.' });
     }
 });
 
@@ -1191,6 +1197,7 @@ router.post('/packages/:id/duplicate', async (req, res) => {
                 name: duplicateName,
                 slug: duplicateSlug,
                 sort_order: maxSortOrder + 1,
+                travel_type: source.travel_type,
                 duration_days: source.duration_days,
                 departure_city: source.departure_city,
                 price: source.price,
@@ -1633,6 +1640,10 @@ router.post('/packages/save', async (req, res) => {
     const is_customizable = req.body.is_customizable === true || req.body.is_customizable === 'true' || req.body.is_customizable === 'on' || req.body.is_customizable === 1 || req.body.is_customizable === '1';
     const slug = (req.body.slug || name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const requestedSortOrder = parseInt(req.body.sort_order, 10);
+    const requestedTravelType = String(req.body.travel_type || '').trim().toLowerCase();
+    const travelType = ['domestic', 'international'].includes(requestedTravelType)
+        ? requestedTravelType
+        : 'domestic';
     const textOrNull = value => {
         if (value === undefined || value === null || value === '') return null;
         return typeof value === 'object' ? JSON.stringify(value) : String(value);
@@ -1658,6 +1669,7 @@ router.post('/packages/save', async (req, res) => {
                     name,
                     slug,
                     sort_order: Number.isInteger(requestedSortOrder) && requestedSortOrder >= 0 ? requestedSortOrder : pkg.sort_order,
+                    travel_type: travelType,
                     duration_days: duration,
                     departure_city: String(departure_city || '').trim().slice(0, 150) || null,
                     price: price || 0,
@@ -1687,6 +1699,7 @@ router.post('/packages/save', async (req, res) => {
                     name,
                     slug,
                     sort_order: Number.isInteger(requestedSortOrder) && requestedSortOrder >= 0 ? requestedSortOrder : maxSortOrder + 1,
+                    travel_type: travelType,
                     duration_days: duration,
                     departure_city: String(departure_city || '').trim().slice(0, 150) || null,
                     price: price || 0,
