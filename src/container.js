@@ -267,6 +267,8 @@ Activity.belongsTo(Destination, { foreignKey: 'destination_id', as: 'destination
 
 Destination.hasMany(Hotel, { foreignKey: 'destination_id', as: 'hotels' });
 Hotel.belongsTo(Destination, { foreignKey: 'destination_id', as: 'destination' });
+Hotel.belongsTo(City, { foreignKey: 'city_id', as: 'city' });
+City.hasMany(Hotel, { foreignKey: 'city_id', as: 'hotels' });
 Hotel.hasMany(HotelBooking, { foreignKey: 'hotel_id', as: 'bookings' });
 HotelBooking.belongsTo(Hotel, { foreignKey: 'hotel_id', as: 'hotel' });
 Destination.hasMany(HotelBooking, { foreignKey: 'destination_id', as: 'hotel_bookings' });

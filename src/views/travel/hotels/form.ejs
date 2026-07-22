@@ -43,12 +43,12 @@
                         </div>
                         <div class="col-md-6 form-group">
                             <label>City</label>
-                            <select name="destination_id" class="form-control select2" required>
-                                <option value="">Select City...</option>
-                                <% cityOptions.forEach(city => { %>
-                                    <option value="<%= city.id %>" <%= hotel && hotel.destination_id == city.id ? 'selected' : '' %>><%= city.name %></option>
-                                <% }) %>
+                            <select name="city_id" id="hotelCitySelect" class="form-control" required style="width:100%">
+                                <% if (selectedCity) { %>
+                                    <option value="<%= selectedCity.id %>" selected><%= selectedCity.name %><%= selectedCity.country ? ` — ${selectedCity.country.name}` : '' %></option>
+                                <% } %>
                             </select>
+                            <small class="form-text text-muted">Search by city or country. Scroll to load more cities.</small>
                         </div>
                     </div>
 
@@ -187,7 +187,45 @@
     $(function() {
         $('#source_type').on('change', toggleProviderField);
         toggleProviderField();
-        $('.select2').select2({ theme: 'bootstrap4' });
+        $('#hotelCitySelect').select2({
+            theme: 'bootstrap4',
+            placeholder: 'Search city or country...',
+            allowClear: true,
+            minimumInputLength: 0,
+            ajax: {
+                url: '/travel/api/v1/cities/paginated',
+                dataType: 'json',
+                delay: 250,
+                data: function(params) {
+                    return {
+                        search: params.term || '',
+                        page: params.page || 1,
+                        limit: 20
+                    };
+                },
+                processResults: function(response, params) {
+                    params.page = params.page || 1;
+                    const rows = response && response.success && response.data
+                        ? response.data.rows || []
+                        : [];
+                    const total = response && response.data ? Number(response.data.count) || 0 : 0;
+
+                    return {
+                        results: rows.map(function(city) {
+                            const country = city.country && city.country.name ? city.country.name : 'Country not set';
+                            return {
+                                id: city.id,
+                                text: city.name + ' — ' + country
+                            };
+                        }),
+                        pagination: {
+                            more: params.page * 20 < total
+                        }
+                    };
+                },
+                cache: true
+            }
+        });
 
         const selectAllMedia = document.getElementById('selectAllMedia');
         const mediaCheckboxes = Array.from(document.querySelectorAll('.remove-media-checkbox'));

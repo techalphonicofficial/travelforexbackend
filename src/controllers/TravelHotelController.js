@@ -126,6 +126,36 @@ class TravelHotelController {
         };
     }
 
+    async buildHotelPayload(body, currentHotel = null) {
+        const cityId = parseInt(body.city_id, 10);
+        if (!Number.isInteger(cityId) || cityId < 1) {
+            const error = new Error('Please select a city.');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        const { DestinationMapping } = this.getLocationModels();
+        let mapping = null;
+        if (DestinationMapping) {
+            const preferredDestinationId = parseInt(currentHotel && currentHotel.destination_id, 10);
+            if (Number.isInteger(preferredDestinationId)) {
+                mapping = await DestinationMapping.findOne({
+                    where: { city_id: cityId, destination_id: preferredDestinationId }
+                });
+            }
+            mapping = mapping || await DestinationMapping.findOne({
+                where: { city_id: cityId },
+                order: [['id', 'ASC']]
+            });
+        }
+
+        return {
+            ...this.parseHotelPayload(body),
+            city_id: cityId,
+            destination_id: mapping ? mapping.destination_id : null
+        };
+    }
+
     async getHotelCityOptions(selectedDestinationId = null) {
         const destinations = await this.Destination.findAll({ order: [['name', 'ASC']] });
         const { DestinationMapping, City } = this.getLocationModels();
@@ -160,6 +190,17 @@ class TravelHotelController {
 
         return [...optionsByCity.values()]
             .sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    async getSelectedCity(cityId) {
+        const { City, Country } = this.getLocationModels();
+        if (!City || !cityId) return null;
+
+        const include = Country
+            ? [{ model: Country, as: 'country', attributes: ['id', 'name'] }]
+            : [];
+        const city = await City.findByPk(cityId, { include });
+        return city ? city.get({ plain: true }) : null;
     }
 
     destinationMatchesLocation(destination, location, filters) {
@@ -362,7 +403,12 @@ class TravelHotelController {
                 where,
                 order: [['created_at', 'DESC']],
                 limit: paginationRequest.limit,
-                offset
+                offset,
+                include: [{
+                    association: 'city',
+                    required: false,
+                    include: [{ association: 'country', required: false }]
+                }]
             });
             const locationOptions = this.buildLocationOptions(destinations, locationMap);
             const startItem = totalHotels ? offset + 1 : 0;
@@ -376,8 +422,8 @@ class TravelHotelController {
                 const location = locationMap[plain.destination_id] || {};
                 plain.destination = destination;
                 plain.location = {
-                    city: location.city || (destination ? destination.name : ''),
-                    country: location.country || (destination ? destination.country : '')
+                    city: plain.city?.name || location.city || (destination ? destination.name : ''),
+                    country: plain.city?.country?.name || location.country || (destination ? destination.country : '')
                 };
                 return plain;
             });
@@ -411,8 +457,13 @@ class TravelHotelController {
 
     async create(req, res) {
         try {
-            const cityOptions = await this.getHotelCityOptions();
-            res.render('travel/hotels/form', { title: 'Add Hotel', hotel: null, gallery: [], cityOptions, user: req.session.user });
+            res.render('travel/hotels/form', {
+                title: 'Add Hotel',
+                hotel: null,
+                gallery: [],
+                selectedCity: null,
+                user: req.session.user
+            });
         } catch (error) {
             console.error(error);
             res.status(500).send('Internal Server Error');
@@ -422,14 +473,14 @@ class TravelHotelController {
     async store(req, res) {
         try {
             const hotel = await this.Hotel.create({
-                ...this.parseHotelPayload(req.body),
+                ...await this.buildHotelPayload(req.body),
                 image_url: null,
             });
             await this.saveGallery(hotel, req);
             res.redirect('/travel/hotels');
         } catch (error) {
             console.error(error);
-            res.status(500).send('Internal Server Error');
+            res.status(error.statusCode || 500).send(error.statusCode ? error.message : 'Internal Server Error');
         }
     }
 
@@ -437,13 +488,13 @@ class TravelHotelController {
         try {
             const hotel = await this.Hotel.findByPk(req.params.id);
             if (!hotel) return res.status(404).send('Not Found');
-            const cityOptions = await this.getHotelCityOptions(hotel.destination_id);
+            const selectedCity = await this.getSelectedCity(hotel.city_id);
             const gallery = await this.fetchHotelGallery(hotel.id);
             res.render('travel/hotels/form', {
                 title: 'Edit Hotel',
                 hotel: hotel.get({ plain: true }),
                 gallery: gallery.map(item => item.get({ plain: true })),
-                cityOptions,
+                selectedCity,
                 user: req.session.user
             });
         } catch (error) {
@@ -456,12 +507,12 @@ class TravelHotelController {
         try {
             const hotel = await this.Hotel.findByPk(req.params.id);
             if (!hotel) return res.status(404).send('Not Found');
-            await hotel.update(this.parseHotelPayload(req.body));
+            await hotel.update(await this.buildHotelPayload(req.body, hotel));
             await this.saveGallery(hotel, req);
             res.redirect('/travel/hotels');
         } catch (error) {
             console.error(error);
-            res.status(500).send('Internal Server Error');
+            res.status(error.statusCode || 500).send(error.statusCode ? error.message : 'Internal Server Error');
         }
     }
 
