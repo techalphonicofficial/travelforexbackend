@@ -46,6 +46,7 @@
 const express = require('express');
 const router = express.Router();
 const { repositories: { packageRepo } } = require('../container');
+const { serializePackageItinerary } = require('../utils/packageItinerary');
 
 /**
  * @swagger
@@ -286,7 +287,7 @@ router.get('/:slug', async (req, res) => {
 
         res.json({
             success: true,
-            data
+            data: serializePackageItinerary(data)
         });
 
     } catch (err) {
