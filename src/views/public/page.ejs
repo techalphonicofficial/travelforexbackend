@@ -203,6 +203,47 @@
             </section>
         <% } %>
 
+        <!-- SECTION TYPE: DESTINATION TABS -->
+        <% if (section.section === 'destination_tabs') { %>
+            <section class="py-5 destination-tabs-section" id="destination-tabs-<%= section.id %>">
+                <div class="container">
+                    <% if (section.title) { %><h2 class="text-center fw-bold mb-2"><%= section.title %></h2><% } %>
+                    <% if (content.heading_content) { %><p class="text-center fs-5 mb-2"><%= content.heading_content %></p><% } %>
+                    <% if (content.description) { %><p class="text-center text-muted mb-4"><%= content.description %></p><% } %>
+
+                    <div class="destination-tab-buttons d-flex justify-content-center flex-wrap gap-2 mb-5" role="tablist">
+                        <% (content.tabs || []).forEach((tab, tabIndex) => { %>
+                            <button type="button" class="destination-tab-btn <%= tabIndex === 0 ? 'active' : '' %>"
+                                data-tab-index="<%= tabIndex %>" role="tab"><%= tab.label || tab.title || tab.key %></button>
+                        <% }) %>
+                    </div>
+
+                    <% (content.tabs || []).forEach((tab, tabIndex) => { %>
+                        <div class="destination-tab-panel <%= tabIndex === 0 ? 'active' : '' %>"
+                            data-tab-panel="<%= tabIndex %>" role="tabpanel">
+                            <div class="destination-card-grid">
+                                <% (tab.destinations || tab.items || []).forEach(destination => { %>
+                                    <article class="destination-page-card">
+                                        <div class="destination-card-media">
+                                            <img src="<%= destination.image || destination.img || '/assets/img/placeholder.png' %>"
+                                                alt="<%= destination.name || '' %>">
+                                            <% if (destination.badge) { %><span class="destination-card-badge"><%= destination.badge %></span><% } %>
+                                        </div>
+                                        <div class="destination-card-body">
+                                            <h3><%= destination.name %></h3>
+                                            <a href="<%= destination.cta_link || destination.link || (destination.slug ? '/destination/' + destination.slug : '#') %>">
+                                                <%= destination.cta_text || 'Apply Now' %> <span aria-hidden="true">→</span>
+                                            </a>
+                                        </div>
+                                    </article>
+                                <% }) %>
+                            </div>
+                        </div>
+                    <% }) %>
+                </div>
+            </section>
+        <% } %>
+
     <% }) %>
 <% } %>
 
@@ -217,4 +258,34 @@
     .transition-opacity { transition: opacity 0.3s; }
     .object-fit-cover { object-fit: cover; }
     .prose p { margin-bottom: 1.5rem; line-height: 1.7; color: var(--text-muted); font-size: 1.1rem; }
+    .destination-tabs-section { background: linear-gradient(120deg, #edf8ff 0%, #f3ecff 100%); }
+    .destination-tab-btn { border: 0; border-radius: 999px; background: #fff; color: #334155; font-weight: 700; padding: .85rem 1.6rem; box-shadow: 0 4px 14px rgba(15, 23, 42, .06); }
+    .destination-tab-btn.active { background: #111; color: #fff; box-shadow: 0 10px 22px rgba(15, 23, 42, .2); }
+    .destination-tab-panel { display: none; }
+    .destination-tab-panel.active { display: block; }
+    .destination-card-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1.5rem; }
+    .destination-page-card { background: #fff; border: 1px solid #d8dee9; border-radius: 20px; overflow: hidden; min-width: 0; }
+    .destination-card-media { height: 200px; position: relative; overflow: hidden; }
+    .destination-card-media img { width: 100%; height: 100%; object-fit: cover; }
+    .destination-card-badge { position: absolute; left: 12px; bottom: 12px; border-radius: 8px; padding: .45rem .7rem; background: #ff3b3b; color: #fff; font-size: .7rem; font-weight: 800; }
+    .destination-card-body { padding: 1.15rem 1.4rem 1.3rem; }
+    .destination-card-body h3 { font-size: 1.35rem; font-weight: 800; margin-bottom: .9rem; }
+    .destination-card-body a { color: #050505; font-weight: 800; text-decoration: none; }
+    @media (max-width: 1199px) { .destination-card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (max-width: 767px) { .destination-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; } }
+    @media (max-width: 480px) { .destination-card-grid { grid-template-columns: 1fr; } }
 </style>
+
+<script>
+    document.querySelectorAll('.destination-tabs-section').forEach(section => {
+        const buttons = section.querySelectorAll('.destination-tab-btn');
+        const panels = section.querySelectorAll('.destination-tab-panel');
+        buttons.forEach(button => {
+            button.addEventListener('click', () => {
+                const index = button.dataset.tabIndex;
+                buttons.forEach(item => item.classList.toggle('active', item === button));
+                panels.forEach(panel => panel.classList.toggle('active', panel.dataset.tabPanel === index));
+            });
+        });
+    });
+</script>

@@ -188,6 +188,28 @@ class PackageRepository extends BaseRepository {
         });
     }
 
+    requiredPaginationIncludes(includes = []) {
+        return includes.map(include => {
+            const nestedIncludes = this.requiredPaginationIncludes(include.include || []);
+            if (!include.required && nestedIncludes.length === 0) return null;
+
+            const paginationInclude = {
+                ...include,
+                attributes: [],
+                required: Boolean(include.required || nestedIncludes.length)
+            };
+
+            if (nestedIncludes.length) paginationInclude.include = nestedIncludes;
+            else delete paginationInclude.include;
+
+            if (include.through || ['categories', 'package_categories'].includes(include.association)) {
+                paginationInclude.through = { ...(include.through || {}), attributes: [] };
+            }
+
+            return paginationInclude;
+        }).filter(Boolean);
+    }
+
     async filterPackages({ page = 1, limit = 10, minPrice, maxPrice, duration, startDate, endDate, city, country, continent, destination, category, package_category_slug, package_type, travel_type }) {
         const where = {};
         const requestedPackageType = String(package_type || travel_type || '').trim().toLowerCase();
@@ -269,19 +291,42 @@ class PackageRepository extends BaseRepository {
             packageCategoryInclude
         ];
 
-        const offset = (page - 1) * limit;
-        return this.model.findAndCountAll({
+        const safePage = Math.max(parseInt(page, 10) || 1, 1);
+        const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 100);
+        const offset = (safePage - 1) * safeLimit;
+        const paginationIncludes = this.requiredPaginationIncludes(includes);
+
+        const count = await this.model.count({
             where,
-            include: includes,
-            // Sequelize's pagination subquery generates an invalid PostgreSQL
-            // join when a destination category is required: the destination
-            // table is joined before the package_destinations alias exists.
+            include: paginationIncludes,
+            distinct: true,
+            col: 'id'
+        });
+
+        const pageRows = await this.model.findAll({
+            where,
+            attributes: ['id'],
+            include: paginationIncludes,
             subQuery: false,
             order: [['sort_order', 'ASC'], ['created_at', 'DESC']],
-            limit: parseInt(limit),
-            offset: parseInt(offset),
-            distinct: true
+            group: ['Package.id'],
+            limit: safeLimit,
+            offset
         });
+
+        const packageIds = pageRows.map(row => row.id);
+        if (!packageIds.length) return { count, rows: [] };
+
+        const rows = await this.model.findAll({
+            where: {
+                ...where,
+                id: { [Op.in]: packageIds }
+            },
+            include: includes,
+            order: [['sort_order', 'ASC'], ['created_at', 'DESC']]
+        });
+
+        return { count, rows };
     }
 
     normalizeFilter(value) {

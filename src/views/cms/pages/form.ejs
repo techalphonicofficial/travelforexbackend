@@ -108,6 +108,7 @@
                         <option value="story_grid" <%=detail.section==='story_grid' ? 'selected' : '' %>>Story (Text + Stats + Images)</option>
                         <option value="team_grid" <%=detail.section==='team_grid' ? 'selected' : '' %>>Team Grid</option>
                         <option value="tabs_section" <%=detail.section==='tabs_section' ? 'selected' : '' %>>Tabs Content (Image + Rich Text)</option>
+                        <option value="destination_tabs" <%=detail.section==='destination_tabs' ? 'selected' : '' %>>Destination Tabs (Cards Array)</option>
                       </select>
                     </div>
 
@@ -401,6 +402,59 @@
                           <button type="button" class="btn btn-sm btn-light border fw-bold text-primary" onclick="addItem(<%= index %>, 'tabs_section')"><i class="bi bi-plus-lg me-1"></i> Add Tab</button>
                         </div>
 
+                        <!-- Destination Tabs -->
+                        <div class="type-destination_tabs section-content"
+                          style="display: <%= detail.section === 'destination_tabs' ? 'block' : 'none' %>">
+                          <div class="mb-3">
+                            <label class="small fw-bold text-muted mb-1">Section Description</label>
+                            <textarea class="form-control form-control-sm destination-tabs-desc" rows="2"
+                              placeholder="e.g. Click on any country to check visa requirements and apply."><%= content.description || '' %></textarea>
+                          </div>
+                          <div class="destination-tabs-list d-flex flex-column gap-3 mb-3">
+                            <% (content.tabs || []).forEach((tab) => { %>
+                              <div class="destination-tab-row bg-white p-3 rounded-3 border shadow-sm">
+                                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                  <span class="fw-bold text-primary"><i class="bi bi-collection me-1"></i> Destination Tab</span>
+                                  <button type="button" class="btn btn-sm btn-light text-danger border"
+                                    onclick="this.closest('.destination-tab-row').remove()"><i class="bi bi-trash3"></i></button>
+                                </div>
+                                <div class="row g-2 mb-3">
+                                  <div class="col-md-6">
+                                    <label class="small fw-bold text-muted">Tab Label</label>
+                                    <input type="text" class="form-control form-control-sm tab-label"
+                                      placeholder="Visa Free & On Arrival" value="<%= tab.label || tab.title || '' %>">
+                                  </div>
+                                  <div class="col-md-6">
+                                    <label class="small fw-bold text-muted">Tab Key</label>
+                                    <input type="text" class="form-control form-control-sm tab-key"
+                                      placeholder="visa-free-on-arrival" value="<%= tab.key || '' %>">
+                                  </div>
+                                </div>
+                                <div class="destination-cards-list d-flex flex-column gap-2 mb-2">
+                                  <% (tab.destinations || tab.items || []).forEach((destination) => { %>
+                                    <div class="destination-card-row bg-light border rounded-3 p-2">
+                                      <div class="row g-2 align-items-end">
+                                        <div class="col-md-3"><label class="small text-muted">Name</label><input type="text" class="form-control form-control-sm card-name" value="<%= destination.name || '' %>" placeholder="Nepal"></div>
+                                        <div class="col-md-3"><label class="small text-muted">Slug</label><input type="text" class="form-control form-control-sm card-slug" value="<%= destination.slug || '' %>" placeholder="nepal"></div>
+                                        <div class="col-md-4"><label class="small text-muted">Image URL</label><div class="input-group input-group-sm media-selector-wrap"><input type="text" class="form-control card-image" value="<%= destination.image || destination.img || '' %>" placeholder="/uploads/..." onchange="updatePreview(this)"><button type="button" class="btn btn-outline-primary" onclick="openMediaLibrary(this.previousElementSibling)"><i class="bi bi-folder2-open"></i></button></div></div>
+                                        <div class="col-md-2"><label class="small text-muted">Badge</label><input type="text" class="form-control form-control-sm card-badge" value="<%= destination.badge || '' %>" placeholder="VISA REQUIRED"></div>
+                                        <div class="col-md-3"><label class="small text-muted">CTA Text</label><input type="text" class="form-control form-control-sm card-cta-text" value="<%= destination.cta_text || 'Apply Now' %>" placeholder="Apply Now"></div>
+                                        <div class="col-md-7"><label class="small text-muted">CTA Link</label><input type="text" class="form-control form-control-sm card-cta-link" value="<%= destination.cta_link || destination.link || '' %>" placeholder="/visa/nepal"></div>
+                                        <div class="col-md-2"><button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="this.closest('.destination-card-row').remove()"><i class="bi bi-x-lg"></i> Remove</button></div>
+                                      </div>
+                                    </div>
+                                  <% }) %>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="addDestinationCard(this)">
+                                  <i class="bi bi-plus-lg me-1"></i> Add Destination
+                                </button>
+                              </div>
+                            <% }) %>
+                          </div>
+                          <button type="button" class="btn btn-sm btn-light border fw-bold text-primary"
+                            onclick="addItem(<%= index %>, 'destination_tab')"><i class="bi bi-plus-lg me-1"></i> Add Tab</button>
+                        </div>
+
                         <input type="hidden" name="sections[<%= index %>][json_data]"
                           value='<%= detail.json_data || "{}" %>' class="json-data-input">
                     </div>
@@ -649,6 +703,8 @@
       list = section.querySelector('.image-text-points-list');
     } else if (type === 'tabs_section') {
       list = section.querySelector('.tabs-list');
+    } else if (type === 'destination_tabs') {
+      list = section.querySelector('.destination-tabs-list');
     }
 
     let html = '';
@@ -755,6 +811,27 @@
                   </div>
                 </div>
               </div>`;
+    } else if (type === 'destination_tabs') {
+      html = `<div class="destination-tab-row bg-white p-3 rounded-3 border shadow-sm">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                  <span class="fw-bold text-primary"><i class="bi bi-collection me-1"></i> Destination Tab</span>
+                  <button type="button" class="btn btn-sm btn-light text-danger border" onclick="this.closest('.destination-tab-row').remove()"><i class="bi bi-trash3"></i></button>
+                </div>
+                <div class="row g-2 mb-3">
+                  <div class="col-md-6">
+                    <label class="small fw-bold text-muted">Tab Label</label>
+                    <input type="text" class="form-control form-control-sm tab-label" placeholder="Visa Free & On Arrival">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="small fw-bold text-muted">Tab Key</label>
+                    <input type="text" class="form-control form-control-sm tab-key" placeholder="visa-free-on-arrival">
+                  </div>
+                </div>
+                <div class="destination-cards-list d-flex flex-column gap-2 mb-2"></div>
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="addDestinationCard(this)">
+                  <i class="bi bi-plus-lg me-1"></i> Add Destination
+                </button>
+              </div>`;
     }
     list.insertAdjacentHTML('beforeend', html);
     
@@ -768,6 +845,22 @@
             });
         }
     }, 100);
+  }
+
+  function addDestinationCard(button) {
+    const list = button.closest('.destination-tab-row').querySelector('.destination-cards-list');
+    const html = `<div class="destination-card-row bg-light border rounded-3 p-2">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3"><label class="small text-muted">Name</label><input type="text" class="form-control form-control-sm card-name" placeholder="Nepal"></div>
+        <div class="col-md-3"><label class="small text-muted">Slug</label><input type="text" class="form-control form-control-sm card-slug" placeholder="nepal"></div>
+        <div class="col-md-4"><label class="small text-muted">Image URL</label><div class="input-group input-group-sm media-selector-wrap"><input type="text" class="form-control card-image" placeholder="/uploads/..." onchange="updatePreview(this)"><button type="button" class="btn btn-outline-primary" onclick="openMediaLibrary(this)"><i class="bi bi-folder2-open"></i></button></div></div>
+        <div class="col-md-2"><label class="small text-muted">Badge</label><input type="text" class="form-control form-control-sm card-badge" value="VISA REQUIRED" placeholder="VISA REQUIRED"></div>
+        <div class="col-md-3"><label class="small text-muted">CTA Text</label><input type="text" class="form-control form-control-sm card-cta-text" value="Apply Now" placeholder="Apply Now"></div>
+        <div class="col-md-7"><label class="small text-muted">CTA Link</label><input type="text" class="form-control form-control-sm card-cta-link" placeholder="/visa/nepal"></div>
+        <div class="col-md-2"><button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="this.closest('.destination-card-row').remove()"><i class="bi bi-x-lg"></i> Remove</button></div>
+      </div>
+    </div>`;
+    list.insertAdjacentHTML('beforeend', html);
   }
 
   function addSection() {
@@ -797,6 +890,7 @@
               <option value="story_grid">Story (Text + Stats + Images)</option>
               <option value="team_grid">Team Grid</option>
               <option value="tabs_section">Tabs Content (Image + Rich Text)</option>
+              <option value="destination_tabs">Destination Tabs (Cards Array)</option>
             </select>
           </div>
           <div class="col-12 mt-3 content-area">
@@ -854,6 +948,14 @@
               </div>
               <div class="tabs-list d-flex flex-column gap-2 mb-3"></div>
               <button type="button" class="btn btn-sm btn-light border fw-bold text-primary" onclick="addItem(${sectionCount}, 'tabs_section')"><i class="bi bi-plus-lg me-1"></i> Add Tab</button>
+            </div>
+            <div class="type-destination_tabs section-content" style="display:none">
+              <div class="mb-3">
+                <label class="small fw-bold text-muted mb-1">Section Description</label>
+                <textarea class="form-control form-control-sm destination-tabs-desc" rows="2" placeholder="Click on any country to check visa requirements and apply."></textarea>
+              </div>
+              <div class="destination-tabs-list d-flex flex-column gap-3 mb-3"></div>
+              <button type="button" class="btn btn-sm btn-light border fw-bold text-primary" onclick="addItem(${sectionCount}, 'destination_tab')"><i class="bi bi-plus-lg me-1"></i> Add Tab</button>
             </div>
             <input type="hidden" name="sections[${sectionCount}][json_data]" value="{}" class="json-data-input">
           </div>
@@ -940,6 +1042,21 @@
           content: r.querySelector('.f4').value
         }));
         data = { ...data, tabs };
+      } else if (type === 'destination_tabs') {
+        const description = section.querySelector('.destination-tabs-desc')?.value || '';
+        const tabs = Array.from(section.querySelectorAll('.destination-tabs-list > .destination-tab-row')).map(tabRow => ({
+          key: tabRow.querySelector('.tab-key')?.value || '',
+          label: tabRow.querySelector('.tab-label')?.value || '',
+          destinations: Array.from(tabRow.querySelectorAll('.destination-cards-list > .destination-card-row')).map(cardRow => ({
+            name: cardRow.querySelector('.card-name')?.value || '',
+            slug: cardRow.querySelector('.card-slug')?.value || '',
+            image: cardRow.querySelector('.card-image')?.value || '',
+            badge: cardRow.querySelector('.card-badge')?.value || '',
+            cta_text: cardRow.querySelector('.card-cta-text')?.value || '',
+            cta_link: cardRow.querySelector('.card-cta-link')?.value || ''
+          }))
+        }));
+        data = { ...data, description, tabs };
       } else if (['faq_accordion', 'stats_bar', 'timeline', 'feature_grid', 'testimonial_grid', 'gallery', 'team_grid'].includes(type)) {
         const rows = section.querySelectorAll('.type-list-based .items-list .item-row');
         const listKey = { 'faq_accordion': 'faqs', 'stats_bar': 'stats', 'timeline': 'items', 'feature_grid': 'features', 'testimonial_grid': 'testimonials', 'gallery': 'images', 'team_grid': 'team' }[type];
