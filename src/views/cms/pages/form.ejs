@@ -109,6 +109,7 @@
                         <option value="team_grid" <%=detail.section==='team_grid' ? 'selected' : '' %>>Team Grid</option>
                         <option value="tabs_section" <%=detail.section==='tabs_section' ? 'selected' : '' %>>Tabs Content (Image + Rich Text)</option>
                         <option value="destination_tabs" <%=detail.section==='destination_tabs' ? 'selected' : '' %>>Destination Tabs (Cards Array)</option>
+                        <option value="offer_grid" <%=detail.section==='offer_grid' ? 'selected' : '' %>>Exclusive Offers (Dynamic Cards)</option>
                       </select>
                     </div>
 
@@ -455,6 +456,38 @@
                             onclick="addItem(<%= index %>, 'destination_tab')"><i class="bi bi-plus-lg me-1"></i> Add Tab</button>
                         </div>
 
+                        <!-- Exclusive Offers -->
+                        <div class="type-offer_grid section-content"
+                          style="display: <%= detail.section === 'offer_grid' ? 'block' : 'none' %>">
+                          <div class="mb-3">
+                            <label class="small fw-bold text-muted mb-1">Section Description</label>
+                            <textarea class="form-control form-control-sm offer-grid-desc" rows="2"
+                              placeholder="Grab the best deals on flights, hotels, and holiday packages."><%= content.description || '' %></textarea>
+                          </div>
+                          <div class="offers-list d-flex flex-column gap-3 mb-3">
+                            <% (content.offers || []).forEach((offer) => { %>
+                              <div class="offer-card-row bg-white p-3 rounded-3 border shadow-sm">
+                                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                  <span class="fw-bold text-primary"><i class="bi bi-tags me-1"></i> Offer Card</span>
+                                  <button type="button" class="btn btn-sm btn-light text-danger border"
+                                    onclick="this.closest('.offer-card-row').remove()"><i class="bi bi-trash3"></i></button>
+                                </div>
+                                <div class="row g-2 align-items-end">
+                                  <div class="col-md-3"><label class="small text-muted">Offer Type</label><input type="text" class="form-control form-control-sm offer-type" value="<%= offer.type || '' %>" placeholder="FLIGHT OFFER"></div>
+                                  <div class="col-md-6"><label class="small text-muted">Offer Title</label><input type="text" class="form-control form-control-sm offer-title" value="<%= offer.title || '' %>" placeholder="Flat 10% Off on International Flights"></div>
+                                  <div class="col-md-3"><label class="small text-muted">Card Size</label><select class="form-select form-select-sm offer-size"><option value="standard" <%= offer.size === 'standard' ? 'selected' : '' %>>Standard</option><option value="wide" <%= offer.size === 'wide' ? 'selected' : '' %>>Wide</option><option value="featured" <%= offer.size === 'featured' ? 'selected' : '' %>>Featured Large</option></select></div>
+                                  <div class="col-md-4"><label class="small text-muted">Image URL</label><div class="input-group input-group-sm media-selector-wrap"><input type="text" class="form-control offer-image" value="<%= offer.image || offer.img || '' %>" placeholder="/uploads/..." onchange="updatePreview(this)"><button type="button" class="btn btn-outline-primary" onclick="openMediaLibrary(this)"><i class="bi bi-folder2-open"></i></button></div></div>
+                                  <div class="col-md-3"><label class="small text-muted">Validity Text</label><input type="text" class="form-control form-control-sm offer-validity" value="<%= offer.validity || offer.valid_until || '' %>" placeholder="Valid till 30th Nov"></div>
+                                  <div class="col-md-2"><label class="small text-muted">Coupon Code</label><input type="text" class="form-control form-control-sm offer-code" value="<%= offer.code || offer.coupon_code || '' %>" placeholder="INTL10"></div>
+                                  <div class="col-md-3"><label class="small text-muted">Offer Link</label><input type="text" class="form-control form-control-sm offer-link" value="<%= offer.link || '' %>" placeholder="/offers/flight"></div>
+                                </div>
+                              </div>
+                            <% }) %>
+                          </div>
+                          <button type="button" class="btn btn-sm btn-light border fw-bold text-primary"
+                            onclick="addItem(<%= index %>, 'offer')"><i class="bi bi-plus-lg me-1"></i> Add Offer</button>
+                        </div>
+
                         <input type="hidden" name="sections[<%= index %>][json_data]"
                           value='<%= detail.json_data || "{}" %>' class="json-data-input">
                     </div>
@@ -705,6 +738,8 @@
       list = section.querySelector('.tabs-list');
     } else if (type === 'destination_tabs') {
       list = section.querySelector('.destination-tabs-list');
+    } else if (type === 'offer_grid') {
+      list = section.querySelector('.offers-list');
     }
 
     let html = '';
@@ -832,6 +867,22 @@
                   <i class="bi bi-plus-lg me-1"></i> Add Destination
                 </button>
               </div>`;
+    } else if (type === 'offer_grid') {
+      html = `<div class="offer-card-row bg-white p-3 rounded-3 border shadow-sm">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                  <span class="fw-bold text-primary"><i class="bi bi-tags me-1"></i> Offer Card</span>
+                  <button type="button" class="btn btn-sm btn-light text-danger border" onclick="this.closest('.offer-card-row').remove()"><i class="bi bi-trash3"></i></button>
+                </div>
+                <div class="row g-2 align-items-end">
+                  <div class="col-md-3"><label class="small text-muted">Offer Type</label><input type="text" class="form-control form-control-sm offer-type" placeholder="FLIGHT OFFER"></div>
+                  <div class="col-md-6"><label class="small text-muted">Offer Title</label><input type="text" class="form-control form-control-sm offer-title" placeholder="Flat 10% Off on International Flights"></div>
+                  <div class="col-md-3"><label class="small text-muted">Card Size</label><select class="form-select form-select-sm offer-size"><option value="standard">Standard</option><option value="wide">Wide</option><option value="featured">Featured Large</option></select></div>
+                  <div class="col-md-4"><label class="small text-muted">Image URL</label><div class="input-group input-group-sm media-selector-wrap"><input type="text" class="form-control offer-image" placeholder="/uploads/..." onchange="updatePreview(this)"><button type="button" class="btn btn-outline-primary" onclick="openMediaLibrary(this)"><i class="bi bi-folder2-open"></i></button></div></div>
+                  <div class="col-md-3"><label class="small text-muted">Validity Text</label><input type="text" class="form-control form-control-sm offer-validity" placeholder="Valid till 30th Nov"></div>
+                  <div class="col-md-2"><label class="small text-muted">Coupon Code</label><input type="text" class="form-control form-control-sm offer-code" placeholder="INTL10"></div>
+                  <div class="col-md-3"><label class="small text-muted">Offer Link</label><input type="text" class="form-control form-control-sm offer-link" placeholder="/offers/flight"></div>
+                </div>
+              </div>`;
     }
     list.insertAdjacentHTML('beforeend', html);
     
@@ -891,6 +942,7 @@
               <option value="team_grid">Team Grid</option>
               <option value="tabs_section">Tabs Content (Image + Rich Text)</option>
               <option value="destination_tabs">Destination Tabs (Cards Array)</option>
+              <option value="offer_grid">Exclusive Offers (Dynamic Cards)</option>
             </select>
           </div>
           <div class="col-12 mt-3 content-area">
@@ -956,6 +1008,14 @@
               </div>
               <div class="destination-tabs-list d-flex flex-column gap-3 mb-3"></div>
               <button type="button" class="btn btn-sm btn-light border fw-bold text-primary" onclick="addItem(${sectionCount}, 'destination_tab')"><i class="bi bi-plus-lg me-1"></i> Add Tab</button>
+            </div>
+            <div class="type-offer_grid section-content" style="display:none">
+              <div class="mb-3">
+                <label class="small fw-bold text-muted mb-1">Section Description</label>
+                <textarea class="form-control form-control-sm offer-grid-desc" rows="2" placeholder="Grab the best deals on flights, hotels, and holiday packages."></textarea>
+              </div>
+              <div class="offers-list d-flex flex-column gap-3 mb-3"></div>
+              <button type="button" class="btn btn-sm btn-light border fw-bold text-primary" onclick="addItem(${sectionCount}, 'offer')"><i class="bi bi-plus-lg me-1"></i> Add Offer</button>
             </div>
             <input type="hidden" name="sections[${sectionCount}][json_data]" value="{}" class="json-data-input">
           </div>
@@ -1057,6 +1117,18 @@
           }))
         }));
         data = { ...data, description, tabs };
+      } else if (type === 'offer_grid') {
+        const description = section.querySelector('.offer-grid-desc')?.value || '';
+        const offers = Array.from(section.querySelectorAll('.offers-list > .offer-card-row')).map(row => ({
+          type: row.querySelector('.offer-type')?.value || '',
+          title: row.querySelector('.offer-title')?.value || '',
+          size: row.querySelector('.offer-size')?.value || 'standard',
+          image: row.querySelector('.offer-image')?.value || '',
+          validity: row.querySelector('.offer-validity')?.value || '',
+          code: row.querySelector('.offer-code')?.value || '',
+          link: row.querySelector('.offer-link')?.value || ''
+        }));
+        data = { ...data, description, offers };
       } else if (['faq_accordion', 'stats_bar', 'timeline', 'feature_grid', 'testimonial_grid', 'gallery', 'team_grid'].includes(type)) {
         const rows = section.querySelectorAll('.type-list-based .items-list .item-row');
         const listKey = { 'faq_accordion': 'faqs', 'stats_bar': 'stats', 'timeline': 'items', 'feature_grid': 'features', 'testimonial_grid': 'testimonials', 'gallery': 'images', 'team_grid': 'team' }[type];

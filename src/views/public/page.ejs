@@ -18,7 +18,11 @@
 <% if (page.details && page.details.length > 0) { %>
     <% page.details.forEach(section => { 
         let content = {};
-        try { content = JSON.parse(section.json_data || '{}'); } catch(e) {}
+        try {
+            content = typeof section.json_data === 'string'
+                ? JSON.parse(section.json_data || '{}')
+                : (section.json_data || {});
+        } catch(e) {}
     %>
         
         <!-- SECTION TYPE: STANDARD -->
@@ -244,6 +248,36 @@
             </section>
         <% } %>
 
+        <!-- SECTION TYPE: EXCLUSIVE OFFERS -->
+        <% if (section.section === 'offer_grid') { %>
+            <section class="py-5 exclusive-offers-section">
+                <div class="container">
+                    <% if (section.title) { %><h2 class="text-center fw-bold mb-2"><%= section.title %></h2><% } %>
+                    <% if (content.heading_content) { %><p class="text-center fs-5 mb-2"><%= content.heading_content %></p><% } %>
+                    <% if (content.description) { %><p class="text-center text-muted mb-5"><%= content.description %></p><% } %>
+
+                    <div class="exclusive-offers-grid">
+                        <% (content.offers || []).forEach(offer => { %>
+                            <a href="<%= offer.link || '#' %>" class="exclusive-offer-card offer-size-<%= offer.size || 'standard' %>">
+                                <img src="<%= offer.image || offer.img || '/assets/img/placeholder.png' %>" alt="<%= offer.title || '' %>">
+                                <div class="exclusive-offer-overlay"></div>
+                                <div class="exclusive-offer-content">
+                                    <% if (offer.type) { %><span class="exclusive-offer-type"><%= offer.type %></span><% } %>
+                                    <div class="exclusive-offer-copy">
+                                        <h3><%= offer.title %></h3>
+                                        <% if (offer.validity || offer.valid_until) { %><p><%= offer.validity || offer.valid_until %></p><% } %>
+                                        <% if (offer.code || offer.coupon_code) { %>
+                                            <span class="exclusive-offer-code">USE CODE: <strong><%= offer.code || offer.coupon_code %></strong></span>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </a>
+                        <% }) %>
+                    </div>
+                </div>
+            </section>
+        <% } %>
+
     <% }) %>
 <% } %>
 
@@ -271,9 +305,25 @@
     .destination-card-body { padding: 1.15rem 1.4rem 1.3rem; }
     .destination-card-body h3 { font-size: 1.35rem; font-weight: 800; margin-bottom: .9rem; }
     .destination-card-body a { color: #050505; font-weight: 800; text-decoration: none; }
+    .exclusive-offers-section { background: linear-gradient(120deg, #eef5ff 0%, #fff0fa 100%); }
+    .exclusive-offers-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: 220px; grid-auto-flow: dense; gap: 1.25rem; }
+    .exclusive-offer-card { position: relative; display: block; min-width: 0; overflow: hidden; border-radius: 18px; color: #fff; text-decoration: none; box-shadow: 0 10px 28px rgba(15, 23, 42, .13); }
+    .exclusive-offer-card:hover { color: #fff; }
+    .exclusive-offer-card.offer-size-wide { grid-column: span 2; }
+    .exclusive-offer-card.offer-size-featured { grid-column: span 2; grid-row: span 2; }
+    .exclusive-offer-card > img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s ease; }
+    .exclusive-offer-card:hover > img { transform: scale(1.04); }
+    .exclusive-offer-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, .05) 5%, rgba(0, 0, 0, .82) 100%); }
+    .exclusive-offer-content { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 1.5rem; }
+    .exclusive-offer-type { align-self: flex-start; padding: .45rem .7rem; border: 1px solid rgba(255, 255, 255, .65); border-radius: 8px; background: rgba(255, 255, 255, .18); font-size: .72rem; font-weight: 800; letter-spacing: .04em; }
+    .exclusive-offer-copy h3 { margin: 0 0 .45rem; font-size: 1.35rem; font-weight: 800; }
+    .offer-size-featured .exclusive-offer-copy h3 { font-size: 2rem; }
+    .exclusive-offer-copy p { margin: 0 0 .6rem; color: rgba(255, 255, 255, .78); font-size: .8rem; font-weight: 600; }
+    .exclusive-offer-code { display: inline-block; border: 1px dashed rgba(255, 255, 255, .75); border-radius: 7px; padding: .45rem .7rem; color: #fff36a; font-size: .78rem; font-weight: 700; }
     @media (max-width: 1199px) { .destination-card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-    @media (max-width: 767px) { .destination-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; } }
-    @media (max-width: 480px) { .destination-card-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 991px) { .exclusive-offers-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 767px) { .destination-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; } .exclusive-offers-grid { grid-auto-rows: 210px; } .exclusive-offer-card.offer-size-featured { grid-row: span 1; } }
+    @media (max-width: 480px) { .destination-card-grid { grid-template-columns: 1fr; } .exclusive-offers-grid { grid-template-columns: 1fr; } .exclusive-offer-card.offer-size-wide, .exclusive-offer-card.offer-size-featured { grid-column: span 1; } }
 </style>
 
 <script>
