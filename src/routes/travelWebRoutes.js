@@ -813,10 +813,8 @@ router.post('/destinations/save', handleUpload(upload.single('feature_image_file
         ? req.body.destination_amount
         : (req.body.gst_amount || 0.00);
     const is_trending = req.body.is_trending === 'true' || req.body.is_trending === true || req.body.is_trending === 'on';
-    const allowedVisaCategories = ['visa_free_on_arrival', 'e_visa', 'stamped_visa'];
-    const requestedVisaCategory = String(req.body.visa_category || '').trim();
-    const visa_category = allowedVisaCategories.includes(requestedVisaCategory) ? requestedVisaCategory : null;
-    const is_visa_free = visa_category === 'visa_free_on_arrival';
+    const is_visa_free = req.body.is_visa_free === 'true' || req.body.is_visa_free === true || req.body.is_visa_free === 'on';
+    const visa_category = is_visa_free ? 'visa_free_on_arrival' : null;
     const is_customizable = req.body.is_customizable === 'true' || req.body.is_customizable === true || req.body.is_customizable === 'on' || req.body.customize === 'true' || req.body.customize === true || req.body.customize === 'on';
     const customize = is_customizable;
 

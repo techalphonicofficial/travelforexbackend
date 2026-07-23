@@ -457,20 +457,8 @@
             <div class="col-12">
               <div class="d-flex gap-3 flex-wrap p-3 bg-light rounded-4">
                 <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="is_trending" id="isTrending" <%= destination && destination.is_trending ? 'checked' : '' %>><label class="form-check-label" for="isTrending">🔥 Trending</label></div>
+                <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="is_visa_free" id="isVisaFree" <%= destination && destination.is_visa_free ? 'checked' : '' %>><label class="form-check-label" for="isVisaFree">🛂 Visa Free</label></div>
               </div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label" for="visaCategory">Visa Destination Tab</label>
-              <% const selectedVisaCategory = destination && destination.visa_category
-                ? destination.visa_category
-                : (destination && destination.is_visa_free ? 'visa_free_on_arrival' : ''); %>
-              <select class="form-select" name="visa_category" id="visaCategory">
-                <option value="">Not shown in visa tabs</option>
-                <option value="visa_free_on_arrival" <%= selectedVisaCategory === 'visa_free_on_arrival' ? 'selected' : '' %>>Visa Free &amp; On Arrival</option>
-                <option value="e_visa" <%= selectedVisaCategory === 'e_visa' ? 'selected' : '' %>>E-Visa</option>
-                <option value="stamped_visa" <%= selectedVisaCategory === 'stamped_visa' ? 'selected' : '' %>>Stamped Visa</option>
-              </select>
-              <small class="text-muted">Controls which tab contains this destination on the visa page.</small>
             </div>
           </div>
         </div>
