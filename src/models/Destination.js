@@ -61,7 +61,7 @@ const Destination = sequelize.define('Destination', {
     country: {
         type: DataTypes.STRING(100),
         allowNull: true,
-        defaultValue: 'India'
+        defaultValue: null
     },
     state: {
         type: DataTypes.STRING(100),

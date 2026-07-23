@@ -37,6 +37,7 @@ const redirectAfterJson = (handler) => async (req, res, next) => {
 // Trip Builder APIs
 router.post('/api/init', (req, res) => adminTripBuilderController.initTrip(req, res));
 router.get('/api/packages/:packageId/quote', (req, res) => adminTripBuilderController.getPackageQuote(req, res));
+router.post('/api/package-bookings/validate-coupon', (req, res) => adminTripBuilderController.validatePackageCoupon(req, res));
 router.post('/api/package-bookings', (req, res) => adminTripBuilderController.createPackageBooking(req, res));
 router.get('/api/destinations/:destinationId/hotels', (req, res) => adminTripBuilderController.getHotels(req, res));
 router.get('/api/destinations/:destinationId/activities', (req, res) => adminTripBuilderController.getActivities(req, res));

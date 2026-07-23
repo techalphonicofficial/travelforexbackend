@@ -159,6 +159,10 @@ body {
     color: #64748b;
     font-weight: 800;
 }
+.coupon-control{padding:12px;border:1px dashed #c7d2fe;border-radius:10px;background:#f8faff;margin-bottom:12px}
+.coupon-control .btn{font-size:12px;font-weight:800;border-radius:0 7px 7px 0;padding-left:14px;padding-right:14px}
+.coupon-message{display:block;min-height:17px;margin-top:6px;font-size:11px;font-weight:700}
+.coupon-message.success{color:#067647}.coupon-message.error{color:#b42318}
 .gst-control { display: grid; grid-template-columns: minmax(0, 1fr) 105px; gap: .75rem; align-items: end; }
 .gst-toggle {
     min-height: 48px;
@@ -838,6 +842,14 @@ body { background: #f5f7fb; color: var(--booking-ink); font-size: 13px; }
                                 <input type="number" class="form-control" id="manualHotelAmount" min="0" step="0.01" placeholder="Total hotel cost" disabled>
                             </div>
                         </div>
+                        <div class="coupon-control">
+                            <label for="bookingCouponCode" class="form-label">Coupon Code</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control text-uppercase" id="bookingCouponCode" maxlength="40" placeholder="Enter coupon code" disabled>
+                                <div class="input-group-append"><button type="button" class="btn btn-outline-primary" id="btnApplyCoupon" disabled>Apply</button></div>
+                            </div>
+                            <small id="couponMessage" class="coupon-message"></small>
+                        </div>
                         <div class="gst-control">
                             <div>
                                 <label class="form-label d-block">Tax</label>
@@ -910,6 +922,7 @@ const inquiryData = <%- typeof inquiry !== 'undefined' && inquiry ? JSON.stringi
 let currentTrip = bookingData ? bookingData.custom_trip : null;
 let currentDayContext = null;
 let currentPackageQuote = null;
+let currentCouponPreview = null;
 
 function formatMoney(amount) {
     const value = Number(amount || 0);
@@ -1112,7 +1125,8 @@ function setConfirmButtonState() {
     const hotelAmount = Number(document.getElementById('manualHotelAmount')?.value || 0);
     const applyGst = Boolean(document.getElementById('applyBookingGst')?.checked);
     const gstPercent = applyGst ? Number(document.getElementById('bookingGstPercent')?.value || 0) : 0;
-    const subtotal = baseAmount + hotelAmount;
+    const couponDiscount = appliedCouponDiscount(baseAmount);
+    const subtotal = Math.max(baseAmount - couponDiscount, 0) + hotelAmount;
     const bookingAmount = subtotal + (subtotal * gstPercent / 100);
     const paidAmount = Number(document.getElementById('manualPaidAmount')?.value || 0);
     const validDates = Boolean(selections.fromDate && selections.toDate && selections.departureDate && selections.toDate >= selections.fromDate && selections.departureDate <= selections.toDate);
@@ -1143,7 +1157,9 @@ function refreshManualAmountSummary() {
     const base = Number(bookingInput?.value || 0);
     const hotel = Number(hotelInput?.value || 0);
     const gstPercent = applyGstInput?.checked ? Number(gstInput?.value || 0) : 0;
-    const subtotal = base + hotel;
+    const couponDiscount = appliedCouponDiscount(base);
+    const discountedBase = Math.max(base - couponDiscount, 0);
+    const subtotal = discountedBase + hotel;
     const gstAmount = subtotal * gstPercent / 100;
     const total = subtotal + gstAmount;
     const paid = Number(paidInput?.value || 0);
@@ -1157,15 +1173,37 @@ function refreshManualAmountSummary() {
     if (gstInput) gstInput.disabled = !applyGstInput?.checked || bookingInput.disabled;
     const finalAmount = document.getElementById('summaryFinalAmount');
     const summaryHotel = document.getElementById('summaryHotelAmount');
+    const summaryCoupon = document.getElementById('summaryCouponDiscount');
     const summaryGst = document.getElementById('summaryGstAmount');
     const payNow = document.getElementById('summaryPayNow');
     const leftAmount = document.getElementById('summaryLeftAmount');
     if (finalAmount) finalAmount.textContent = formatMoney(valid ? total : 0);
     if (summaryHotel) summaryHotel.textContent = formatMoney(valid ? hotel : 0);
+    if (summaryCoupon) summaryCoupon.textContent = `- ${formatMoney(valid ? couponDiscount : 0)}`;
     if (summaryGst) summaryGst.textContent = formatMoney(valid ? gstAmount : 0);
     if (payNow) payNow.textContent = formatMoney(valid ? paid : 0);
     if (leftAmount) leftAmount.textContent = formatMoney(valid ? Math.max(total - paid, 0) : 0);
     setConfirmButtonState();
+}
+
+function clearAppliedCoupon(message = '') {
+    currentCouponPreview = null;
+    const status = document.getElementById('couponMessage');
+    const button = document.getElementById('btnApplyCoupon');
+    if (status) {
+        status.textContent = message;
+        status.className = `coupon-message${message ? ' error' : ''}`;
+    }
+    if (button) button.textContent = 'Apply';
+}
+
+function appliedCouponDiscount(baseAmount) {
+    if (!currentCouponPreview) return 0;
+    const selections = getBookingSelections();
+    const sameContext = String(currentCouponPreview.package_id) === String(selections.packageId)
+        && String(currentCouponPreview.customer_id) === String(selections.customerId)
+        && Math.abs(Number(currentCouponPreview.booking_amount) - Number(baseAmount)) < 0.005;
+    return sameContext ? Number(currentCouponPreview.discount_amount || 0) : 0;
 }
 
 function updateTravelDateSummary() {
@@ -1196,6 +1234,7 @@ function updateTravelDateSummary() {
 
 function resetPackageQuote(message) {
     currentPackageQuote = null;
+    clearAppliedCoupon();
     const preview = document.getElementById('packagePreview');
     if (preview) {
         preview.className = 'package-preview empty';
@@ -1210,11 +1249,15 @@ function resetPackageQuote(message) {
     const paidAmountInput = document.getElementById('manualPaidAmount');
     const applyGstInput = document.getElementById('applyBookingGst');
     const gstInput = document.getElementById('bookingGstPercent');
+    const couponInput = document.getElementById('bookingCouponCode');
+    const couponButton = document.getElementById('btnApplyCoupon');
     if (bookingAmountInput) { bookingAmountInput.value = ''; bookingAmountInput.disabled = true; }
     if (hotelAmountInput) { hotelAmountInput.value = ''; hotelAmountInput.disabled = true; }
     if (paidAmountInput) { paidAmountInput.value = ''; paidAmountInput.disabled = true; }
     if (applyGstInput) { applyGstInput.checked = false; applyGstInput.disabled = true; }
     if (gstInput) { gstInput.value = '0'; gstInput.disabled = true; }
+    if (couponInput) { couponInput.value = ''; couponInput.disabled = true; }
+    if (couponButton) couponButton.disabled = true;
     document.getElementById('pricingEditorTotal').textContent = formatMoney(0);
     if (document.getElementById('manualAmountError')) document.getElementById('manualAmountError').textContent = '';
     document.getElementById('destBreakdownContainer').innerHTML = 'Select a package to calculate booking amounts.';
@@ -1223,6 +1266,7 @@ function resetPackageQuote(message) {
 }
 
 function renderPackageQuote(quote) {
+    clearAppliedCoupon();
     currentPackageQuote = quote;
     const pkg = quote.package || {};
     const amounts = quote.amounts || {};
@@ -1308,6 +1352,8 @@ function renderPackageQuote(quote) {
     const paidAmountInput = document.getElementById('manualPaidAmount');
     const applyGstInput = document.getElementById('applyBookingGst');
     const gstInput = document.getElementById('bookingGstPercent');
+    const couponInput = document.getElementById('bookingCouponCode');
+    const couponButton = document.getElementById('btnApplyCoupon');
     bookingAmountInput.disabled = false;
     hotelAmountInput.disabled = false;
     paidAmountInput.disabled = false;
@@ -1315,6 +1361,8 @@ function renderPackageQuote(quote) {
     applyGstInput.checked = Number(amounts.tax_percent || 0) > 0;
     gstInput.value = Number(amounts.tax_percent || 0).toFixed(2);
     gstInput.disabled = !applyGstInput.checked;
+    couponInput.disabled = false;
+    couponButton.disabled = false;
     bookingAmountInput.value = Number(amounts.package_base_amount || amounts.package_total || 0).toFixed(2);
     hotelAmountInput.value = Number(amounts.hotel_estimated_amount || 0).toFixed(2);
     paidAmountInput.value = Number(amounts.payable_now || 0).toFixed(2);
@@ -1322,6 +1370,7 @@ function renderPackageQuote(quote) {
     document.getElementById('destBreakdownContainer').innerHTML = `
         <div class="summary-line"><span>Calculated Total</span><strong>${formatMoney(amounts.package_total)}</strong></div>
         <div class="summary-line"><span>Hotel Amount</span><strong id="summaryHotelAmount"></strong></div>
+        <div class="summary-line"><span>Coupon Discount</span><strong id="summaryCouponDiscount">- ${formatMoney(0)}</strong></div>
         ${Number(amounts.discount_amount || 0) > 0 ? `<div class="summary-line"><span>Discount</span><strong>- ${formatMoney(amounts.discount_amount)}</strong></div>` : ''}
         <div class="summary-line"><span>GST Amount</span><strong id="summaryGstAmount"></strong></div>
         <div class="summary-line"><span>Final Booking Amount</span><strong id="summaryFinalAmount"></strong></div>
@@ -1330,6 +1379,56 @@ function renderPackageQuote(quote) {
     `;
     updateTravelDateSummary();
     refreshManualAmountSummary();
+}
+
+async function applyBookingCoupon() {
+    const input = document.getElementById('bookingCouponCode');
+    const button = document.getElementById('btnApplyCoupon');
+    const status = document.getElementById('couponMessage');
+    const selections = getBookingSelections();
+    const baseAmount = Number(document.getElementById('manualBookingAmount')?.value || 0);
+    const code = String(input?.value || '').trim().toUpperCase();
+
+    if (!code || !selections.packageId || !selections.customerId || !Number.isFinite(baseAmount) || baseAmount <= 0) {
+        clearAppliedCoupon('Select customer and package, then enter base amount and coupon code.');
+        refreshManualAmountSummary();
+        return;
+    }
+
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    if (status) { status.textContent = 'Checking coupon...'; status.className = 'coupon-message'; }
+    try {
+        const response = await fetch('/admin/bookings/api/package-bookings/validate-coupon', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                coupon_code: code,
+                package_id: selections.packageId,
+                customer_id: selections.customerId,
+                base_amount: baseAmount
+            })
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) throw new Error(result.message || 'Coupon could not be applied.');
+
+        currentCouponPreview = {
+            ...result.data,
+            package_id: selections.packageId,
+            customer_id: selections.customerId
+        };
+        input.value = result.data.coupon.code;
+        status.textContent = `${result.data.coupon.code} applied - you save ${formatMoney(result.data.discount_amount)}`;
+        status.className = 'coupon-message success';
+        button.textContent = 'Applied';
+        refreshManualAmountSummary();
+    } catch (error) {
+        clearAppliedCoupon(error.message || 'Coupon could not be applied.');
+        refreshManualAmountSummary();
+    } finally {
+        button.disabled = false;
+        if (!currentCouponPreview) button.textContent = 'Apply';
+    }
 }
 
 async function fetchPackageQuote(silent = false) {
@@ -1386,17 +1485,27 @@ function initPackageBookingForm() {
     const applyGstInput = document.getElementById('applyBookingGst');
     const gstInput = document.getElementById('bookingGstPercent');
     const dateInputs = ['bookingFromDate', 'bookingToDate', 'bookingDepartureDate'].map(id => document.getElementById(id)).filter(Boolean);
+    const couponInput = document.getElementById('bookingCouponCode');
+    const couponButton = document.getElementById('btnApplyCoupon');
 
-    if (customerSelect) customerSelect.addEventListener('change', updateCustomerSummary);
-    if (packageSelect) packageSelect.addEventListener('change', () => fetchPackageQuote(true));
+    if (customerSelect) customerSelect.addEventListener('change', () => { clearAppliedCoupon(); updateCustomerSummary(); refreshManualAmountSummary(); });
+    if (packageSelect) packageSelect.addEventListener('change', () => { clearAppliedCoupon(); fetchPackageQuote(true); });
     paymentModeInputs.forEach(input => input.addEventListener('change', () => {
         if (getBookingSelections().packageId) fetchPackageQuote(true);
     }));
-    if (bookingAmountInput) bookingAmountInput.addEventListener('input', refreshManualAmountSummary);
+    if (bookingAmountInput) bookingAmountInput.addEventListener('input', () => { clearAppliedCoupon('Base amount changed. Apply coupon again.'); refreshManualAmountSummary(); });
     if (hotelAmountInput) hotelAmountInput.addEventListener('input', refreshManualAmountSummary);
     if (paidAmountInput) paidAmountInput.addEventListener('input', refreshManualAmountSummary);
     if (applyGstInput) applyGstInput.addEventListener('change', refreshManualAmountSummary);
     if (gstInput) gstInput.addEventListener('input', refreshManualAmountSummary);
+    if (couponInput) couponInput.addEventListener('input', () => {
+        couponInput.value = couponInput.value.toUpperCase();
+        if (currentCouponPreview && couponInput.value.trim() !== currentCouponPreview.coupon.code) {
+            clearAppliedCoupon();
+            refreshManualAmountSummary();
+        }
+    });
+    if (couponButton) couponButton.addEventListener('click', applyBookingCoupon);
     dateInputs.forEach(input => input.addEventListener('change', updateTravelDateSummary));
     updateTravelDateSummary();
     if (adultInput) {
@@ -1918,6 +2027,7 @@ async function confirmBooking() {
             payment_mode: selections.paymentMode,
             base_amount: Number(document.getElementById('manualBookingAmount').value),
             hotel_amount: Number(document.getElementById('manualHotelAmount').value),
+            coupon_code: currentCouponPreview ? currentCouponPreview.coupon.code : null,
             apply_gst: Boolean(document.getElementById('applyBookingGst').checked),
             gst_percent: Number(document.getElementById('bookingGstPercent').value || 0),
             paid_amount: Number(document.getElementById('manualPaidAmount').value),

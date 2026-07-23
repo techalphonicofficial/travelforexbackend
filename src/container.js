@@ -28,12 +28,14 @@ const PassengerFormField = require('./models/PassengerFormField');
 const PackageReturnRequest = require('./models/PackageReturnRequest');
 const Coupon = require('./models/Coupon');
 const CouponRedemption = require('./models/CouponRedemption');
+const CouponService = require('./services/CouponService');
 const Activity = require('./models/Activity');
 const AppSetting = require('./models/AppSetting');
 const Theme = require('./models/Theme');
 const Media = require('./models/Media');
 const PackageInclusion = require('./models/PackageInclusion');
 const PackageExclusion = require('./models/PackageExclusion');
+const PackageHighlight = require('./models/PackageHighlight');
 const PackageDestination = require('./models/PackageDestination');
 const PackageDay = require('./models/PackageDay');
 const PackageActivity = require('./models/PackageActivity');
@@ -133,6 +135,7 @@ Package.belongsToMany(PackageCategory, { through: PackageCategoryMapping, foreig
 PackageCategory.belongsToMany(Package, { through: PackageCategoryMapping, foreignKey: 'package_category_id', as: 'packages' });
 Package.hasMany(PackageInclusion, { foreignKey: 'package_id', as: 'inclusions', onDelete: 'CASCADE' });
 Package.hasMany(PackageExclusion, { foreignKey: 'package_id', as: 'exclusions', onDelete: 'CASCADE' });
+Package.hasMany(PackageHighlight, { foreignKey: 'package_id', as: 'highlights', onDelete: 'CASCADE' });
 Package.hasMany(PackageDestination, { foreignKey: 'package_id', as: 'destinations', onDelete: 'CASCADE' });
 Package.hasMany(VideoReview, { foreignKey: 'package_id', as: 'videoReviews', onDelete: 'SET NULL' });
 VideoReview.belongsTo(Package, { foreignKey: 'package_id', as: 'package' });
@@ -239,6 +242,7 @@ Destination.belongsToMany(Package, {
 
 PackageInclusion.belongsTo(Package, { foreignKey: 'package_id', as: 'package' });
 PackageExclusion.belongsTo(Package, { foreignKey: 'package_id', as: 'package' });
+PackageHighlight.belongsTo(Package, { foreignKey: 'package_id', as: 'package' });
 
 // Travel Master Associations
 Continent.hasMany(Country, { foreignKey: 'continent_id', as: 'countries' });
@@ -461,7 +465,7 @@ const airportRepo = new AirportRepository(Airport);
 const categoryRepo = new CategoryRepository(Category);
 const packageCategoryRepo = new PackageCategoryRepository(PackageCategory, Category);
 const destinationRepo = new DestinationRepository(Destination, Category, DestinationMapping, Media, City, Country, Continent, Package);
-const packageRepo = new PackageRepository(Package, Destination, Activity, Media, PackageInclusion, PackageExclusion, PackageDestination, Review);
+const packageRepo = new PackageRepository(Package, Destination, Activity, Media, PackageInclusion, PackageExclusion, PackageDestination, Review, PackageHighlight);
 const couponRepo = new CouponRepository(Coupon, CouponRedemption);
 const activityRepo = new ActivityRepository(Activity, Destination);
 const appSettingRepo = new AppSettingRepository(AppSetting);
@@ -530,11 +534,12 @@ const packageCategoryController = new PackageCategoryController(packageCategoryR
 const vendorAuthController = new VendorAuthController(authService, { User, VendorProfile }, sequelize);
 const vendorDashboardController = new VendorDashboardController(vendorService, walletService);
 const vendorPackageController = new VendorPackageController(vendorService, packageRepo, destinationRepo, categoryRepo, activityRepo, sequelize, {
-  Package, PackageDestination, PackageInclusion, PackageExclusion, Destination, Activity, Media, Hotel
+  Package, PackageDestination, PackageInclusion, PackageExclusion, PackageHighlight, Destination, Activity, Media, Hotel
 });
 const vendorWalletController = new VendorWalletController(walletService);
 const accountingController = new AccountingController(accountingService);
 const apiPackageBookingController = new ApiPackageBookingController({ Package, PackageBooking, BookingPassenger, BookingEmailQueue, PackageReturnRequest, Customer, User, Role, CancellationRule, Coupon, CouponRedemption }, accountingService, sequelize, bookingEmailService);
+const couponService = new CouponService({ Coupon, CouponRedemption });
 
 const AdminWalletController = require('./controllers/AdminWalletController');
 const adminWalletController = new AdminWalletController(walletService);
@@ -546,7 +551,7 @@ const AdminBookingController = require('./controllers/AdminBookingController');
 const adminBookingController = new AdminBookingController(bookingRepo, accountingService, walletService, tripInquiryRepo, hotelBookingRepo);
 
 const AdminTripBuilderController = require('./controllers/AdminTripBuilderController');
-const adminTripBuilderController = new AdminTripBuilderController(tripBuilderService, hotelRepo, activityRepo, bookingRepo, accountingService, appSettingRepo);
+const adminTripBuilderController = new AdminTripBuilderController(tripBuilderService, hotelRepo, activityRepo, bookingRepo, accountingService, appSettingRepo, couponService);
 
 const TravelHotelController = require('./controllers/TravelHotelController');
 const travelHotelController = new TravelHotelController(Hotel, Destination);
@@ -570,7 +575,7 @@ module.exports = {
     Continent, Country, City,
     Destination, DestinationMapping, DestinationCrowdLevel, DestinationTax,
     Category, DestinationCategory, PackageCategory, PackageCategoryMapping,
-    Package, PackageBooking, BookingPassenger, BookingEmailQueue, PassengerFormField, PackageReturnRequest, Coupon, CouponRedemption, PackageInclusion, PackageExclusion, PackageDestination,
+    Package, PackageBooking, BookingPassenger, BookingEmailQueue, PassengerFormField, PackageReturnRequest, Coupon, CouponRedemption, PackageInclusion, PackageExclusion, PackageHighlight, PackageDestination,
     Activity, AppSetting, Theme, Media, VideoReview, Review, TourType, Hotel, HotelBooking,
     Pipeline, PipelineStage, LeadFormField, Lead, LeadFollowUp, CancellationRule,
     Page, PageDetail, Banner, BlogCategory, BlogPost, BlogDetail,

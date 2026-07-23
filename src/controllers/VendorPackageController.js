@@ -117,6 +117,7 @@ class VendorPackageController {
                     },
                     { model: this.models.PackageInclusion, as: 'inclusions' },
                     { model: this.models.PackageExclusion, as: 'exclusions' },
+                    { model: this.models.PackageHighlight, as: 'highlights' },
                     { model: this.models.Media, as: 'gallery' }
                 ],
                 order: [[{ model: this.models.PackageDestination, as: 'destinations' }, 'order', 'ASC']]
@@ -160,7 +161,10 @@ class VendorPackageController {
     }
 
     async save(req, res) {
-        const { id, name, duration, price, description, destinations, inclusions, exclusions } = req.body;
+        const { id, name, duration, price, description, destinations, inclusions, exclusions, highlights } = req.body;
+        const normalizedHighlights = Array.isArray(highlights)
+            ? [...new Set(highlights.map(item => String(item && typeof item === 'object' ? (item.content || item.text || '') : item || '').trim()).filter(Boolean))]
+            : [];
         const vendorId = req.session.user.id;
         const slug = (req.body.slug || name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
@@ -192,6 +196,7 @@ class VendorPackageController {
                     await this.models.PackageDestination.destroy({ where: { package_id: id }, transaction });
                     await this.models.PackageInclusion.destroy({ where: { package_id: id }, transaction });
                     await this.models.PackageExclusion.destroy({ where: { package_id: id }, transaction });
+                    await this.models.PackageHighlight.destroy({ where: { package_id: id }, transaction });
                 } else {
                     // Create new Package
                     pkg = await this.models.Package.create(packageData, { transaction });
@@ -223,6 +228,13 @@ class VendorPackageController {
                 if (exclusions && exclusions.length) {
                     await this.models.PackageExclusion.bulkCreate(
                         exclusions.map(text => ({ package_id: pkg.id, text })),
+                        { transaction }
+                    );
+                }
+
+                if (normalizedHighlights.length) {
+                    await this.models.PackageHighlight.bulkCreate(
+                        normalizedHighlights.map((content, index) => ({ package_id: pkg.id, content, sort_order: index + 1 })),
                         { transaction }
                     );
                 }

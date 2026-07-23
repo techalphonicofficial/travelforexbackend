@@ -44,6 +44,25 @@ function activitiesWithDayHotels(activities, hotels, totalDays) {
     return result;
 }
 
+function serializeDestinationLocation(destinationRecord) {
+    const destination = asPlainObject(destinationRecord) || {};
+    const mappings = Array.isArray(destination.mappings) ? destination.mappings : [];
+    const mappedCity = mappings.map(mapping => asPlainObject(mapping)?.city).find(Boolean) || null;
+    const mappedCountry = mappedCity ? asPlainObject(mappedCity.country) : null;
+    const { mappings: _mappings, ...destinationData } = destination;
+
+    return {
+        ...destinationData,
+        country: mappedCountry?.name || destination.country || null,
+        country_id: mappedCountry?.id || mappedCity?.country_id || null,
+        city: mappedCity ? {
+            id: mappedCity.id,
+            name: mappedCity.name,
+            country_id: mappedCity.country_id || mappedCountry?.id || null
+        } : null
+    };
+}
+
 function serializePackageItinerary(packageRecord) {
     const pkg = asPlainObject(packageRecord);
     if (!pkg) return pkg;
@@ -52,21 +71,26 @@ function serializePackageItinerary(packageRecord) {
 
     return {
         ...pkg,
-        destinations: destinations.map(destinationRecord => {
-            const destination = asPlainObject(destinationRecord);
-            const activities = destination.activities || {};
+        destinations: destinations
+          .slice()
+          .sort((a, b) => Number(asPlainObject(a)?.order || 0) - Number(asPlainObject(b)?.order || 0))
+          .map(destinationRecord => {
+            const packageDestination = asPlainObject(destinationRecord);
+            const activities = packageDestination.activities || {};
             const hotels = getHotels(activities);
-            const totalDays = Math.max(parseInt(destination.nights, 10) || 1, 1);
+            const totalDays = Math.max(parseInt(packageDestination.nights, 10) || 1, 1);
             const serializedActivities = activitiesWithDayHotels(activities, hotels, totalDays);
 
             return {
-                ...destination,
+                ...packageDestination,
+                destination: serializeDestinationLocation(packageDestination.destination),
                 activities: serializedActivities
             };
-        })
+          })
     };
 }
 
 module.exports = {
-    serializePackageItinerary
+    serializePackageItinerary,
+    serializeDestinationLocation
 };

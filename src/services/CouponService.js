@@ -57,13 +57,13 @@ class CouponService {
     return toMoney(Math.min(Math.max(discount, 0), amount));
   }
 
-  async validate({ code, packageId = null, customerId = null, customerEmail = null, bookingAmount = 0 } = {}) {
+  async validate({ code, packageId = null, customerId = null, customerEmail = null, bookingAmount = 0, transaction = null } = {}) {
     if (!this.Coupon) throw httpError('Coupons are not configured.', 500);
 
     const couponCode = normalizeCode(code);
     if (!couponCode) throw httpError('Coupon code is required.');
 
-    const coupon = await this.Coupon.findOne({ where: { code: couponCode } });
+    const coupon = await this.Coupon.findOne({ where: { code: couponCode }, transaction });
     if (!coupon) throw httpError('Coupon not found.', 404);
     if (coupon.is_active === false) throw httpError('Coupon is inactive.');
 
@@ -87,7 +87,7 @@ class CouponService {
     if (this.CouponRedemption) {
       const usageLimit = parseInt(coupon.usage_limit, 10);
       if (Number.isInteger(usageLimit) && usageLimit > 0) {
-        const totalUsed = await this.CouponRedemption.count({ where: { coupon_id: coupon.id } });
+        const totalUsed = await this.CouponRedemption.count({ where: { coupon_id: coupon.id }, transaction });
         if (totalUsed >= usageLimit) throw httpError('Coupon usage limit has been reached.');
       }
 
@@ -97,7 +97,7 @@ class CouponService {
         const where = { coupon_id: coupon.id };
         if (customerId) where.customer_id = customerId;
         else where.customer_email = email;
-        const customerUsed = await this.CouponRedemption.count({ where });
+        const customerUsed = await this.CouponRedemption.count({ where, transaction });
         if (customerUsed >= perCustomerLimit) throw httpError('Coupon usage limit for this customer has been reached.');
       }
     }

@@ -57,6 +57,22 @@
  *           description: List of mapped destinations in this package
  *           items:
  *             type: object
+ *         highlights:
+ *           type: array
+ *           description: Ordered package highlight records. Create/update requests may send an array of strings.
+ *           items:
+ *             oneOf:
+ *               - type: string
+ *               - type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   package_id:
+ *                     type: integer
+ *                   content:
+ *                     type: string
+ *                   sort_order:
+ *                     type: integer
  */
 
 const express = require('express');
@@ -169,7 +185,7 @@ router.get('/', async (req, res) => {
         } else {
             data = await packageRepo.findAll({ page, limit });
         }
-        res.json({ success: true, data: data.rows, total: data.count, currentPage: parseInt(page), totalPages: Math.ceil(data.count / limit) });
+        res.json({ success: true, data: data.rows.map(serializePackageItinerary), total: data.count, currentPage: parseInt(page), totalPages: Math.ceil(data.count / limit) });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -273,7 +289,7 @@ router.get('/filters', async (req, res) => {
 router.get('/destination/:slug', async (req, res) => {
     try {
         const data = await packageRepo.findByDestinationSlug(req.params.slug);
-        res.json({ success: true, data });
+        res.json({ success: true, data: data.map(serializePackageItinerary) });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }

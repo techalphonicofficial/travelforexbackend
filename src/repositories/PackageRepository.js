@@ -2,7 +2,7 @@ const BaseRepository = require('./BaseRepository');
 const { Op } = require('sequelize');
 
 class PackageRepository extends BaseRepository {
-    constructor(model, destinationModel, activityModel, mediaModel, inclusionModel, exclusionModel, packageDestinationModel, reviewModel = null) {
+    constructor(model, destinationModel, activityModel, mediaModel, inclusionModel, exclusionModel, packageDestinationModel, reviewModel = null, highlightModel = null) {
         super(model);
         this.destinationModel = destinationModel;
         this.activityModel = activityModel;
@@ -11,10 +11,78 @@ class PackageRepository extends BaseRepository {
         this.exclusionModel = exclusionModel;
         this.packageDestinationModel = packageDestinationModel;
         this.reviewModel = reviewModel;
+        this.highlightModel = highlightModel;
+    }
+
+    normalizeHighlights(value) {
+        if (!Array.isArray(value)) return [];
+        return [...new Set(value
+            .map(item => String(item && typeof item === 'object' ? (item.content || item.text || '') : item || '').trim())
+            .filter(Boolean))];
+    }
+
+    highlightInclude() {
+        if (!this.highlightModel) return [];
+        return [{
+            model: this.highlightModel,
+            as: 'highlights',
+            separate: true,
+            order: [['sort_order', 'ASC'], ['id', 'ASC']]
+        }];
+    }
+
+    destinationLocationInclude({ required = false, city = null, country = null, continent = null } = {}) {
+        const countryInclude = {
+            association: 'country',
+            required: Boolean(country || continent)
+        };
+        if (country) {
+            countryInclude.where = {
+                [Op.or]: [
+                    { id: isNaN(country) ? -1 : country },
+                    { name: { [Op.iLike]: `%${country}%` } }
+                ]
+            };
+        }
+        if (continent) {
+            countryInclude.include = [{
+                association: 'continent',
+                required: true,
+                where: {
+                    [Op.or]: [
+                        { id: isNaN(continent) ? -1 : continent },
+                        { name: { [Op.iLike]: `%${continent}%` } }
+                    ]
+                }
+            }];
+        }
+
+        const cityInclude = {
+            association: 'city',
+            required: Boolean(required || city || country || continent),
+            include: [countryInclude]
+        };
+        if (city) {
+            cityInclude.where = {
+                [Op.or]: [
+                    { id: isNaN(city) ? -1 : city },
+                    { name: { [Op.iLike]: `%${city}%` } }
+                ]
+            };
+        }
+
+        return {
+            association: 'mappings',
+            required: Boolean(required || city || country || continent),
+            include: [cityInclude]
+        };
     }
 
     async create(data) {
         const payload = { ...data };
+        const hasHighlights = Object.prototype.hasOwnProperty.call(payload, 'highlights');
+        const highlights = this.normalizeHighlights(payload.highlights);
+        delete payload.highlights;
         const requestedSortOrder = parseInt(payload.sort_order, 10);
         if (!Number.isInteger(requestedSortOrder) || requestedSortOrder < 0) {
             const maxSortOrder = parseInt(await this.model.max('sort_order'), 10) || 0;
@@ -22,7 +90,58 @@ class PackageRepository extends BaseRepository {
         } else {
             payload.sort_order = requestedSortOrder;
         }
-        return this.model.create(payload);
+        if (!this.highlightModel || !hasHighlights) return this.model.create(payload);
+
+        const transaction = await this.model.sequelize.transaction();
+        try {
+            const pkg = await this.model.create(payload, { transaction });
+            if (highlights.length) {
+                await this.highlightModel.bulkCreate(highlights.map((content, index) => ({
+                    package_id: pkg.id,
+                    content,
+                    sort_order: index + 1
+                })), { transaction });
+            }
+            await transaction.commit();
+            return this.model.findByPk(pkg.id, { include: this.highlightInclude() });
+        } catch (error) {
+            await transaction.rollback();
+            throw error;
+        }
+    }
+
+    async update(id, data) {
+        const payload = { ...data };
+        const hasHighlights = Object.prototype.hasOwnProperty.call(payload, 'highlights');
+        const highlights = this.normalizeHighlights(payload.highlights);
+        delete payload.highlights;
+
+        const transaction = await this.model.sequelize.transaction();
+        try {
+            const pkg = await this.model.findByPk(id, { transaction });
+            if (!pkg) {
+                await transaction.rollback();
+                return null;
+            }
+            await pkg.update(payload, { transaction });
+            if (this.highlightModel && hasHighlights) {
+                await this.highlightModel.destroy({ where: { package_id: id }, transaction });
+                if (highlights.length) {
+                    await this.highlightModel.bulkCreate(highlights.map((content, index) => ({
+                        package_id: id,
+                        content,
+                        sort_order: index + 1
+                    })), { transaction });
+                }
+            }
+            await transaction.commit();
+            return this.model.findByPk(id, {
+                include: this.highlightInclude()
+            });
+        } catch (error) {
+            await transaction.rollback();
+            throw error;
+        }
     }
 
     reviewInclude() {
@@ -53,9 +172,13 @@ class PackageRepository extends BaseRepository {
         return this.model.findAndCountAll({
             include: [
                 { 
-                    model: this.packageDestinationModel, as: 'destinations', attributes: { exclude: ['activities'] }, include: [{ model: this.destinationModel, as: 'destination' }]
+                    model: this.packageDestinationModel,
+                    as: 'destinations',
+                    attributes: { exclude: ['activities'] },
+                    include: [{ model: this.destinationModel, as: 'destination', include: [this.destinationLocationInclude()] }]
                 },
                 { model: this.mediaModel, as: 'gallery' },
+                ...this.highlightInclude(),
                 { association: 'package_categories' }
             ],
             order: [['sort_order', 'ASC'], ['created_at', 'DESC']],
@@ -98,56 +221,11 @@ class PackageRepository extends BaseRepository {
 
         const nestedIncludes = [];
         
-        let cityInclude = {
-            association: 'city',
-            required: true
-        };
-
-        if (city) {
-            cityInclude.where = {
-                [Op.or]: [
-                    { id: isNaN(city) ? -1 : city },
-                    { name: { [Op.iLike]: `%${city}%` } }
-                ]
-            };
-        }
-
-        let countryInclude = null;
-        if (country || continent) {
-            countryInclude = {
-                association: 'country',
-                required: true
-            };
-            if (country) {
-                countryInclude.where = {
-                    [Op.or]: [
-                        { id: isNaN(country) ? -1 : country },
-                        { name: { [Op.iLike]: `%${country}%` } }
-                    ]
-                };
-            }
-            if (continent) {
-                countryInclude.include = [{
-                    association: 'continent',
-                    required: true,
-                    where: {
-                        [Op.or]: [
-                            { id: isNaN(continent) ? -1 : continent },
-                            { name: { [Op.iLike]: `%${continent}%` } }
-                        ]
-                    }
-                }];
-            }
-            cityInclude.include = [countryInclude];
-        }
-
         if (city || country || continent) {
-            nestedIncludes.push({
-                association: 'mappings',
-                required: true,
-                include: [cityInclude]
-            });
+            nestedIncludes.push(this.destinationLocationInclude({ required: true, city, country, continent }));
             destIncludeOptions.required = true;
+        } else {
+            nestedIncludes.push(this.destinationLocationInclude());
         }
 
         if (category) {
@@ -187,6 +265,7 @@ class PackageRepository extends BaseRepository {
         let includes = [
             pkgDestInclude,
             { model: this.mediaModel, as: 'gallery' },
+            ...this.highlightInclude(),
             packageCategoryInclude
         ];
 
@@ -454,7 +533,8 @@ async findBySlug(slug) {
                 include: [
                     {
                         model: this.destinationModel,
-                        as: 'destination'
+                        as: 'destination',
+                        include: [this.destinationLocationInclude()]
                     }
                 ]
             },
@@ -466,6 +546,7 @@ async findBySlug(slug) {
                 model: this.exclusionModel,
                 as: 'exclusions'
             },
+            ...this.highlightInclude(),
             {
                 model: this.mediaModel,
                 as: 'gallery'
@@ -488,11 +569,12 @@ async findBySlug(slug) {
                 {
                     model: this.packageDestinationModel, as: 'destinations',
                     include: [
-                        { model: this.destinationModel, as: 'destination' }
+                        { model: this.destinationModel, as: 'destination', include: [this.destinationLocationInclude()] }
                     ]
                 },
                 { model: this.inclusionModel, as: 'inclusions' },
                 { model: this.exclusionModel, as: 'exclusions' },
+                ...this.highlightInclude(),
                 { model: this.mediaModel, as: 'gallery' },
                 ...this.reviewInclude()
             ],
@@ -530,10 +612,12 @@ async findBySlug(slug) {
                         model: this.destinationModel, 
                         as: 'destination',
                         where: { slug: slug },
-                        required: true
+                        required: true,
+                        include: [this.destinationLocationInclude()]
                     }]
                 },
-                { model: this.mediaModel, as: 'gallery' }
+                { model: this.mediaModel, as: 'gallery' },
+                ...this.highlightInclude()
             ],
             order: [['sort_order', 'ASC'], ['created_at', 'DESC']]
         });

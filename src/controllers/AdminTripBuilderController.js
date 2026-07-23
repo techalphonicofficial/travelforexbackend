@@ -1,11 +1,12 @@
 class AdminTripBuilderController {
-    constructor(tripBuilderService, hotelRepo, activityRepo, bookingRepo, accountingService, appSettingRepo = null) {
+    constructor(tripBuilderService, hotelRepo, activityRepo, bookingRepo, accountingService, appSettingRepo = null, couponService = null) {
         this.tripBuilderService = tripBuilderService;
         this.hotelRepo = hotelRepo;
         this.activityRepo = activityRepo;
         this.bookingRepo = bookingRepo;
         this.accountingService = accountingService;
         this.appSettingRepo = appSettingRepo;
+        this.couponService = couponService;
     }
 
     async initTrip(req, res) {
@@ -278,6 +279,7 @@ class AdminTripBuilderController {
             } : null,
             sequelize.models.PackageInclusion ? { model: sequelize.models.PackageInclusion, as: 'inclusions', required: false } : null,
             sequelize.models.PackageExclusion ? { model: sequelize.models.PackageExclusion, as: 'exclusions', required: false } : null,
+            sequelize.models.PackageHighlight ? { model: sequelize.models.PackageHighlight, as: 'highlights', required: false } : null,
             sequelize.models.User ? { model: sequelize.models.User, as: 'vendor', required: false, attributes: ['id', 'name', 'email'] } : null
         ].filter(Boolean);
 
@@ -424,6 +426,7 @@ class AdminTripBuilderController {
         const destinations = Array.isArray(packageRow.destinations) ? packageRow.destinations : [];
         const inclusions = Array.isArray(packageRow.inclusions) ? packageRow.inclusions : [];
         const exclusions = Array.isArray(packageRow.exclusions) ? packageRow.exclusions : [];
+        const highlights = Array.isArray(packageRow.highlights) ? packageRow.highlights : [];
 
         return {
             package: {
@@ -455,6 +458,11 @@ class AdminTripBuilderController {
                 })),
             inclusions: inclusions.map(item => item.text).filter(Boolean),
             exclusions: exclusions.map(item => item.text).filter(Boolean),
+            highlights: highlights
+                .slice()
+                .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
+                .map(item => item.content)
+                .filter(Boolean),
             amounts: {
                 payment_mode: quote.paymentMode,
                 adults: quote.adultCount,
@@ -510,11 +518,66 @@ class AdminTripBuilderController {
         }
     }
 
+    async validatePackageCoupon(req, res) {
+        try {
+            if (!this.couponService) {
+                return res.status(500).json({ success: false, message: 'Coupons are not configured.' });
+            }
+
+            const { coupon_code, package_id, customer_id, base_amount } = req.body || {};
+            const packageId = parseInt(package_id, 10);
+            const baseAmount = Number(base_amount);
+            if (!coupon_code || !String(coupon_code).trim()) {
+                return res.status(400).json({ success: false, message: 'Enter a coupon code.' });
+            }
+            if (!Number.isInteger(packageId) || packageId <= 0) {
+                return res.status(400).json({ success: false, message: 'Select a package first.' });
+            }
+            if (!customer_id) {
+                return res.status(400).json({ success: false, message: 'Select a customer first.' });
+            }
+            if (!Number.isFinite(baseAmount) || baseAmount <= 0) {
+                return res.status(400).json({ success: false, message: 'Enter a valid base booking amount.' });
+            }
+
+            const sequelize = this.bookingRepo.CustomTrip.sequelize;
+            const Customer = this.bookingRepo.Customer;
+            const User = sequelize.models.User;
+            const customer = await Customer.findByPk(customer_id, {
+                include: User ? [{ model: User, as: 'user', required: false }] : []
+            });
+            if (!customer) {
+                return res.status(404).json({ success: false, message: 'Customer not found.' });
+            }
+
+            const preview = await this.couponService.validate({
+                code: coupon_code,
+                packageId,
+                customerId: customer.id,
+                customerEmail: customer.user ? customer.user.email : null,
+                bookingAmount: baseAmount
+            });
+
+            return res.json({
+                success: true,
+                message: 'Coupon applied successfully.',
+                data: {
+                    coupon: this.couponService.serializeCoupon(preview.coupon),
+                    booking_amount: preview.booking_amount,
+                    discount_amount: preview.discount_amount,
+                    amount_after_discount: preview.amount_after_discount
+                }
+            });
+        } catch (e) {
+            return res.status(e.statusCode || 400).json({ success: false, message: e.message });
+        }
+    }
+
     async createPackageBooking(req, res) {
         let transaction = null;
 
         try {
-            const { customer_id, package_id, adults, inquiry_id, payment_mode, passengers, booking_amount, base_amount, hotel_amount, paid_amount, apply_gst, gst_percent, from_date, to_date, departure_date } = req.body || {};
+            const { customer_id, package_id, adults, inquiry_id, payment_mode, passengers, booking_amount, base_amount, hotel_amount, paid_amount, apply_gst, gst_percent, from_date, to_date, departure_date, coupon_code } = req.body || {};
             if (!customer_id) {
                 return res.status(400).json({ success: false, message: 'Please select a customer.' });
             }
@@ -593,23 +656,47 @@ class AdminTripBuilderController {
                 transaction = null;
                 return res.status(400).json({ success: false, message: 'GST percentage must be between 0 and 100.' });
             }
-            const taxableAmount = requestedBaseAmount + requestedHotelAmount;
+            const customerUser = customer.user || {};
+            let couponPreview = null;
+            if (coupon_code && String(coupon_code).trim()) {
+                if (!this.couponService) {
+                    await transaction.rollback();
+                    transaction = null;
+                    return res.status(500).json({ success: false, message: 'Coupons are not configured.' });
+                }
+                couponPreview = await this.couponService.validate({
+                    code: coupon_code,
+                    packageId,
+                    customerId: customer.id,
+                    customerEmail: customerUser.email || null,
+                    bookingAmount: requestedBaseAmount,
+                    transaction
+                });
+            }
+            const couponDiscountAmount = couponPreview ? this.money(couponPreview.discount_amount) : 0;
+            const discountedBaseAmount = this.money(Math.max(requestedBaseAmount - couponDiscountAmount, 0));
+            const taxableAmount = discountedBaseAmount + requestedHotelAmount;
             const requestedTotal = this.money(taxableAmount + (taxableAmount * requestedGstPercent / 100));
             if (!Number.isFinite(requestedPaidAmount) || requestedPaidAmount < 0 || requestedPaidAmount > requestedTotal) {
                 await transaction.rollback();
                 transaction = null;
                 return res.status(400).json({ success: false, message: 'Received amount must be between zero and the total booking amount.' });
             }
-            const quote = this.applyAdminPackageAmounts(calculatedQuote, requestedBaseAmount, requestedPaidAmount, requestedGstPercent, requestedHotelAmount);
+            const quote = this.applyAdminPackageAmounts(calculatedQuote, discountedBaseAmount, requestedPaidAmount, requestedGstPercent, requestedHotelAmount);
             if (quote.packageTotal <= 0) {
                 await transaction.rollback();
                 transaction = null;
                 return res.status(400).json({ success: false, message: 'Package amount must be greater than zero.' });
             }
 
-            const customerUser = customer.user || {};
             const route = this.packageRoute(packageRow);
             const bookingReference = this.adminPackageBookingReference(packageRow.id);
+            const couponSnapshot = couponPreview ? {
+                ...this.couponService.serializeCoupon(couponPreview.coupon),
+                booking_amount: this.money(requestedBaseAmount),
+                discount_amount: couponDiscountAmount,
+                amount_after_discount: discountedBaseAmount
+            } : {};
             const rawPayload = {
                 source: 'admin_package_booking',
                 inquiry_id: inquiry_id || null,
@@ -622,6 +709,7 @@ class AdminTripBuilderController {
                 hotels: quote.hotels,
                 hotel_count: quote.hotels.length,
                 hotel_estimated_amount: quote.hotelEstimatedAmount,
+                coupon: couponPreview ? couponSnapshot : null,
                 package: {
                     id: packageRow.id,
                     name: packageRow.name,
@@ -634,6 +722,8 @@ class AdminTripBuilderController {
                     system_calculated_total: quote.systemCalculatedTotal,
                     manually_overridden: this.money(quote.systemCalculatedTotal) !== this.money(quote.packageTotal),
                     service_base_amount: quote.serviceBaseAmount,
+                    original_service_base_amount: this.money(requestedBaseAmount),
+                    coupon_discount_amount: couponDiscountAmount,
                     hotel_amount: quote.hotelAmount,
                     gross_base_amount: quote.grossBaseAmount,
                     hotel_estimated_amount: quote.hotelEstimatedAmount,
@@ -675,8 +765,10 @@ class AdminTripBuilderController {
                 package_total: quote.packageTotal,
                 paid_amount: quote.payableNow,
                 remaining_amount: quote.remainingAmount,
-                coupon_discount_amount: 0,
-                coupon_snapshot: {},
+                coupon_id: couponPreview ? couponPreview.coupon.id : null,
+                coupon_code: couponPreview ? couponPreview.coupon.code : null,
+                coupon_discount_amount: couponDiscountAmount,
+                coupon_snapshot: couponSnapshot,
                 vendor_amount: quote.vendorAmount,
                 platform_amount: quote.platformAmount,
                 vendor_split_basis: quote.vendorSplitBasis,
@@ -688,6 +780,18 @@ class AdminTripBuilderController {
                 page_url: '/admin/bookings/create',
                 raw_payload: rawPayload
             }, { transaction });
+
+            if (couponPreview) {
+                await this.couponService.redeem({
+                    coupon: couponPreview.coupon,
+                    booking,
+                    customerId: customer.id,
+                    customerEmail: customerUser.email || null,
+                    bookingAmount: requestedBaseAmount,
+                    discountAmount: couponDiscountAmount,
+                    transaction
+                });
+            }
 
             if (BookingPassenger) {
                 let passengerData = [];
@@ -757,7 +861,7 @@ class AdminTripBuilderController {
                 await transaction.rollback();
             }
             console.error(e);
-            res.status(500).json({ success: false, message: e.message });
+            res.status(e.statusCode || 500).json({ success: false, message: e.message });
         }
     }
 

@@ -239,8 +239,9 @@ const findDepartureDate = (raw = {}) => {
               const rawCoupon = raw.coupon || raw.applied_coupon || {};
               const couponCode = booking.coupon_code || couponSnapshot.code || couponSnapshot.coupon_code || rawCoupon.code || rawCoupon.coupon_code || '';
               const couponDiscount = Number(booking.coupon_discount_amount || couponSnapshot.discount_amount || rawCoupon.discount_amount || rawCoupon.amount || 0);
-              const baseAfterCoupon = Number(booking.package_base_amount || booking.package_price || 0);
-              const baseBeforeCoupon = baseAfterCoupon + couponDiscount;
+              const hotelAmount = Number(booking.hotel_amount || 0);
+              const baseAfterCoupon = Number(booking.package_base_amount || booking.package_price || 0) - hotelAmount;
+              const baseBeforeCoupon = Number(couponSnapshot.booking_amount || (baseAfterCoupon + couponDiscount));
               const canAccount = booking.accounting_status === 'recorded';
               const canPayRemaining = canAccount && remainingAmount > 0;
               const departureInputValue = dateInputValue(findDepartureDate(raw));

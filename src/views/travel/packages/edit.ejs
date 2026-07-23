@@ -753,6 +753,18 @@
             </div>
           </div>
         </div>
+
+        <div class="tf-form-card mt-4">
+          <div class="tf-form-header"><i class="bi bi-stars text-primary"></i> Package Highlights</div>
+          <div class="tf-form-body">
+            <div id="highlightsList"></div>
+            <div class="input-group mt-2">
+              <input type="text" class="form-control" id="newHighlight" placeholder="Enter a package highlight">
+              <button type="button" class="btn btn-outline-primary" id="addHighlightBtn">Add</button>
+            </div>
+            <small class="text-muted">Add multiple highlights; their current order will be saved.</small>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -775,6 +787,7 @@
     let destinations = [];
     let inclusions = [];
     let exclusions = [];
+    let highlights = [];
     let currentDestIdx = null;
     let currentDayNum = null;
     let editingHotelId = null;
@@ -1457,7 +1470,22 @@
                 <span><i class="bi bi-x-circle-fill text-danger me-2"></i>${escapeHtml(exc)}</span>
                 <i class="bi bi-trash3 text-danger" style="cursor:pointer" onclick="removeExclusion(${idx})"></i>
             </div>
-        `).join('');
+      `).join('');
+    }
+
+    function renderHighlights() {
+      const container = document.getElementById('highlightsList');
+      if (!container) return;
+      if (!highlights.length) {
+        container.innerHTML = '<div class="text-muted">No highlights added</div>';
+        return;
+      }
+      container.innerHTML = highlights.map((content, idx) => `
+        <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+          <span><i class="bi bi-stars text-primary me-2"></i>${escapeHtml(content)}</span>
+          <i class="bi bi-trash3 text-danger" style="cursor:pointer" onclick="removeHighlight(${idx})"></i>
+        </div>
+      `).join('');
     }
 
     function addInclusion() {
@@ -1482,6 +1510,17 @@
       }
     }
 
+    function addHighlight() {
+      const input = document.getElementById('newHighlight');
+      const content = input.value.trim();
+      if (content) {
+        highlights.push(content);
+        renderHighlights();
+        input.value = '';
+        showNotification('Highlight added');
+      }
+    }
+
     function removeInclusion(idx) {
       inclusions.splice(idx, 1);
       renderInclusions();
@@ -1492,6 +1531,12 @@
       exclusions.splice(idx, 1);
       renderExclusions();
       showNotification('Exclusion removed');
+    }
+
+    function removeHighlight(idx) {
+      highlights.splice(idx, 1);
+      renderHighlights();
+      showNotification('Highlight removed');
     }
 
     async function uploadMainImage(input) {
@@ -1584,7 +1629,8 @@
           hotels: dest.hotels || []
         })),
         inclusions: inclusions,
-        exclusions: exclusions
+        exclusions: exclusions,
+        highlights: highlights
       };
 
       try {
@@ -1637,6 +1683,15 @@
         exclusions = PKG_DATA.exclusions.map(e => e.text || e);
         renderExclusions();
       }
+
+      highlights = Array.isArray(PKG_DATA.highlights)
+        ? PKG_DATA.highlights
+          .slice()
+          .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
+          .map(item => item.content || item.text || item)
+          .filter(Boolean)
+        : [];
+      renderHighlights();
 
       // Fill stays/destinations with activities
       if (PKG_DATA.stays && PKG_DATA.stays.length) {
@@ -1733,6 +1788,7 @@
     });
     document.getElementById('addInclusionBtn')?.addEventListener('click', addInclusion);
     document.getElementById('addExclusionBtn')?.addEventListener('click', addExclusion);
+    document.getElementById('addHighlightBtn')?.addEventListener('click', addHighlight);
     document.getElementById('savePackageBtn')?.addEventListener('click', savePackage);
     document.getElementById('fTaxType')?.addEventListener('change', () => syncTaxPercent(true));
     document.getElementById('fName')?.addEventListener('input', (e) => {
@@ -1770,6 +1826,7 @@
     });
     document.getElementById('newInclusion')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') addInclusion(); });
     document.getElementById('newExclusion')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') addExclusion(); });
+    document.getElementById('newHighlight')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') addHighlight(); });
     document.getElementById('galleryInput')?.addEventListener('change', handleGalleryUpload);
 
     // Initialize with auto-fill

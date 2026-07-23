@@ -602,6 +602,18 @@
                     </div>
                 </div>
 
+                <div class="tf-form-card">
+                    <div class="tf-form-header"><i class="bi bi-stars text-primary"></i> Package Highlights</div>
+                    <div class="tf-form-body">
+                        <div id="highlightsList"></div>
+                        <div class="input-group mt-2">
+                            <input type="text" class="form-control" id="newHighlight" placeholder="Enter a package highlight">
+                            <button type="button" class="btn btn-outline-primary" id="addHighlightBtn">Add</button>
+                        </div>
+                        <small class="text-muted">Add multiple highlights; their current order will be saved.</small>
+                    </div>
+                </div>
+
                 <!-- Destinations & Daily Itinerary -->
                 <div class="tf-form-card">
                     <div class="tf-form-header"><i class="bi bi-calendar-week text-danger"></i> Destinations & Daily
@@ -671,6 +683,7 @@
         let destinations = [];
         let inclusions = [];
         let exclusions = [];
+        let highlights = [];
 
         // Modal state
         let currentDestIdx = null;
@@ -1387,6 +1400,21 @@
         `).join('');
         }
 
+        function renderHighlights() {
+            const container = document.getElementById('highlightsList');
+            if (!container) return;
+            if (highlights.length === 0) {
+                container.innerHTML = '<div class="text-muted">No highlights added</div>';
+                return;
+            }
+            container.innerHTML = highlights.map((content, idx) => `
+                <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                    <span><i class="bi bi-stars text-primary me-2"></i>${escapeHtml(content)}</span>
+                    <i class="bi bi-trash3 text-danger" style="cursor:pointer" onclick="removeHighlight(${idx})"></i>
+                </div>
+            `).join('');
+        }
+
         function addInclusion() {
             const input = document.getElementById('newInclusion');
             const text = input.value.trim();
@@ -1409,6 +1437,17 @@
             }
         }
 
+        function addHighlight() {
+            const input = document.getElementById('newHighlight');
+            const content = input.value.trim();
+            if (content) {
+                highlights.push(content);
+                renderHighlights();
+                input.value = '';
+                showNotification('Highlight added');
+            }
+        }
+
         function removeInclusion(idx) {
             inclusions.splice(idx, 1);
             renderInclusions();
@@ -1419,6 +1458,12 @@
             exclusions.splice(idx, 1);
             renderExclusions();
             showNotification('Exclusion removed');
+        }
+
+        function removeHighlight(idx) {
+            highlights.splice(idx, 1);
+            renderHighlights();
+            showNotification('Highlight removed');
         }
 
         async function uploadMainImage(input) {
@@ -1511,7 +1556,8 @@
                     hotels: dest.hotels || []
                 })),
                 inclusions: inclusions,
-                exclusions: exclusions
+                exclusions: exclusions,
+                highlights: highlights
             };
 
             try {
@@ -1558,6 +1604,7 @@
 
         document.getElementById('addInclusionBtn')?.addEventListener('click', addInclusion);
         document.getElementById('addExclusionBtn')?.addEventListener('click', addExclusion);
+        document.getElementById('addHighlightBtn')?.addEventListener('click', addHighlight);
         document.getElementById('savePackageBtn')?.addEventListener('click', savePackage);
         document.getElementById('taxType')?.addEventListener('change', () => syncTaxPercent(true));
         document.getElementById('packageName')?.addEventListener('input', (e) => {
@@ -1600,6 +1647,9 @@
         document.getElementById('newExclusion')?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') addExclusion();
         });
+        document.getElementById('newHighlight')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addHighlight();
+        });
 
         // Initialize
         if (destinations.length === 0) {
@@ -1618,6 +1668,7 @@
 
         renderInclusions();
         renderExclusions();
+        renderHighlights();
         syncTaxPercent();
     </script>
 

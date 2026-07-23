@@ -11,7 +11,7 @@ const {
     models: {
         Continent, Country, City, Destination, DestinationMapping,
         DestinationCategory, Category, PackageCategory, PackageCategoryMapping, Package, Activity,
-        PackageDestination, PackageInclusion, PackageExclusion, Media, VideoReview, Review, DestinationCrowdLevel, DestinationTax, Hotel,
+        PackageDestination, PackageInclusion, PackageExclusion, PackageHighlight, Media, VideoReview, Review, DestinationCrowdLevel, DestinationTax, Hotel,
         ForexConversionRequest, Customer, User, Lead, JournalEntry
     },
     services: {
@@ -123,6 +123,13 @@ function clampPercent(value) {
     const parsed = parseFloat(value);
     if (!Number.isFinite(parsed)) return 0;
     return Math.min(Math.max(parsed, 0), 100);
+}
+
+function normalizePackageHighlights(value) {
+    if (!Array.isArray(value)) return [];
+    return [...new Set(value
+        .map(item => String(item && typeof item === 'object' ? (item.content || item.text || '') : item || '').trim())
+        .filter(Boolean))];
 }
 
 function parseTaxTypes(value) {
@@ -1167,6 +1174,7 @@ router.post('/packages/:id/duplicate', async (req, res) => {
                 { model: PackageDestination, as: 'destinations' },
                 { model: PackageInclusion, as: 'inclusions' },
                 { model: PackageExclusion, as: 'exclusions' },
+                { model: PackageHighlight, as: 'highlights' },
                 { model: Media, as: 'gallery' },
                 { model: PackageCategory, as: 'package_categories' }
             ]
@@ -1238,6 +1246,13 @@ router.post('/packages/:id/duplicate', async (req, res) => {
                     package_id: duplicate.id,
                     text: item.text,
                     icon: item.icon
+                })), { transaction });
+            }
+            if (source.highlights?.length) {
+                await PackageHighlight.bulkCreate(source.highlights.map((item, index) => ({
+                    package_id: duplicate.id,
+                    content: item.content,
+                    sort_order: Number(item.sort_order || index + 1)
                 })), { transaction });
             }
             if (source.package_categories?.length) {
@@ -1345,6 +1360,7 @@ router.get('/packages/:id/edit', async (req, res) => {
                 },
                 { model: PackageInclusion, as: 'inclusions' },
                 { model: PackageExclusion, as: 'exclusions' },
+                { model: PackageHighlight, as: 'highlights' },
                 { model: Media, as: 'gallery' },
                 { model: PackageCategory, as: 'package_categories' }
             ],
@@ -1521,6 +1537,7 @@ router.get('/packages/:id', async (req, res) => {
                 },
                 { model: PackageInclusion, as: 'inclusions' },
                 { model: PackageExclusion, as: 'exclusions' },
+                { model: PackageHighlight, as: 'highlights' },
                 { model: Media, as: 'gallery' }
             ],
             order: [
@@ -1636,7 +1653,8 @@ router.post('/packages/activity-image', handleUpload(upload.single('activity_ima
 });
 
 router.post('/packages/save', async (req, res) => {
-    const { id, name, duration, departure_city, price, description, show_in_home_page, main_image, main_image_alt, destinations, inclusions, exclusions, package_categories, meta_title, meta_description, meta_keyword, schema } = req.body;
+    const { id, name, duration, departure_city, price, description, show_in_home_page, main_image, main_image_alt, destinations, inclusions, exclusions, highlights, package_categories, meta_title, meta_description, meta_keyword, schema } = req.body;
+    const normalizedHighlights = normalizePackageHighlights(highlights);
     const is_customizable = req.body.is_customizable === true || req.body.is_customizable === 'true' || req.body.is_customizable === 'on' || req.body.is_customizable === 1 || req.body.is_customizable === '1';
     const slug = (req.body.slug || name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const requestedSortOrder = parseInt(req.body.sort_order, 10);
@@ -1691,6 +1709,7 @@ router.post('/packages/save', async (req, res) => {
                 await PackageDestination.destroy({ where: { package_id: id }, transaction });
                 await PackageInclusion.destroy({ where: { package_id: id }, transaction });
                 await PackageExclusion.destroy({ where: { package_id: id }, transaction });
+                await PackageHighlight.destroy({ where: { package_id: id }, transaction });
                 await PackageCategoryMapping.destroy({ where: { package_id: id }, transaction });
             } else {
                 // Create new Package
@@ -1748,7 +1767,15 @@ router.post('/packages/save', async (req, res) => {
                 );
             }
 
-            // 5. Package Categories
+            // 5. Highlights (request payload is an array; rows preserve its order)
+            if (normalizedHighlights.length) {
+                await PackageHighlight.bulkCreate(
+                    normalizedHighlights.map((content, index) => ({ package_id: pkg.id, content, sort_order: index + 1 })),
+                    { transaction }
+                );
+            }
+
+            // 6. Package Categories
             if (package_categories && Array.isArray(package_categories) && package_categories.length) {
                 await PackageCategoryMapping.bulkCreate(
                     package_categories.map(catId => ({ package_id: pkg.id, package_category_id: parseInt(catId) })),

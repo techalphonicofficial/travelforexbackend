@@ -484,6 +484,16 @@
                         class="bi bi-plus-lg"></i></button>
             </div>
         </div>
+        <div class="glass-card">
+            <h3 style="margin-bottom: 1.5rem; font-size: 1.15rem; display: flex; align-items: center; gap: 10px; color: var(--nav-text);">
+                <i class="bi bi-stars" style="color: var(--primary);"></i> Highlights
+            </h3>
+            <div id="highlightsList" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 1.2rem;"></div>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="newHighlight" class="vp-input" placeholder="e.g. Best seller itinerary">
+                <button type="button" id="addHighlightBtn" class="glass-card" style="padding: 0.7rem 1.2rem; background: var(--primary); color: white; border: none; border-radius: 12px;"><i class="bi bi-plus-lg"></i></button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -582,6 +592,7 @@
     let destinations = [];
     let inclusions = [];
     let exclusions = [];
+    let highlights = [];
 
     function slugify(value) {
         return (value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -607,6 +618,7 @@
         destinations = initialPkg.stays || [];
         inclusions = (initialPkg.inclusions || []).map(i => i.text);
         exclusions = (initialPkg.exclusions || []).map(e => e.text);
+        highlights = (initialPkg.highlights || []).slice().sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0)).map(item => item.content || item.text || item);
         if (initialPkg.slug) document.getElementById('packageSlug').dataset.touched = 'true';
     }
 
@@ -1074,6 +1086,17 @@
         `).join('');
     }
 
+    function renderHighlights() {
+        const list = document.getElementById('highlightsList');
+        if (!list) return;
+        list.innerHTML = highlights.map((content, idx) => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#eef2ff;border-radius:12px;border:1px solid #c7d2fe;">
+                <span style="font-size:.9rem;font-weight:600;color:#3730a3;"><i class="bi bi-stars" style="margin-right:8px;"></i>${escapeHtml(content)}</span>
+                <button type="button" onclick="removeHighlight(${idx})" style="background:none;border:none;color:#ef4444;cursor:pointer;"><i class="bi bi-trash"></i></button>
+            </div>
+        `).join('');
+    }
+
     document.getElementById('addInclusionBtn').onclick = () => {
         const val = document.getElementById('newInclusion').value;
         if (val) {
@@ -1092,8 +1115,19 @@
         }
     };
 
+    document.getElementById('addHighlightBtn').onclick = () => {
+        const input = document.getElementById('newHighlight');
+        const content = input.value.trim();
+        if (content) {
+            highlights.push(content);
+            input.value = '';
+            renderHighlights();
+        }
+    };
+
     function removeInclusion(idx) { inclusions.splice(idx, 1); renderInclusions(); }
     function removeExclusion(idx) { exclusions.splice(idx, 1); renderExclusions(); }
+    function removeHighlight(idx) { highlights.splice(idx, 1); renderHighlights(); }
 
     async function uploadMedia(input) {
         if (!input.files || !input.files[0]) return;
@@ -1233,7 +1267,8 @@
             main_image_alt: document.getElementById('packageMainImageAlt').value,
             destinations,
             inclusions,
-            exclusions
+            exclusions,
+            highlights
         };
 
         if (!data.name || !data.price) {
@@ -1262,4 +1297,5 @@
     renderDestinations();
     renderInclusions();
     renderExclusions();
+    renderHighlights();
 </script>

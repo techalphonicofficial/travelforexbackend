@@ -838,6 +838,17 @@
           <% } %>
         </section>
 
+        <% if (pkg.highlights && pkg.highlights.length) { %>
+          <section class="section">
+            <div class="section-header"><div class="section-title-wrap"><div class="section-icon"><i class="bi bi-stars"></i></div><h2>Package Highlights</h2></div></div>
+            <ul class="meta-list">
+              <% pkg.highlights.slice().sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0)).forEach(item => { %>
+                <li><i class="bi bi-star-fill text-warning"></i><span><%= item.content %></span></li>
+              <% }) %>
+            </ul>
+          </section>
+        <% } %>
+
         <section class="meta-grid">
           <div class="section">
             <div class="section-header">

@@ -8,6 +8,10 @@
   const money = value => `INR ${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const dateText = value => value ? new Date(`${String(value).substring(0,10)}T00:00:00`).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : 'N/A';
   const customerUser = booking.customer && booking.customer.user ? booking.customer.user : {};
+  const coupon = booking.coupon_snapshot || {};
+  const couponDiscount = Number(booking.coupon_discount_amount || 0);
+  const discountedBase = Number(booking.package_base_amount || 0) - Number(booking.hotel_amount || 0);
+  const originalBase = Number(coupon.booking_amount || (discountedBase + couponDiscount));
 %>
 
 <style>
@@ -62,7 +66,9 @@
     <section class="bv-card">
       <div class="bv-card-head">Payment summary</div>
       <div class="bv-card-body">
-        <div class="bv-money"><span>Base package amount</span><strong><%= money(Number(booking.package_base_amount || 0) - Number(booking.hotel_amount || 0)) %></strong></div>
+        <div class="bv-money"><span>Base package amount</span><strong><%= money(originalBase) %></strong></div>
+        <% if (couponDiscount > 0 || booking.coupon_code) { %><div class="bv-money"><span>Coupon <%= booking.coupon_code || coupon.code || '' %></span><strong>- <%= money(couponDiscount) %></strong></div><% } %>
+        <div class="bv-money"><span>Package amount after coupon</span><strong><%= money(discountedBase) %></strong></div>
         <div class="bv-money"><span>Hotel amount</span><strong><%= money(booking.hotel_amount) %></strong></div>
         <div class="bv-money"><span>GST <%= Number(booking.tax_percent || 0) %>%</span><strong><%= money(booking.tax_amount) %></strong></div>
         <div class="bv-money"><span>Total</span><strong class="bv-money-total"><%= money(booking.package_total) %></strong></div>
