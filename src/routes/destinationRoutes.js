@@ -94,6 +94,25 @@ router.get('/visa-free', async (req, res) => {
     }
 });
 
+/**
+ * @openapi
+ * /api/v1/destinations/visa-tabs:
+ *   get:
+ *     summary: Get destinations grouped into visa tabs
+ *     tags: [Destinations]
+ *     responses:
+ *       200:
+ *         description: Ordered array of visa tab objects and their destinations
+ */
+router.get('/visa-tabs', async (req, res) => {
+    try {
+        const data = await destinationRepo.findVisaTabs();
+        res.json({ success: true, data });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 router.get('/customizable', async (req, res) => {
     try {
         const data = await destinationRepo.findCustomizable();

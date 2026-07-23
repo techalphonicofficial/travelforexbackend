@@ -24,7 +24,7 @@ const Destination = sequelize.define('Destination', {
     slug: {
         type: DataTypes.STRING,
         unique: true,
-        allowNull: true
+        allowNull: false
     },
     meta_title: {
         type: DataTypes.STRING(255),
@@ -49,6 +49,13 @@ const Destination = sequelize.define('Destination', {
     is_visa_free: {
         type: DataTypes.BOOLEAN,
         defaultValue: false
+    },
+    visa_category: {
+        type: DataTypes.STRING(40),
+        allowNull: true,
+        validate: {
+            isIn: [['visa_free_on_arrival', 'e_visa', 'stamped_visa']]
+        }
     },
     customize: {
         type: DataTypes.BOOLEAN,

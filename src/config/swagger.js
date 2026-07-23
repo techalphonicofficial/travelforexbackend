@@ -46,6 +46,7 @@ const documentedOperations = new Set([
   'get /api/v1/destinations',
   'get /api/v1/destinations/trending',
   'get /api/v1/destinations/visa-free',
+  'get /api/v1/destinations/visa-tabs',
   'get /api/v1/destinations/slug/{slug}/related-by-country',
   'get /api/v1/destinations/slug/{slug}/related-packages',
 

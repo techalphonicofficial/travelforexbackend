@@ -239,6 +239,14 @@ const _continents   = JSON.stringify(continents).replace(/</g, '\\u003c');
         <option value="">All Categories</option>
         <% categories.forEach(c => { %><option value="<%= c.id %>"><%= c.name %></option><% }) %>
       </select>
+
+      <select id="visaFilter" class="form-select form-select-sm filter-input py-2" style="width: 190px;" onchange="applyFilters()">
+        <option value="">All Visa Tabs</option>
+        <option value="visa_free_on_arrival">Visa Free &amp; On Arrival</option>
+        <option value="e_visa">E-Visa</option>
+        <option value="stamped_visa">Stamped Visa</option>
+        <option value="none">Not in a Visa Tab</option>
+      </select>
     </div>
     <div>
       <span class="text-muted fw-bold" id="countLabel" style="font-size: 0.85rem;"></span>
@@ -270,7 +278,7 @@ const _continents   = JSON.stringify(continents).replace(/</g, '\\u003c');
             <th>Destination</th>
             <th>Type</th>
             <th>Trending</th>
-            <th>Visa Free</th>
+            <th>Visa Tab</th>
             <th>Customizable</th>
             <th>Categories</th>
             <th>Geography</th>
@@ -347,18 +355,36 @@ const CATS = <%- _categories %>;
 const PS = 10;
 let view = 'list', page = 1, filtered = [...ALL], delId = null;
 let selectedIds = new Set();
+const VISA_TAB_LABELS = {
+  visa_free_on_arrival: 'Visa Free & On Arrival',
+  e_visa: 'E-Visa',
+  stamped_visa: 'Stamped Visa'
+};
+
+function destinationVisaCategory(destination) {
+  return destination.visa_category || (destination.is_visa_free ? 'visa_free_on_arrival' : '');
+}
+
+function visaTabBadge(destination) {
+  const category = destinationVisaCategory(destination);
+  if (!category) return '<span class="text-muted">—</span>';
+  return `<span class="px-2 py-1 rounded-pill" style="background:#ecfdf5;font-size:0.72rem;font-weight:600;color:#047857">${VISA_TAB_LABELS[category] || category}</span>`;
+}
 
 function applyFilters() {
   const q = document.getElementById('searchInput').value.toLowerCase();
   const cont = document.getElementById('contFilter').value;
   const cat = document.getElementById('catFilter').value;
+  const visa = document.getElementById('visaFilter').value;
   
   filtered = ALL.filter(d => {
     const mn = d.name.toLowerCase().includes(q);
     const mapping = d.mappings && d.mappings[0];
     const mc = !cont || (mapping && String(mapping.continent_id) === cont);
     const mk = !cat || (d.categories && d.categories.some(c => String(c.id) === cat));
-    return mn && mc && mk;
+    const visaCategory = destinationVisaCategory(d);
+    const mv = !visa || (visa === 'none' ? !visaCategory : visaCategory === visa);
+    return mn && mc && mk && mv;
   });
   page = 1; render();
 }
@@ -386,7 +412,7 @@ function renderList(slice,s,tot,pages) {
       <td style="font-weight:600;color:#111827;">${d.name}</td>
       <td>${d.type ? `<span class="px-2 py-1 rounded-pill" style="background:#f3f4f6;font-size:0.75rem;font-weight:600;color:#d97706">${d.type}</span>` : '—'}</td>
       <td>${d.is_trending ? '<span class="text-success"><i class="bi bi-check-circle-fill"></i></span>' : '<span class="text-muted"><i class="bi bi-x-circle"></i></span>'}</td>
-      <td>${d.is_visa_free ? '<span class="text-success"><i class="bi bi-check-circle-fill"></i></span>' : '<span class="text-muted"><i class="bi bi-x-circle"></i></span>'}</td>
+      <td>${visaTabBadge(d)}</td>
       <td>${(d.is_customizable || d.customize) ? '<span class="text-success"><i class="bi bi-check-circle-fill"></i></span>' : '<span class="text-muted"><i class="bi bi-x-circle"></i></span>'}</td>
       <td>
         <div class="d-flex flex-wrap gap-1">
@@ -420,7 +446,7 @@ function renderCards(slice,s,tot,pages) {
         <div class="tf-card-icon" style="background:rgba(245,158,11,0.1);color:#f59e0b"><i class="bi bi-geo-alt"></i></div>
         <div class="d-flex gap-1">
           ${d.is_trending ? `<span class="tf-badge" style="background:rgba(239,68,68,0.1);color:#ef4444"><i class="bi bi-fire"></i></span>` : ''}
-          ${d.is_visa_free ? `<span class="tf-badge" style="background:rgba(34,197,94,0.1);color:#22c55e"><i class="bi bi-airplane"></i></span>` : ''}
+          ${(d.visa_category || d.is_visa_free) ? visaTabBadge(d) : ''}
           ${(d.is_customizable || d.customize) ? `<span class="tf-badge" style="background:rgba(79,70,229,0.1);color:#4f46e5" title="Customizable"><i class="bi bi-tools"></i></span>` : ''}
           ${d.type ? `<span class="tf-badge" style="background:rgba(245,158,11,0.1);color:#d97706">${d.type}</span>` : ''}
         </div>

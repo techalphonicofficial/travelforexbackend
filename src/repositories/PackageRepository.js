@@ -273,6 +273,10 @@ class PackageRepository extends BaseRepository {
         return this.model.findAndCountAll({
             where,
             include: includes,
+            // Sequelize's pagination subquery generates an invalid PostgreSQL
+            // join when a destination category is required: the destination
+            // table is joined before the package_destinations alias exists.
+            subQuery: false,
             order: [['sort_order', 'ASC'], ['created_at', 'DESC']],
             limit: parseInt(limit),
             offset: parseInt(offset),

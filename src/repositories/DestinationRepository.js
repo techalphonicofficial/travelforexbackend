@@ -1,4 +1,11 @@
 const BaseRepository = require('./BaseRepository');
+const { Op } = require('sequelize');
+
+const VISA_TABS = [
+    { key: 'visa_free_on_arrival', label: 'Visa Free & On Arrival' },
+    { key: 'e_visa', label: 'E-Visa' },
+    { key: 'stamped_visa', label: 'Stamped Visa' }
+];
 
 class DestinationRepository extends BaseRepository {
     constructor(model, categoryModel, mappingModel, mediaModel, cityModel, countryModel, continentModel, packageModel) {
@@ -137,7 +144,12 @@ class DestinationRepository extends BaseRepository {
 
     async findVisaFree() {
         return this.model.findAll({
-            where: { is_visa_free: true },
+            where: {
+                [Op.or]: [
+                    { visa_category: 'visa_free_on_arrival' },
+                    { is_visa_free: true }
+                ]
+            },
             include: [
                 { model: this.mediaModel, as: 'gallery', separate: true, limit: 1 },
                 {
@@ -156,8 +168,57 @@ class DestinationRepository extends BaseRepository {
         });
     }
 
+    async findVisaTabs() {
+        const destinations = await this.model.findAll({
+            where: { visa_category: { [Op.in]: VISA_TABS.map(tab => tab.key) } },
+            order: [['name', 'ASC']],
+            include: [
+                { model: this.mediaModel, as: 'gallery', separate: true, limit: 1 },
+                {
+                    model: this.mappingModel,
+                    as: 'mappings',
+                    include: [{
+                        model: this.cityModel,
+                        as: 'city',
+                        include: [{
+                            model: this.countryModel,
+                            as: 'country',
+                            include: [{ model: this.continentModel, as: 'continent' }]
+                        }]
+                    }]
+                }
+            ]
+        });
+
+        return VISA_TABS.map(tab => ({
+            ...tab,
+            destinations: destinations.filter(destination => destination.visa_category === tab.key)
+        }));
+    }
+
+    normalizeVisaData(data = {}) {
+        const payload = { ...data };
+        if (Object.prototype.hasOwnProperty.call(payload, 'visa_category')) {
+            const category = String(payload.visa_category || '').trim();
+            payload.visa_category = VISA_TABS.some(tab => tab.key === category) ? category : null;
+            payload.is_visa_free = payload.visa_category === 'visa_free_on_arrival';
+        } else if (Object.prototype.hasOwnProperty.call(payload, 'is_visa_free')) {
+            const isVisaFree = [true, 'true', '1', 1, 'on'].includes(payload.is_visa_free);
+            payload.visa_category = isVisaFree ? 'visa_free_on_arrival' : null;
+            payload.is_visa_free = isVisaFree;
+        }
+        return payload;
+    }
+
+    async create(data) {
+        return super.create(this.normalizeVisaData(data));
+    }
+
+    async update(id, data) {
+        return super.update(id, this.normalizeVisaData(data));
+    }
+
     async findCustomizable() {
-        const { Op } = require('sequelize');
         return this.model.findAll({
             where: {
                 [Op.or]: [
