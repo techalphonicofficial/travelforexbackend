@@ -210,7 +210,39 @@ class PackageRepository extends BaseRepository {
         }).filter(Boolean);
     }
 
-    async filterPackages({ page = 1, limit = 10, minPrice, maxPrice, duration, startDate, endDate, city, country, continent, destination, category, package_category_slug, package_type, travel_type }) {
+    parsePositiveInteger(value, fallback = null) {
+        const parsed = parseInt(value, 10);
+        return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+    }
+
+    parseRating(value, fallback = null) {
+        const parsed = parseFloat(value);
+        return Number.isFinite(parsed) && parsed >= 1 && parsed <= 5 ? parsed : fallback;
+    }
+
+    ratingFilterCondition({ rating, minRating, maxRating } = {}) {
+        if (!this.reviewModel) return null;
+
+        const minimumRating = this.parseRating(minRating !== undefined ? minRating : rating);
+        const maximumRating = this.parseRating(maxRating);
+        if (minimumRating === null && maximumRating === null) return null;
+
+        const having = [];
+        if (minimumRating !== null) having.push(`AVG("rating") >= ${minimumRating}`);
+        if (maximumRating !== null) having.push(`AVG("rating") <= ${maximumRating}`);
+
+        return this.model.sequelize.literal(`"Package"."id" IN (
+            SELECT "package_id"
+            FROM "reviews"
+            WHERE "package_id" IS NOT NULL
+              AND "reviewable_type" = 'package'
+              AND "status" = 'approved'
+            GROUP BY "package_id"
+            HAVING ${having.join(' AND ')}
+        )`);
+    }
+
+    async filterPackages({ page = 1, limit = 10, minPrice, maxPrice, duration, startDate, endDate, city, country, continent, destination, category, package_category_slug, package_type, travel_type, rating, minRating, maxRating }) {
         const where = {};
         const requestedPackageType = String(package_type || travel_type || '').trim().toLowerCase();
         if (['domestic', 'international'].includes(requestedPackageType)) {
@@ -221,8 +253,13 @@ class PackageRepository extends BaseRepository {
             if (minPrice) where.price[Op.gte] = minPrice;
             if (maxPrice) where.price[Op.lte] = maxPrice;
         }
-        if (duration) {
-            where.duration_days = duration;
+        const durationDays = this.parsePositiveInteger(duration);
+        if (durationDays !== null) {
+            where.duration_days = durationDays;
+        }
+        const ratingCondition = this.ratingFilterCondition({ rating, minRating, maxRating });
+        if (ratingCondition) {
+            where[Op.and] = [...(where[Op.and] || []), ratingCondition];
         }
 
         const destIncludeOptions = {

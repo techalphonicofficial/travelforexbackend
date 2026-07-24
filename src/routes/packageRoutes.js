@@ -101,7 +101,31 @@ const { serializePackageItinerary } = require('../utils/packageItinerary');
  *         name: duration
  *         schema:
  *           type: integer
- *         description: Duration in days of the package
+ *           minimum: 1
+ *           example: 3
+ *         description: Exact duration in days of the package
+ *       - in: query
+ *         name: rating
+ *         schema:
+ *           type: number
+ *           minimum: 1
+ *           maximum: 5
+ *           example: 4
+ *         description: Minimum average approved review rating
+ *       - in: query
+ *         name: minRating
+ *         schema:
+ *           type: number
+ *           minimum: 1
+ *           maximum: 5
+ *         description: Minimum average approved review rating
+ *       - in: query
+ *         name: maxRating
+ *         schema:
+ *           type: number
+ *           minimum: 1
+ *           maximum: 5
+ *         description: Maximum average approved review rating
  *       - in: query
  *         name: startDate
  *         schema:
@@ -177,11 +201,11 @@ const { serializePackageItinerary } = require('../utils/packageItinerary');
  */
 router.get('/', async (req, res) => {
     try {
-        const { page = 1, limit = 10, minPrice, maxPrice, duration, startDate, endDate, city, country, continent, destination, category, package_category_slug } = req.query;
+        const { page = 1, limit = 10, minPrice, maxPrice, duration, startDate, endDate, city, country, continent, destination, category, package_category_slug, rating, minRating, maxRating } = req.query;
         const package_type = req.query.package_type || req.query.travel_type;
         let data;
-        if (minPrice || maxPrice || duration || startDate || endDate || city || country || continent || destination || category || package_category_slug || package_type) {
-            data = await packageRepo.filterPackages({ page, limit, minPrice, maxPrice, duration, startDate, endDate, city, country, continent, destination, category, package_category_slug, package_type });
+        if (minPrice || maxPrice || duration || startDate || endDate || city || country || continent || destination || category || package_category_slug || package_type || rating || minRating || maxRating) {
+            data = await packageRepo.filterPackages({ page, limit, minPrice, maxPrice, duration, startDate, endDate, city, country, continent, destination, category, package_category_slug, package_type, rating, minRating, maxRating });
         } else {
             data = await packageRepo.findAll({ page, limit });
         }
