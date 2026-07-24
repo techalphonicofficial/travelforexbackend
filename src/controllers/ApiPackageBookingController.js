@@ -1181,6 +1181,7 @@ class ApiPackageBookingController {
       const Customer = this.models.Customer;
       const User = this.models.User;
       const Package = this.models.Package;
+      const BookingPassenger = this.models.BookingPassenger || this.models.PackageBooking.associations.passengers?.target;
       const authUser = req.user || {};
       const authUserType = clean(authUser.type).toLowerCase();
       const privilegedTypes = ['admin', 'manager', 'super_admin'];
@@ -1280,8 +1281,27 @@ class ApiPackageBookingController {
       if (authUserType === 'vendor' && !isPrivileged) where.vendor_id = authUser.id;
 
       const include = [
-        Package ? { model: Package, as: 'package', required: false, attributes: ['id', 'name', 'slug', 'price', 'duration_days', 'main_image', 'main_image_alt'] } : null,
-        Customer ? { model: Customer, as: 'customer', required: false, attributes: ['id', 'user_id', 'phone'] } : null
+        Package ? {
+          model: Package,
+          as: 'package',
+          required: false,
+          attributes: [
+            'id', 'name', 'slug', 'sort_order', 'travel_type', 'duration_days',
+            'departure_city', 'price', 'discount_percentage', 'tax_type', 'tax_percent',
+            'status', 'show_in_home_page', 'is_customizable', 'description',
+            'meta_title', 'meta_description', 'meta_keyword', 'schema', 'vendor_id',
+            'main_image', 'main_image_alt', 'created_at', 'updated_at'
+          ]
+        } : null,
+        Customer ? {
+          model: Customer,
+          as: 'customer',
+          required: false,
+          attributes: ['id', 'user_id', 'phone', 'address', 'city', 'state', 'pincode'],
+          include: User ? [{ model: User, as: 'user', required: false, attributes: ['id', 'name', 'email', 'phone_number', 'type', 'status'] }] : []
+        } : null,
+        User ? { model: User, as: 'vendor', required: false, attributes: ['id', 'name', 'email', 'phone_number', 'type', 'status'] } : null,
+        BookingPassenger ? { model: BookingPassenger, as: 'passengers', required: false } : null
       ].filter(Boolean);
 
       const [result, packageTotal, paidTotal, remainingTotal] = await Promise.all([
@@ -1922,6 +1942,16 @@ class ApiPackageBookingController {
       package_id: row.package_id,
       package_slug: row.package_slug,
       package_name: row.package_name,
+      vendor_id: row.vendor_id,
+      customer_id: row.customer_id,
+      from_date: row.from_date,
+      to_date: row.to_date,
+      departure_date: row.departure_date,
+      travel_dates: {
+        from_date: row.from_date,
+        to_date: row.to_date,
+        departure_date: row.departure_date
+      },
       package: row.package ? {
         id: row.package.id,
         name: row.package.name,
@@ -1954,6 +1984,15 @@ class ApiPackageBookingController {
         email: row.customer_email || (row.customer && row.customer.user ? row.customer.user.email : null),
         phone: row.customer_phone || (row.customer && (row.customer.phone || (row.customer.user && row.customer.user.phone_number))) || null
       },
+      vendor: row.vendor ? {
+        id: row.vendor.id,
+        name: row.vendor.name,
+        email: row.vendor.email,
+        phone: row.vendor.phone_number,
+        type: row.vendor.type,
+        status: row.vendor.status
+      } : null,
+      passengers: Array.isArray(row.passengers) ? row.passengers : [],
       amounts: {
         original_package_base_amount: originalPackageBaseAmount,
         package_base_amount: Number(row.package_base_amount || 0),
@@ -1970,11 +2009,26 @@ class ApiPackageBookingController {
         partial_booking_percentage: Number(row.partial_booking_percentage || 0)
       },
       coupon: bookingCoupon,
+      payment: {
+        status: row.payment_status,
+        package_total: Number(row.package_total || 0),
+        paid_amount: Number(row.paid_amount || 0),
+        remaining_amount: Number(row.remaining_amount || 0),
+        razorpay_order_id: row.razorpay_order_id,
+        razorpay_payment_id: row.razorpay_payment_id,
+        verified_at: row.payment_verified_at,
+        remaining_payments: Array.isArray(raw.remaining_payments) ? raw.remaining_payments : []
+      },
+      accounting: {
+        status: row.accounting_status,
+        entry_id: row.accounting_entry_id
+      },
       payment_status: row.payment_status,
       razorpay_order_id: row.razorpay_order_id,
       razorpay_payment_id: row.razorpay_payment_id,
       payment_verified_at: row.payment_verified_at,
       page_url: row.page_url,
+      raw_payload: raw,
       created_at: row.created_at,
       updated_at: row.updated_at
     };
