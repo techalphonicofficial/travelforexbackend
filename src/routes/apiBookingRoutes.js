@@ -477,7 +477,7 @@ router.get('/package/customize', apiAuth, (req, res) => apiPackageBookingControl
  *               amount:
  *                 type: number
  *                 description: Amount paid now. Defaults to full remaining amount when omitted.
- *                 example: 23520
+ *                 example: 22500
  *               razorpay_order_id:
  *                 type: string
  *                 example: order_remaining_123

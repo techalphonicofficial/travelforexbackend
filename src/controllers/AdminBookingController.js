@@ -62,7 +62,7 @@ class AdminBookingController {
             const Destination = this.bookingRepo.CustomTrip.associations.destination.target;
 
             const customers = await this.bookingRepo.Customer.findAll({
-                include: [{ model: User, as: 'user', where: { type: 'customer' } }],
+                include: [{ model: User, as: 'user', required: true }],
                 order: [[{ model: User, as: 'user' }, 'name', 'ASC']]
             });
 
@@ -1057,7 +1057,7 @@ class AdminBookingController {
                 include: [{
                     model: User,
                     as: 'user',
-                    where: { type: 'customer' }
+                    required: true
                 }],
                 order: [[{ model: User, as: 'user' }, 'name', 'ASC']]
             });
@@ -1106,7 +1106,7 @@ class AdminBookingController {
                 include: [{
                     model: User,
                     as: 'user',
-                    where: { type: 'customer' }
+                    required: true
                 }],
                 order: [[{ model: User, as: 'user' }, 'name', 'ASC']]
             });

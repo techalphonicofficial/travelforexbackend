@@ -1434,7 +1434,14 @@ class ApiPackageBookingController {
         return res.status(400).json({ success: false, message: 'Remaining payment amount must be greater than zero.' });
       }
       if (amount - currentRemaining > 0.01) {
-        return res.status(400).json({ success: false, message: 'Payment amount cannot be greater than remaining amount.' });
+        return res.status(400).json({
+          success: false,
+          message: `Payment amount cannot be greater than remaining amount of ${currentRemaining}.`,
+          data: {
+            requested_amount: amount,
+            current_remaining_amount: currentRemaining
+          }
+        });
       }
 
       const paymentReference = clean(payload.razorpay_payment_id || payload.payment_id || payload.transaction_id || payload.reference);
