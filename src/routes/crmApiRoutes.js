@@ -552,7 +552,7 @@
                                                                                                             id: pipeline.id,
                                                                                                             name: pipeline.name,
                                                                                                             stages: pipeline.stages.map(s => ({ id: s.id, name: s.name, color: s.color })),
-                                                                                                            fields: [...baseFields, ...customFields]
+                                                                                                            fields: [...baseFields, ...customFields].sort((a, b) => (a.order || 0) - (b.order || 0))
                                                                                                         }
                                                                                                     });
                                                                                                 } catch (err) {
