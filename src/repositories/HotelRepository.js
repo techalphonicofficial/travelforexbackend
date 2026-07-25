@@ -25,9 +25,14 @@ class HotelRepository {
         const city = this.normalizeText(filters.city);
         const country = this.normalizeText(filters.country);
         const cityId = parseInt(filters.city_id || filters.cityId, 10);
+        const isHotDeal = filters.is_hot_deal === '1' || filters.is_hot_deal === 'true' || filters.is_hot_deal === true;
 
         const where = {};
         const andConditions = [];
+
+        if (filters.is_hot_deal !== undefined && filters.is_hot_deal !== '') {
+            andConditions.push({ is_hot_deal: isHotDeal });
+        }
 
         if (Number.isInteger(cityId) && cityId > 0) {
             andConditions.push({ city_id: cityId });

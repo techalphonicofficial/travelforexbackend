@@ -76,6 +76,11 @@ const Hotel = sequelize.define('Hotel', {
     provider_name: {
         type: DataTypes.STRING(150),
         allowNull: true
+    },
+    is_hot_deal: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
     }
 }, {
     tableName: 'hotels',

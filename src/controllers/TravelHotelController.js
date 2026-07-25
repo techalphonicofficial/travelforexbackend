@@ -46,7 +46,8 @@ class TravelHotelController {
             commission_percent: Number.isFinite(commissionPercent) ? Math.min(Math.max(commissionPercent, 0), 100).toFixed(2) : 0,
             description: body.description,
             source_type: body.source_type || 'manual',
-            provider_name: body.provider_name
+            provider_name: body.provider_name,
+            is_hot_deal: body.is_hot_deal === '1' || body.is_hot_deal === 'true' || body.is_hot_deal === true || body.is_hot_deal === 'on'
         };
     }
 
@@ -254,6 +255,10 @@ class TravelHotelController {
             ];
         }
 
+        if (filters.is_hot_deal) {
+            where.is_hot_deal = true;
+        }
+
         return where;
     }
 
@@ -387,7 +392,8 @@ class TravelHotelController {
             const filters = {
                 search: this.normalizeFilter(req.query.search),
                 country: this.normalizeFilter(req.query.country),
-                city: this.normalizeFilter(req.query.city)
+                city: this.normalizeFilter(req.query.city),
+                is_hot_deal: req.query.is_hot_deal === '1' || req.query.is_hot_deal === 'true'
             };
             const paginationRequest = this.parsePagination(req.query);
 

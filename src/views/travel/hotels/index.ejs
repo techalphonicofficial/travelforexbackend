@@ -26,6 +26,7 @@
         if (activeFilters.search) params.set('search', activeFilters.search);
         if (activeFilters.country) params.set('country', activeFilters.country);
         if (activeFilters.city) params.set('city', activeFilters.city);
+        if (activeFilters.is_hot_deal) params.set('is_hot_deal', '1');
         params.set('limit', selectedLimit);
         params.set('page', pageNo);
         return `/travel/hotels?${params.toString()}`;
@@ -652,6 +653,13 @@
                                         <option value="<%= option %>" <%= selectedLimit === option ? 'selected' : '' %>><%= option %> / page</option>
                                     <% }) %>
                                 </select>
+                            </div>
+
+                            <div class="hotel-filter-field" style="display:flex; align-items:center; height:100%; padding-bottom: 8px;">
+                                <label style="display:flex; align-items:center; gap:0.4rem; margin:0; cursor:pointer;">
+                                    <input type="checkbox" name="is_hot_deal" value="1" <%= activeFilters.is_hot_deal ? 'checked' : '' %>>
+                                    <span class="hotel-filter-label" style="margin:0;"><i class="fas fa-fire text-danger"></i> Hot Deals</span>
+                                </label>
                             </div>
 
                             <button type="submit" class="hotel-filter-btn">

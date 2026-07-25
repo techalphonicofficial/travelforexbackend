@@ -30,6 +30,11 @@ const { repositories: { hotelRepo } } = require('../container');
  *           type: integer
  *         description: Filter by city ID
  *       - in: query
+ *         name: is_hot_deal
+ *         schema:
+ *           type: boolean
+ *         description: Filter by Hot Deal status (true/false)
+ *       - in: query
  *         name: page
  *         schema:
  *           type: integer
@@ -51,6 +56,7 @@ router.get('/', async (req, res) => {
             city: req.query.city,
             city_id: req.query.city_id,
             cityId: req.query.cityId,
+            is_hot_deal: req.query.is_hot_deal,
             page: req.query.page,
             limit: req.query.limit
         });
