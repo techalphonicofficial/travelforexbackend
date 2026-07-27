@@ -3,15 +3,30 @@
     <h2 class="tf-page-title">Blog Posts</h2>
     <p class="tf-page-sub">Manage your blog content and articles</p>
   </div>
-  <a href="/cms/blog/posts/create" class="btn btn-add-primary">
-    <i class="bi bi-plus-lg me-2"></i> New Post
-  </a>
+  <div class="d-flex gap-2 flex-wrap justify-content-end">
+    <button type="button" class="btn btn-outline-danger" id="deleteSelectedPostsBtn" disabled>
+      <i class="bi bi-trash3 me-2"></i> Delete Selected
+    </button>
+    <a href="/cms/blog/posts/create" class="btn btn-add-primary">
+      <i class="bi bi-plus-lg me-2"></i> New Post
+    </a>
+  </div>
+</div>
+
+<div class="mb-3">
+  <div class="input-group" style="max-width: 460px;">
+    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+    <input type="search" class="form-control border-start-0" id="postSearchInput" placeholder="Search blog posts...">
+  </div>
 </div>
 
 <div class="tf-table-wrap">
   <table class="tf-table">
     <thead>
       <tr>
+        <th style="width: 46px;">
+          <input type="checkbox" class="form-check-input" id="selectAllPosts" <%= posts.length ? '' : 'disabled' %>>
+        </th>
         <th>Post</th>
         <th>Category</th>
         <th>Status</th>
@@ -19,9 +34,12 @@
         <th class="text-end">Actions</th>
       </tr>
     </thead>
-    <tbody>
+    <tbody id="postsTableBody">
       <% posts.forEach(post => { %>
-        <tr id="post-<%= post.id %>">
+        <tr id="post-<%= post.id %>" class="post-row">
+          <td>
+            <input type="checkbox" class="form-check-input post-checkbox" value="<%= post.id %>">
+          </td>
           <td>
             <div class="d-flex align-items-center gap-3">
               <% if (post.featured_image) { %>
@@ -67,15 +85,106 @@
           </td>
         </tr>
       <% }) %>
+      <tr id="noPostsRow" style="<%= posts.length ? 'display:none;' : '' %>">
+        <td colspan="6" class="text-center text-muted py-4">No blog posts found.</td>
+      </tr>
     </tbody>
   </table>
 </div>
 
 <script>
+  const searchInput = document.getElementById('postSearchInput');
+  const noPostsRow = document.getElementById('noPostsRow');
+  const selectAllPosts = document.getElementById('selectAllPosts');
+  const deleteSelectedPostsBtn = document.getElementById('deleteSelectedPostsBtn');
+
+  function getPostRows() {
+    return Array.from(document.querySelectorAll('.post-row'));
+  }
+
+  function getVisiblePostRows() {
+    return getPostRows().filter(row => row.style.display !== 'none');
+  }
+
+  function getSelectedCheckboxes() {
+    return Array.from(document.querySelectorAll('.post-checkbox:checked'));
+  }
+
+  function updateSelectionState() {
+    const rows = getPostRows();
+    const visibleRows = getVisiblePostRows();
+    const visibleCheckboxes = visibleRows.map(row => row.querySelector('.post-checkbox'));
+    const selectedVisibleCount = visibleCheckboxes.filter(checkbox => checkbox.checked).length;
+    const selectedCount = getSelectedCheckboxes().length;
+
+    selectAllPosts.disabled = rows.length === 0 || visibleRows.length === 0;
+    selectAllPosts.checked = visibleCheckboxes.length > 0 && selectedVisibleCount === visibleCheckboxes.length;
+    selectAllPosts.indeterminate = selectedVisibleCount > 0 && selectedVisibleCount < visibleCheckboxes.length;
+    deleteSelectedPostsBtn.disabled = selectedCount === 0;
+    deleteSelectedPostsBtn.innerHTML = selectedCount
+      ? `<i class="bi bi-trash3 me-2"></i> Delete Selected (${selectedCount})`
+      : '<i class="bi bi-trash3 me-2"></i> Delete Selected';
+  }
+
+  function updateEmptyState() {
+    const rows = getPostRows();
+    const visibleRows = getVisiblePostRows();
+    noPostsRow.style.display = visibleRows.length ? 'none' : '';
+    updateSelectionState();
+  }
+
+  searchInput.addEventListener('input', () => {
+    const query = searchInput.value.trim().toLowerCase();
+    getPostRows().forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none';
+    });
+    updateEmptyState();
+  });
+
+  selectAllPosts.addEventListener('change', () => {
+    getVisiblePostRows().forEach(row => {
+      row.querySelector('.post-checkbox').checked = selectAllPosts.checked;
+    });
+    updateSelectionState();
+  });
+
+  document.addEventListener('change', event => {
+    if (!event.target.classList.contains('post-checkbox')) return;
+    updateSelectionState();
+  });
+
   async function deletePost(id) {
     if (!confirm('Are you sure you want to delete this post?')) return;
     const res = await fetch(`/cms/blog/posts/${id}`, { method: 'DELETE' });
     const data = await res.json();
-    if (data.success) document.getElementById(`post-${id}`).remove();
+    if (data.success) {
+      document.getElementById(`post-${id}`).remove();
+      updateEmptyState();
+    } else {
+      alert(data.message || 'Unable to delete post.');
+    }
   }
+
+  deleteSelectedPostsBtn.addEventListener('click', async () => {
+    const selectedIds = getSelectedCheckboxes().map(checkbox => checkbox.value);
+    if (!selectedIds.length) return;
+    if (!confirm(`Are you sure you want to delete ${selectedIds.length} selected blog post(s)? This cannot be undone.`)) return;
+    deleteSelectedPostsBtn.disabled = true;
+    deleteSelectedPostsBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Deleting...';
+
+    try {
+      await Promise.all(selectedIds.map(async id => {
+        const res = await fetch(`/cms/blog/posts/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message || `Unable to delete post ${id}.`);
+        document.getElementById(`post-${id}`)?.remove();
+      }));
+      updateEmptyState();
+    } catch (err) {
+      alert(err.message);
+      updateSelectionState();
+    } finally {
+      updateSelectionState();
+    }
+  });
 </script>

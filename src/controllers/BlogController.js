@@ -155,6 +155,7 @@ class BlogController {
     async delete(req, res) {
         try {
             await this.blogRepo.deletePost(req.params.id);
+            await this.mediaRepo.deleteByEntity('blog_post', req.params.id);
             res.json({ success: true });
         } catch (err) {
             res.status(500).json({ success: false, message: err.message });

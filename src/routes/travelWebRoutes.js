@@ -1820,7 +1820,8 @@ router.get('/reviews', async (req, res) => {
 
 router.get('/reviews/create', async (req, res) => {
     try {
-        const packages = await packageRepo.findAll();
+        const packageResult = await packageRepo.findAll({ page: 1, limit: 1000 });
+        const packages = packageResult.rows || packageResult;
         res.render('travel/reviews/form', { title: 'Create Video Review', review: null, packages });
     } catch (err) {
         res.status(500).send(err.message);
@@ -1831,7 +1832,8 @@ router.get('/reviews/:id/edit', async (req, res) => {
     try {
         const review = await videoReviewRepo.findById(req.params.id);
         if (!review) return res.status(404).send('Review not found');
-        const packages = await packageRepo.findAll();
+        const packageResult = await packageRepo.findAll({ page: 1, limit: 1000 });
+        const packages = packageResult.rows || packageResult;
         res.render('travel/reviews/form', { title: `Edit Review`, review, packages });
     } catch (err) {
         res.status(500).send(err.message);
