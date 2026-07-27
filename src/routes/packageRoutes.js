@@ -205,11 +205,12 @@ router.get('/', async (req, res) => {
         const package_type = req.query.package_type || req.query.travel_type;
         let data;
         if (minPrice || maxPrice || duration || startDate || endDate || city || country || continent || destination || category || package_category_slug || package_type || rating || minRating || maxRating) {
-            data = await packageRepo.filterPackages({ page, limit, minPrice, maxPrice, duration, startDate, endDate, city, country, continent, destination, category, package_category_slug, package_type, rating, minRating, maxRating });
+            data = await packageRepo.filterPackages({ page, limit, minPrice, maxPrice, duration, startDate, endDate, city, country, continent, destination, category, package_category_slug, package_type, rating, minRating, maxRating, status: true });
         } else {
-            data = await packageRepo.findAll({ page, limit });
+            data = await packageRepo.findAll({ page, limit, status: true });
         }
-        res.json({ success: true, data: data.rows.map(serializePackageItinerary), total: data.count, currentPage: parseInt(page), totalPages: Math.ceil(data.count / limit) });
+        const serializedRows = await Promise.all(data.rows.map(row => serializePackageItinerary(row)));
+        res.json({ success: true, data: serializedRows, total: data.count, currentPage: parseInt(page), totalPages: Math.ceil(data.count / limit) });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -312,8 +313,28 @@ router.get('/filters', async (req, res) => {
  */
 router.get('/destination/:slug', async (req, res) => {
     try {
-        const data = await packageRepo.findByDestinationSlug(req.params.slug);
-        res.json({ success: true, data: data.map(serializePackageItinerary) });
+        const data = await packageRepo.findByDestinationSlug(req.params.slug, { status: true });
+        const serializedData = await Promise.all(data.map(pkg => serializePackageItinerary(pkg)));
+        res.json({ success: true, data: serializedData });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+/**
+ * @swagger
+ * /api/v1/packages/{slug}:
+ *   get:
+ *     summary: Get package by slug
+ *     tags: [Packages]
+ *     parameters:
+ *       - in: path
+ *         name: slug
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -339,7 +360,7 @@ router.get('/destination/:slug', async (req, res) => {
  */
 router.get('/:slug', async (req, res) => {
     try {
-        const data = await packageRepo.findBySlug(req.params.slug);
+        const data = await packageRepo.findBySlug(req.params.slug, { status: true });
 
         if (!data) {
             return res.status(404).json({
@@ -348,9 +369,10 @@ router.get('/:slug', async (req, res) => {
             });
         }
 
+        const serializedData = await serializePackageItinerary(data);
         res.json({
             success: true,
-            data: serializePackageItinerary(data)
+            data: serializedData
         });
 
     } catch (err) {
@@ -380,7 +402,8 @@ router.get('/:slug', async (req, res) => {
 router.post('/', async (req, res) => {
     try {
         const data = await packageRepo.create(req.body);
-        res.status(201).json({ success: true, data });
+        const serializedData = await serializePackageItinerary(data);
+        res.status(201).json({ success: true, data: serializedData });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -406,7 +429,8 @@ router.put('/:id', async (req, res) => {
     try {
         const data = await packageRepo.update(req.params.id, req.body);
         if (!data) return res.status(404).json({ success: false, message: 'Not found' });
-        res.json({ success: true, data });
+        const serializedData = await serializePackageItinerary(data);
+        res.json({ success: true, data: serializedData });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }

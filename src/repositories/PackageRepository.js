@@ -167,9 +167,13 @@ class PackageRepository extends BaseRepository {
         }];
     }
 
-    async findAll({ page = 1, limit = 10 } = {}) {
+    async findAll({ page = 1, limit = 10, status = null, where = {} } = {}) {
         const offset = (page - 1) * limit;
-        return this.model.findAndCountAll({
+        const queryWhere = { ...where };
+        if (status !== null && status !== undefined) {
+            queryWhere.status = status;
+        }
+        const options = {
             include: [
                 { 
                     model: this.packageDestinationModel,
@@ -185,7 +189,11 @@ class PackageRepository extends BaseRepository {
             limit: parseInt(limit),
             offset: parseInt(offset),
             distinct: true
-        });
+        };
+        if (Object.keys(queryWhere).length > 0) {
+            options.where = queryWhere;
+        }
+        return this.model.findAndCountAll(options);
     }
 
     requiredPaginationIncludes(includes = []) {
@@ -242,8 +250,11 @@ class PackageRepository extends BaseRepository {
         )`);
     }
 
-    async filterPackages({ page = 1, limit = 10, minPrice, maxPrice, duration, startDate, endDate, city, country, continent, destination, category, package_category_slug, package_type, travel_type, rating, minRating, maxRating }) {
+    async filterPackages({ page = 1, limit = 10, minPrice, maxPrice, duration, startDate, endDate, city, country, continent, destination, category, package_category_slug, package_type, travel_type, rating, minRating, maxRating, status = true }) {
         const where = {};
+        if (status !== null && status !== undefined) {
+            where.status = status;
+        }
         const requestedPackageType = String(package_type || travel_type || '').trim().toLowerCase();
         if (['domestic', 'international'].includes(requestedPackageType)) {
             where.travel_type = requestedPackageType;
@@ -608,49 +619,55 @@ class PackageRepository extends BaseRepository {
             ]
         };
     }
-async findBySlug(slug) {
-    return this.model.findOne({
-        where: { slug },
 
-        include: [
-            {
-                model: this.packageDestinationModel,
-                as: 'destinations',
-                include: [
-                    {
-                        model: this.destinationModel,
-                        as: 'destination',
-                        include: [this.destinationLocationInclude()]
-                    }
+    async findBySlug(slug, { status = true } = {}) {
+        const where = { slug };
+        if (status !== null && status !== undefined) {
+            where.status = status;
+        }
+        return this.model.findOne({
+            where,
+
+            include: [
+                {
+                    model: this.packageDestinationModel,
+                    as: 'destinations',
+                    include: [
+                        {
+                            model: this.destinationModel,
+                            as: 'destination',
+                            include: [this.destinationLocationInclude()]
+                        }
+                    ]
+                },
+                {
+                    model: this.inclusionModel,
+                    as: 'inclusions'
+                },
+                {
+                    model: this.exclusionModel,
+                    as: 'exclusions'
+                },
+                ...this.highlightInclude(),
+                {
+                    model: this.mediaModel,
+                    as: 'gallery'
+                },
+                ...this.reviewInclude()
+            ],
+
+            order: [
+                [
+                    { model: this.packageDestinationModel, as: 'destinations' },
+                    'order',
+                    'ASC'
                 ]
-            },
-            {
-                model: this.inclusionModel,
-                as: 'inclusions'
-            },
-            {
-                model: this.exclusionModel,
-                as: 'exclusions'
-            },
-            ...this.highlightInclude(),
-            {
-                model: this.mediaModel,
-                as: 'gallery'
-            },
-            ...this.reviewInclude()
-        ],
-
-        order: [
-            [
-                { model: this.packageDestinationModel, as: 'destinations' },
-                'order',
-                'ASC'
             ]
-        ]
-    });
-}
-    async findById(id) {
-        return this.model.findByPk(id, {
+        });
+    }
+
+    async findById(id, { status = null } = {}) {
+        const options = {
             include: [
                 {
                     model: this.packageDestinationModel, as: 'destinations',
@@ -667,7 +684,12 @@ async findBySlug(slug) {
             order: [
                 [{ model: this.packageDestinationModel, as: 'destinations' }, 'order', 'ASC']
             ]
-        });
+        };
+        if (status !== null && status !== undefined) {
+            options.where = { id, status };
+            return this.model.findOne(options);
+        }
+        return this.model.findByPk(id, options);
     }
 
     async delete(id) {
@@ -687,8 +709,13 @@ async findBySlug(slug) {
         return pkg.destroy();
     }
 
-    async findByDestinationSlug(slug) {
+    async findByDestinationSlug(slug, { status = true } = {}) {
+        const where = {};
+        if (status !== null && status !== undefined) {
+            where.status = status;
+        }
         return this.model.findAll({
+            where,
             include: [
                 {
                     model: this.packageDestinationModel,

@@ -119,8 +119,8 @@ class PageController {
         try {
             const page = await this.pageRepo.findBySlug(req.params.slug);
             if (!page) return res.status(404).send('Page not found');
-            res.render('public/page', { 
-                title: page.meta_title || page.title, 
+            res.render('public/page', {
+                title: page.meta_title || page.title,
                 page,
                 layout: 'layouts/public'
             });
@@ -133,10 +133,10 @@ class PageController {
         try {
             const page = await this.pageRepo.findBySlug(req.params.slug);
             if (!page) return res.status(404).json({ success: false, message: 'Page not found' });
-            
+
             // Convert to plain object
             const pageData = page.toJSON();
-            
+
             // Parse json_data in details
             if (pageData.details && pageData.details.length > 0) {
                 pageData.details = pageData.details.map(detail => {

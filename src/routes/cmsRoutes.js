@@ -14,7 +14,7 @@ const storage = multer.diskStorage({
         else if (req.originalUrl.includes('blog')) entity = 'blog';
         else if (req.originalUrl.includes('media')) entity = 'media';
         else if (req.originalUrl.includes('footer')) entity = 'settings';
-        
+
         const dir = `public/uploads/${entity}`;
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
         cb(null, dir);
@@ -27,7 +27,7 @@ const storage = multer.diskStorage({
         else if (req.originalUrl.includes('blog')) prefix = 'blog';
         else if (req.originalUrl.includes('media')) prefix = 'med';
         else if (req.originalUrl.includes('footer')) prefix = 'logo';
-        
+
         cb(null, `${prefix}-${uniqueSuffix}${path.extname(file.originalname)}`);
     }
 });

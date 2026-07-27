@@ -101,8 +101,8 @@ const resolveTour = async (req, res) => {
 
         if (packageRef) {
             const packageRow = /^\d+$/.test(packageRef)
-                ? await packageRepo.findById(packageRef)
-                : await packageRepo.findBySlug(packageRef.toLowerCase());
+                ? await packageRepo.findById(packageRef, { status: true })
+                : await packageRepo.findBySlug(packageRef.toLowerCase(), { status: true });
 
             if (!packageRow) {
                 return res.status(404).json({
@@ -126,7 +126,7 @@ const resolveTour = async (req, res) => {
         }
 
         if (destination) {
-            const packages = await packageRepo.filterPackages({ destination });
+            const packages = await packageRepo.filterPackages({ destination, status: true });
             return res.json({
                 success: true,
                 data: {

@@ -71,12 +71,12 @@ class ApiPackageBookingController {
   async findPackage(payload = {}) {
     const packageId = parseInt(payload.package_id || payload.packageId, 10);
     if (Number.isInteger(packageId) && packageId > 0) {
-      return await this.models.Package.findByPk(packageId);
+      return await this.models.Package.findOne({ where: { id: packageId, status: true } });
     }
 
     const slug = clean(payload.package_slug || payload.packageSlug);
     if (slug) {
-      return await this.models.Package.findOne({ where: { slug } });
+      return await this.models.Package.findOne({ where: { slug, status: true } });
     }
 
     return null;
