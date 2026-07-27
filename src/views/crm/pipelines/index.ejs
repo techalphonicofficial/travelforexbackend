@@ -51,6 +51,9 @@
             <a href="/crm/form-builder?pipeline_id=<%= pipeline.id %>" class="btn btn-sm btn-light border flex-grow-1 fw-bold" title="Form Builder">
               <i class="bi bi-ui-checks me-1"></i> Form
             </a>
+            <button type="button" class="btn btn-sm btn-light border flex-grow-1 fw-bold" onclick="duplicatePipeline(<%= pipeline.id %>)" title="Duplicate Pipeline">
+              <i class="bi bi-copy me-1"></i> Duplicate
+            </button>
           </div>
         </div>
       </div>
@@ -68,5 +71,15 @@ async function deletePipeline(id) {
       else alert('Error: ' + data.message);
     } catch (err) { alert('Network error'); }
   }
+}
+
+async function duplicatePipeline(id) {
+  if (!confirm('Duplicate this pipeline with its stages and form fields?')) return;
+  try {
+    const res = await fetch(`/crm/pipelines/${id}/duplicate`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) location.reload();
+    else alert('Error: ' + data.message);
+  } catch (err) { alert('Network error'); }
 }
 </script>

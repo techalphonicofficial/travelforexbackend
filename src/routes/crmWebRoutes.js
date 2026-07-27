@@ -193,6 +193,14 @@ router.get('/pipelines/create', async (req, res) => {
     res.render('crm/pipelines/form', { title: 'Create Pipeline', pipeline: null });
 });
 
+router.post('/pipelines/:id/duplicate', async (req, res) => {
+    try {
+        const pipeline = await pipelineRepo.duplicate(req.params.id);
+        if (!pipeline) return res.status(404).json({ success: false, message: 'Pipeline not found' });
+        res.json({ success: true, id: pipeline.id });
+    } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+});
+
 router.get('/pipelines/:id/edit', async (req, res) => {
     try {
         const pipeline = await pipelineRepo.findById(req.params.id);

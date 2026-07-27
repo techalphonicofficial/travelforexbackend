@@ -40,7 +40,8 @@
             <table class="table align-middle">
               <thead class="bg-light">
                 <tr>
-                  <th style="width: 50px;">Order</th>
+                  <th style="width: 42px;"></th>
+                  <th style="width: 70px;">Order</th>
                   <th>Label</th>
                   <th>Key</th>
                   <th>Type</th>
@@ -48,10 +49,15 @@
                   <th class="text-end">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="fieldsTableBody">
                 <% pipeline.formFields.sort((a,b) => a.order - b.order).forEach(field => { %>
-                  <tr>
-                    <td><span class="badge bg-light text-dark fw-bold"><%= field.order %></span></td>
+                  <tr class="field-sort-row" data-field-id="<%= field.id %>" draggable="true">
+                    <td>
+                      <button type="button" class="btn btn-sm btn-light border drag-handle" title="Drag to reorder">
+                        <i class="bi bi-grip-vertical"></i>
+                      </button>
+                    </td>
+                    <td><span class="badge bg-light text-dark fw-bold field-order-badge"><%= field.order %></span></td>
                     <td class="fw-bold"><%= field.label %></td>
                     <td><code><%= field.field_key %></code></td>
                     <td><span class="badge bg-soft-info text-info"><%= field.field_type.toUpperCase() %></span></td>
@@ -138,6 +144,9 @@
 <style>
   .btn-icon { width: 32px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; }
   .bg-soft-info { background-color: rgba(13, 202, 240, 0.1); }
+  .drag-handle { width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; cursor: grab; color: #64748b; }
+  .field-sort-row.dragging { opacity: 0.5; }
+  .field-sort-row.drag-over { box-shadow: inset 0 2px 0 #4f46e5; }
 </style>
 
 <script>
@@ -187,6 +196,69 @@
       const data = await res.json();
       if (data.success) location.reload();
     }
+  }
+
+  const fieldsTableBody = document.getElementById('fieldsTableBody');
+  let draggedFieldRow = null;
+
+  function getFieldRows() {
+    return fieldsTableBody ? Array.from(fieldsTableBody.querySelectorAll('.field-sort-row')) : [];
+  }
+
+  function refreshFieldOrderBadges() {
+    getFieldRows().forEach((row, index) => {
+      const badge = row.querySelector('.field-order-badge');
+      if (badge) badge.textContent = index;
+    });
+  }
+
+  async function saveFieldOrder() {
+    const order = getFieldRows().map((row, index) => ({
+      id: row.dataset.fieldId,
+      order: index
+    }));
+
+    const res = await fetch('/crm/form-builder/reorder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message || 'Unable to save field order.');
+  }
+
+  if (fieldsTableBody) {
+    fieldsTableBody.addEventListener('dragstart', event => {
+      const row = event.target.closest('.field-sort-row');
+      if (!row) return;
+      draggedFieldRow = row;
+      row.classList.add('dragging');
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', row.dataset.fieldId);
+    });
+
+    fieldsTableBody.addEventListener('dragover', event => {
+      event.preventDefault();
+      const targetRow = event.target.closest('.field-sort-row');
+      if (!targetRow || targetRow === draggedFieldRow) return;
+      const rect = targetRow.getBoundingClientRect();
+      const shouldInsertAfter = event.clientY > rect.top + rect.height / 2;
+      fieldsTableBody.insertBefore(draggedFieldRow, shouldInsertAfter ? targetRow.nextSibling : targetRow);
+      getFieldRows().forEach(row => row.classList.remove('drag-over'));
+      targetRow.classList.add('drag-over');
+      refreshFieldOrderBadges();
+    });
+
+    fieldsTableBody.addEventListener('dragend', async () => {
+      getFieldRows().forEach(row => row.classList.remove('dragging', 'drag-over'));
+      draggedFieldRow = null;
+      try {
+        await saveFieldOrder();
+      } catch (err) {
+        alert(err.message);
+        location.reload();
+      }
+    });
   }
 
   // Reset modal on close
