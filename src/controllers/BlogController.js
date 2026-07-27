@@ -162,6 +162,27 @@ class BlogController {
         }
     }
 
+    async duplicate(req, res) {
+        try {
+            const post = await this.blogRepo.duplicatePost(req.params.id);
+            if (!post) return res.status(404).json({ success: false, message: 'Blog post not found' });
+
+            if (post.featured_image && this.mediaRepo) {
+                await this.mediaRepo.create({
+                    entity_type: 'blog_post',
+                    entity_id: post.id,
+                    url: post.featured_image,
+                    is_primary: true
+                });
+            }
+
+            res.json({ success: true, post });
+        } catch (err) {
+            console.error('Error duplicating post:', err);
+            res.status(500).json({ success: false, message: err.message });
+        }
+    }
+
     // Public Views
     async renderPublicList(req, res) {
         try {

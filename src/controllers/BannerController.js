@@ -84,6 +84,27 @@ class BannerController {
             res.status(500).json({ success: false, message: err.message });
         }
     }
+
+    async duplicate(req, res) {
+        try {
+            const banner = await this.bannerRepo.duplicate(req.params.id);
+            if (!banner) return res.status(404).json({ success: false, message: 'Banner not found' });
+
+            if (banner.image_path && this.mediaRepo) {
+                await this.mediaRepo.create({
+                    entity_type: 'banner',
+                    entity_id: banner.id,
+                    url: banner.image_path,
+                    is_primary: true
+                });
+            }
+
+            res.json({ success: true, banner });
+        } catch (err) {
+            console.error('Error duplicating banner:', err);
+            res.status(500).json({ success: false, message: err.message });
+        }
+    }
 }
 
 module.exports = BannerController;

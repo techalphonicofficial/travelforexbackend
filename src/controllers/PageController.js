@@ -94,6 +94,27 @@ class PageController {
         }
     }
 
+    async duplicate(req, res) {
+        try {
+            const page = await this.pageRepo.duplicate(req.params.id);
+            if (!page) return res.status(404).json({ success: false, message: 'Page not found' });
+
+            if (page.feature_image && this.mediaRepo) {
+                await this.mediaRepo.create({
+                    entity_type: 'page',
+                    entity_id: page.id,
+                    url: page.feature_image,
+                    is_primary: true
+                });
+            }
+
+            res.json({ success: true, page });
+        } catch (err) {
+            console.error('Error duplicating page:', err);
+            res.status(500).json({ success: false, message: err.message });
+        }
+    }
+
     async renderPublicPage(req, res) {
         try {
             const page = await this.pageRepo.findBySlug(req.params.slug);

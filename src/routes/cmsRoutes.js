@@ -39,6 +39,7 @@ router.get('/pages/create', (req, res) => pageController.create(req, res));
 router.get('/pages/:id/edit', (req, res) => pageController.edit(req, res));
 router.post('/pages/save', upload.single('feature_image'), (req, res) => pageController.store(req, res));
 router.post('/pages/:id/update', upload.single('feature_image'), (req, res) => pageController.update(req, res));
+router.post('/pages/:id/duplicate', (req, res) => pageController.duplicate(req, res));
 router.delete('/pages/:id', (req, res) => pageController.delete(req, res));
 
 // Footer
@@ -89,6 +90,7 @@ router.get('/banners/create', (req, res) => bannerController.create(req, res));
 router.get('/banners/:id/edit', (req, res) => bannerController.edit(req, res));
 router.post('/banners/save', upload.single('image'), (req, res) => bannerController.store(req, res));
 router.post('/banners/:id/update', upload.single('image'), (req, res) => bannerController.update(req, res));
+router.post('/banners/:id/duplicate', (req, res) => bannerController.duplicate(req, res));
 router.delete('/banners/:id', (req, res) => bannerController.delete(req, res));
 
 // Blog Categories
@@ -101,6 +103,7 @@ router.get('/blog/posts/create', (req, res) => blogController.create(req, res));
 router.get('/blog/posts/:id/edit', (req, res) => blogController.edit(req, res));
 router.post('/blog/posts/save', upload.single('featured_image'), (req, res) => blogController.store(req, res));
 router.post('/blog/posts/:id/update', upload.single('featured_image'), (req, res) => blogController.update(req, res));
+router.post('/blog/posts/:id/duplicate', (req, res) => blogController.duplicate(req, res));
 router.delete('/blog/posts/:id', (req, res) => blogController.delete(req, res));
 
 // Media Library

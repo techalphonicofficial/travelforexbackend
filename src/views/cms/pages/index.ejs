@@ -66,6 +66,7 @@
             </td>
             <td style="text-align:right">
               <a href="/cms/pages/<%= page.id %>/edit" class="btn-icon btn-icon-edit me-1" title="Edit"><i class="bi bi-pencil"></i></a>
+              <button class="btn-icon btn-icon-view me-1" onclick="duplicatePage('<%= page.id %>', '<%= page.title.replace(/'/g, "\\'") %>')" title="Duplicate"><i class="bi bi-copy"></i></button>
               <button class="btn-icon btn-icon-del" onclick="confirmDelete('<%= page.id %>', '<%= page.title.replace(/'/g, "\\'") %>')" title="Delete"><i class="bi bi-trash3"></i></button>
             </td>
           </tr>
@@ -107,6 +108,27 @@
         }
       } catch (err) {
         alert('Failed to delete page');
+      }
+    }
+  }
+
+  async function duplicatePage(id, title) {
+    if (confirm(`Are you sure you want to duplicate the page "${title}" with all its sections and SEO?`)) {
+      try {
+        const res = await fetch(`/cms/pages/${id}/duplicate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        const result = await res.json();
+        if (result.success) {
+          location.reload();
+        } else {
+          alert('Error: ' + (result.message || 'Failed to duplicate page'));
+        }
+      } catch (err) {
+        alert('Failed to duplicate page: ' + err.message);
       }
     }
   }

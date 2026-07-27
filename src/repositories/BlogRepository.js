@@ -103,6 +103,63 @@ class BlogRepository {
     async deletePost(id) {
         return await this.BlogPost.destroy({ where: { id } });
     }
+
+    async duplicatePost(id) {
+        const source = await this.BlogPost.findByPk(id, {
+            include: [{ model: this.BlogDetail, as: 'details' }]
+        });
+        if (!source) return null;
+
+        const baseTitle = `${source.title} (Copy)`;
+        const baseSlug = `${source.slug}-copy`;
+        let titleSuffix = 2;
+        let slugSuffix = 2;
+
+        let duplicateTitle = baseTitle;
+        while (await this.BlogPost.count({ where: { title: duplicateTitle } })) {
+            duplicateTitle = `${baseTitle} ${titleSuffix++}`;
+        }
+
+        let duplicateSlug = baseSlug;
+        while (await this.BlogPost.count({ where: { slug: duplicateSlug } })) {
+            duplicateSlug = `${baseSlug}-${slugSuffix++}`;
+        }
+
+        const transaction = await this.BlogPost.sequelize.transaction();
+        try {
+            const post = await this.BlogPost.create({
+                category_id: source.category_id,
+                author_id: source.author_id,
+                title: duplicateTitle,
+                slug: duplicateSlug,
+                summary: source.summary,
+                content: source.content,
+                featured_image: source.featured_image,
+                meta_title: source.meta_title ? `${source.meta_title} (Copy)` : null,
+                meta_description: source.meta_description,
+                meta_keywords: source.meta_keywords,
+                schema_markup: source.schema_markup,
+                status: 'draft',
+                is_featured: source.is_featured
+            }, { transaction });
+
+            if (source.details && source.details.length > 0) {
+                const details = source.details.map(detail => ({
+                    blog_id: post.id,
+                    image: detail.image,
+                    alt_text: detail.alt_text,
+                    content: detail.content
+                }));
+                await this.BlogDetail.bulkCreate(details, { transaction });
+            }
+
+            await transaction.commit();
+            return post;
+        } catch (err) {
+            await transaction.rollback();
+            throw err;
+        }
+    }
 }
 
 module.exports = BlogRepository;

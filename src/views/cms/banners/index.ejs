@@ -54,6 +54,9 @@
               <a href="/cms/banners/<%= banner.id %>/edit" class="btn-icon btn-icon-edit" title="Edit">
                 <i class="bi bi-pencil"></i>
               </a>
+              <button onclick="duplicateBanner(<%= banner.id %>)" class="btn-icon btn-icon-view" title="Duplicate">
+                <i class="bi bi-copy"></i>
+              </button>
               <button onclick="deleteBanner(<%= banner.id %>)" class="btn-icon btn-icon-del" title="Delete">
                 <i class="bi bi-trash"></i>
               </button>
@@ -87,6 +90,21 @@
       }
     } catch (err) {
       alert('Failed to delete banner');
+    }
+  }
+
+  async function duplicateBanner(id) {
+    if (!confirm('Are you sure you want to duplicate this banner?')) return;
+    try {
+      const res = await fetch(`/cms/banners/${id}/duplicate`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        location.reload();
+      } else {
+        alert('Error: ' + (data.message || 'Failed to duplicate banner'));
+      }
+    } catch (err) {
+      alert('Failed to duplicate banner: ' + err.message);
     }
   }
 </script>
