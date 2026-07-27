@@ -73,6 +73,7 @@
                     <div>
                       <div class="fw-bold text-dark d-flex align-items-center gap-2">
                         ${p.name}
+                        ${p.status !== false ? '<span class="badge" style="background-color:#d1fae5; color:#065f46; font-size:0.65rem; border-radius:12px; padding:2px 6px;">Active</span>' : '<span class="badge" style="background-color:#fee2e2; color:#991b1b; font-size:0.65rem; border-radius:12px; padding:2px 6px;">Inactive</span>'}
                         ${p.show_in_home_page ? '<span class="badge" style="background-color:#d1fae5; color:#065f46; font-size:0.65rem; border-radius:12px; padding:2px 6px;">Home Page</span>' : ''}
                       </div>
                       <div class="text-muted small">${p.duration_days} Days / ${Math.max(0, p.duration_days - 1)} Nights • <strong class="text-primary">₹${p.price || 0}</strong></div>

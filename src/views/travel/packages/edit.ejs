@@ -575,6 +575,10 @@
               </div>
               <div class="col-md-12 d-flex flex-wrap gap-4">
                 <div class="form-check form-switch pt-2 pb-2">
+                  <input class="form-check-input" type="checkbox" id="fStatus" role="switch" <%= !pkg || pkg.status !== false ? 'checked' : '' %>>
+                  <label class="form-check-label fw-bold ps-2 text-success" for="fStatus" style="cursor:pointer;">Active Package</label>
+                </div>
+                <div class="form-check form-switch pt-2 pb-2">
                   <input class="form-check-input" type="checkbox" id="showInHomePage" role="switch">
                   <label class="form-check-label fw-bold ps-2" for="showInHomePage">Show in Home Page</label>
                 </div>
@@ -1581,6 +1585,7 @@
       const packageName = document.getElementById('fName').value;
       const slug = document.getElementById('fSlug')?.value.trim() || '';
       const description = document.getElementById('fDesc')?.value || '';
+      const isActive = !!document.getElementById('fStatus')?.checked;
       const showInHomePage = !!document.getElementById('showInHomePage')?.checked;
       const isCustomizable = !!document.getElementById('fIsCustomizable')?.checked;
       const duration = parseInt(document.getElementById('fDays').value) || 0;
@@ -1605,6 +1610,7 @@
         name: packageName,
         slug: slug,
         description: description,
+        status: isActive,
         show_in_home_page: showInHomePage,
         is_customizable: isCustomizable,
         duration: duration,
@@ -1668,6 +1674,7 @@
       if (document.getElementById('fPrice')) document.getElementById('fPrice').value = PKG_DATA.price || '';
       if (document.getElementById('fDiscountPercentage')) document.getElementById('fDiscountPercentage').value = PKG_DATA.discount_percentage || 0;
       if (document.getElementById('fSortOrder')) document.getElementById('fSortOrder').value = PKG_DATA.sort_order ?? 0;
+      if (document.getElementById('fStatus')) document.getElementById('fStatus').checked = PKG_DATA.status !== undefined ? !!PKG_DATA.status : true;
       if (document.getElementById('showInHomePage')) document.getElementById('showInHomePage').checked = !!PKG_DATA.show_in_home_page;
       if (document.getElementById('fIsCustomizable')) document.getElementById('fIsCustomizable').checked = !!PKG_DATA.is_customizable;
       if (document.getElementById('fMainImageAlt')) document.getElementById('fMainImageAlt').value = PKG_DATA.main_image_alt || '';

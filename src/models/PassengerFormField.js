@@ -6,7 +6,7 @@ const PassengerFormField = sequelize.define('PassengerFormField', {
     label: { type: DataTypes.STRING, allowNull: false },
     field_key: { type: DataTypes.STRING, allowNull: false, unique: true },
     field_type: {
-        type: DataTypes.ENUM('text', 'number', 'select', 'date', 'textarea', 'checkbox', 'email', 'phone'),
+        type: DataTypes.ENUM('text', 'number', 'select', 'date', 'time', 'textarea', 'checkbox', 'email', 'phone'),
         defaultValue: 'text'
     },
     options: { type: DataTypes.JSONB, defaultValue: [] },

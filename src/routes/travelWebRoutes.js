@@ -1658,7 +1658,8 @@ router.post('/packages/activity-image', handleUpload(upload.single('activity_ima
 });
 
 router.post('/packages/save', async (req, res) => {
-    const { id, name, duration, departure_city, price, description, show_in_home_page, main_image, main_image_alt, destinations, inclusions, exclusions, highlights, package_categories, meta_title, meta_description, meta_keyword, schema } = req.body;
+    const { id, name, duration, departure_city, price, description, status, show_in_home_page, main_image, main_image_alt, destinations, inclusions, exclusions, highlights, package_categories, meta_title, meta_description, meta_keyword, schema } = req.body;
+    const is_active = status !== undefined ? (status === true || status === 'true' || status === 'on' || status === 1 || status === '1') : true;
     const normalizedHighlights = normalizePackageHighlights(highlights);
     const is_customizable = req.body.is_customizable === true || req.body.is_customizable === 'true' || req.body.is_customizable === 'on' || req.body.is_customizable === 1 || req.body.is_customizable === '1';
     const slug = (req.body.slug || name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');

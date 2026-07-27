@@ -519,12 +519,24 @@
                                         <option value="<%= tax.name %>" data-percent="<%= tax.percent %>"><%= tax.name %> (<%= tax.percent %>%)</option>
                                     <% }) %>
                                 </select>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Tax Type</label>
+                                <select class="form-select" id="taxType">
+                                    <option value="" data-percent="0">Select Tax Type</option>
+                                    <% (taxTypes || []).forEach(tax => { %>
+                                        <option value="<%= tax.name %>" data-percent="<%= tax.percent %>"><%= tax.name %> (<%= tax.percent %>%)</option>
+                                    <% }) %>
+                                </select>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Tax %</label>
                                 <input type="number" class="form-control bg-light" id="taxPercent" value="0" readonly>
                             </div>
                             <div class="col-md-12 d-flex flex-wrap gap-4">
+                                <div class="form-check form-switch pt-2 pb-2">
+                                    <input class="form-check-input" type="checkbox" id="fStatus" role="switch" checked>
+                                    <label class="form-check-label fw-bold ps-2 text-success" for="fStatus" style="cursor:pointer;">Active Package</label>
+                                </div>
                                 <div class="form-check form-switch pt-2 pb-2">
                                     <input class="form-check-input" type="checkbox" id="showInHomePage" role="switch">
                                     <label class="form-check-label fw-bold ps-2" for="showInHomePage">Show in Home Page</label>
@@ -1512,6 +1524,7 @@
             const departureCity = document.getElementById('departureCity')?.value.trim() || '';
             const price = parseInt(document.getElementById('price').value) || 0;
             const description = document.getElementById('description').value;
+            const isActive = !!document.getElementById('fStatus')?.checked;
             const showInHomePage = !!document.getElementById('showInHomePage')?.checked;
             const isCustomizable = !!document.getElementById('isCustomizable')?.checked;
             const discountPercentage = parseFloat(document.getElementById('discountPercentage')?.value) || 0;
@@ -1544,14 +1557,6 @@
                 meta_description: document.getElementById('metaDescription')?.value.trim() || null,
                 meta_keyword: document.getElementById('metaKeyword')?.value.trim() || null,
                 schema: document.getElementById('metaSchema')?.value.trim() || null,
-                show_in_home_page: showInHomePage,
-                is_customizable: isCustomizable,
-                package_categories: Array.from(document.querySelectorAll('.package-category-checkbox:checked')).map(cb => cb.value),
-                main_image: document.getElementById('fMainImage').value,
-                main_image_alt: document.getElementById('fMainImageAlt').value,
-                destinations: destinations.map(dest => ({
-                    destinationId: dest.destinationId,
-                    nights: dest.nights,
                     activities: dest.activities,
                     hotels: dest.hotels || []
                 })),
