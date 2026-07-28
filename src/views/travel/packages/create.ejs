@@ -1557,6 +1557,9 @@
                 meta_description: document.getElementById('metaDescription')?.value.trim() || null,
                 meta_keyword: document.getElementById('metaKeyword')?.value.trim() || null,
                 schema: document.getElementById('metaSchema')?.value.trim() || null,
+                destinations: destinations.map(dest => ({
+                    destinationId: dest.destinationId,
+                    nights: dest.nights,
                     activities: dest.activities,
                     hotels: dest.hotels || []
                 })),
