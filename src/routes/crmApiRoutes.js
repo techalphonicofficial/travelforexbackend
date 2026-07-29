@@ -188,6 +188,10 @@
                                                                                             *                       type: string
                                                                                             *                     company_logo_url:
                                                                                             *                       type: string
+                                                                                            *                     its_logo_url:
+                                                                                            *                       type: string
+                                                                                            *                     currency_logo_url:
+                                                                                            *                       type: string
                                                                                             *                     footer_columns:
                                                                                             *                       type: object
                                                                                             *                       description: Nested object containing arrays of links for company, explore, support, and trust_safety columns
@@ -213,6 +217,8 @@
                                                                                                     const footer_content = await appSettingRepo.get('footer_content') || '';
                                                                                                     
                                                                                                     const company_logo_url = await appSettingRepo.get('company_logo_url') || '';
+                                                                                                    const its_logo_url = await appSettingRepo.get('its_logo_url') || '';
+                                                                                                    const currency_logo_url = await appSettingRepo.get('currency_logo_url') || '';
                                                                                                     const rawFooterColumns = await appSettingRepo.get('footer_columns');
                                                                                                     let footer_columns = { company: [], explore: [], support: [], trust_safety: [] };
                                                                                                     if (rawFooterColumns) {
@@ -242,6 +248,8 @@
                                                                                                             },
                                                                                                             footer_content,
                                                                                                             company_logo_url,
+                                                                                                            its_logo_url,
+                                                                                                            currency_logo_url,
                                                                                                             footer_columns
                                                                                                         }
                                                                                                     });

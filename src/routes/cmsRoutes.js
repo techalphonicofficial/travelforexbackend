@@ -46,6 +46,8 @@ router.delete('/pages/:id', (req, res) => pageController.delete(req, res));
 router.get('/footer', async (req, res) => {
     try {
         const company_logo_url = await appSettingRepo.get('company_logo_url') || '';
+        const its_logo_url = await appSettingRepo.get('its_logo_url') || '';
+        const currency_logo_url = await appSettingRepo.get('currency_logo_url') || '';
         const footer_content = await appSettingRepo.get('footer_content') || '';
         const rawFooterColumns = await appSettingRepo.get('footer_columns');
         let footer_columns = { company: [], explore: [], support: [], trust_safety: [] };
@@ -55,6 +57,8 @@ router.get('/footer', async (req, res) => {
         res.render('cms/footer/index', {
             title: 'Footer Settings',
             company_logo_url,
+            its_logo_url,
+            currency_logo_url,
             footer_content,
             footer_columns
         });
@@ -63,16 +67,31 @@ router.get('/footer', async (req, res) => {
     }
 });
 
-router.post('/footer/save', upload.single('company_logo_file'), async (req, res) => {
+router.post('/footer/save', upload.fields([
+    { name: 'company_logo_file', maxCount: 1 },
+    { name: 'its_logo_file', maxCount: 1 },
+    { name: 'currency_logo_file', maxCount: 1 }
+]), async (req, res) => {
     try {
         let company_logo_url = req.body.company_logo_url || '';
-        if (req.file) {
-            company_logo_url = `/uploads/settings/${req.file.filename}`;
+        let its_logo_url = req.body.its_logo_url || '';
+        let currency_logo_url = req.body.currency_logo_url || '';
+
+        if (req.files?.company_logo_file?.[0]) {
+            company_logo_url = `/uploads/settings/${req.files.company_logo_file[0].filename}`;
+        }
+        if (req.files?.its_logo_file?.[0]) {
+            its_logo_url = `/uploads/settings/${req.files.its_logo_file[0].filename}`;
+        }
+        if (req.files?.currency_logo_file?.[0]) {
+            currency_logo_url = `/uploads/settings/${req.files.currency_logo_file[0].filename}`;
         }
         const { footer_content, footer_columns } = req.body;
 
         await appSettingRepo.set('footer_content', footer_content || '');
         await appSettingRepo.set('company_logo_url', company_logo_url || '');
+        await appSettingRepo.set('its_logo_url', its_logo_url || '');
+        await appSettingRepo.set('currency_logo_url', currency_logo_url || '');
 
         if (footer_columns) {
             await appSettingRepo.set('footer_columns', typeof footer_columns === 'string' ? footer_columns : JSON.stringify(footer_columns));
