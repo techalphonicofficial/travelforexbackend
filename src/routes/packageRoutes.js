@@ -335,25 +335,6 @@ router.get('/destination/:slug', async (req, res) => {
  *           type: string
  *     responses:
  *       200:
-    } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
-    }
-});
-
-/**
- * @swagger
- * /api/v1/packages/{slug}:
- *   get:
- *     summary: Get package by slug
- *     tags: [Packages]
- *     parameters:
- *       - in: path
- *         name: slug
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
  *         description: Package details
  *       404:
  *         description: Package not found

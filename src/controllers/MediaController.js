@@ -1,3 +1,7 @@
+const fs = require('fs');
+const path = require('path');
+const { Op } = require('sequelize');
+
 class MediaController {
     constructor(mediaRepo) {
         this.mediaRepo = mediaRepo;
@@ -8,13 +12,22 @@ class MediaController {
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 20;
             const offset = (page - 1) * limit;
+            const search = (req.query.search || '').trim();
+            const where = search ? {
+                [Op.or]: [
+                    { label: { [Op.iLike]: `%${search}%` } },
+                    { alt_text: { [Op.iLike]: `%${search}%` } },
+                    { url: { [Op.iLike]: `%${search}%` } }
+                ]
+            } : {};
 
             const media = await this.mediaRepo.Media.findAll({
+                where,
                 order: [['created_at', 'DESC']],
                 limit: limit,
                 offset: offset
             });
-            const total = await this.mediaRepo.Media.count();
+            const total = await this.mediaRepo.Media.count({ where });
             const hasMore = offset + media.length < total;
 
             res.json({ success: true, data: media, hasMore, page, total });
@@ -39,6 +52,30 @@ class MediaController {
             res.json({ success: true, data: media });
         } catch (err) {
             console.error('[MediaController.upload] Error:', err);
+            res.status(500).json({ success: false, message: err.message });
+        }
+    }
+
+    async delete(req, res) {
+        try {
+            const media = await this.mediaRepo.Media.findByPk(req.params.id);
+            if (!media) {
+                return res.status(404).json({ success: false, message: 'Media not found' });
+            }
+
+            const publicRoot = path.resolve(__dirname, '..', '..', 'public');
+            const relativeUrl = String(media.url || '').replace(/^\/+/, '');
+            const filePath = path.resolve(publicRoot, relativeUrl);
+
+            await media.destroy();
+
+            if (filePath.startsWith(publicRoot) && fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
+
+            res.json({ success: true, message: 'Media deleted successfully' });
+        } catch (err) {
+            console.error('[MediaController.delete] Error:', err);
             res.status(500).json({ success: false, message: err.message });
         }
     }

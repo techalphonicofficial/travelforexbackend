@@ -128,5 +128,6 @@ router.delete('/blog/posts/:id', (req, res) => blogController.delete(req, res));
 // Media Library
 router.get('/media/all', (req, res) => mediaController.getAll(req, res));
 router.post('/media/upload', upload.single('media'), (req, res) => mediaController.upload(req, res));
+router.delete('/media/:id', (req, res) => mediaController.delete(req, res));
 
 module.exports = router;
