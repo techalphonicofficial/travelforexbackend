@@ -591,6 +591,9 @@
   let hasMoreMedia = true;
   let isMediaLoading = false;
   let mediaSearchTimer = null;
+  let pendingMediaReload = false;
+  let mediaRequestId = 0;
+  let loadedMediaItems = [];
 
   function escapeMediaText(value) {
     const div = document.createElement('div');
@@ -598,7 +601,84 @@
     return div.innerHTML;
   }
 
+  function finishMediaLibraryLoad() {
+    isMediaLoading = false;
+    if (pendingMediaReload) {
+      pendingMediaReload = false;
+      loadMediaLibrary(true);
+    }
+  }
+
+  function normalizeMediaSearch(value) {
+    return String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+
+  function mediaSearchText(media) {
+    return [media.label, media.alt_text, media.url, String(media.url || '').split('/').pop()]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+  }
+
+  function mediaMatchesSearch(media, search) {
+    const query = String(search || '').trim().toLowerCase();
+    if (!query) return true;
+
+    const queryWithoutExt = query.replace(/\.[a-z0-9]+$/i, '');
+    const text = mediaSearchText(media);
+    const compactText = normalizeMediaSearch(text);
+    const compactQuery = normalizeMediaSearch(query);
+
+    return text.includes(query)
+      || (queryWithoutExt && text.includes(queryWithoutExt))
+      || (compactQuery && compactText.includes(compactQuery));
+  }
+
+  function mediaCardHtml(m) {
+    const isVideo = m.url && m.url.match(/\.(mp4|webm|ogg|mov|avi)$/i);
+    const mediaUrl = JSON.stringify(m.url || '');
+    const mediaLabel = escapeMediaText(m.label || 'Unnamed');
+    const safeUrl = escapeMediaText(m.url || '');
+
+    return `
+      <div class="col-md-3 col-6 mb-3">
+        <div class="media-item border rounded-3 p-1 position-relative" style="cursor:pointer" onclick='selectMedia(${mediaUrl})'>
+          <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 py-0 px-1" style="z-index:2" title="Delete media" onclick="deleteMediaItem(event, ${m.id})">
+            <i class="bi bi-trash"></i>
+          </button>
+          ${isVideo
+            ? `<video src="${safeUrl}" style="height:100px; width:100%; object-fit:cover; background:#000;" class="rounded-2" muted></video><div style="position:absolute; top:5px; right:5px; background:rgba(0,0,0,0.5); color:#fff; border-radius:4px; padding:2px 5px; font-size:10px;"><i class="bi bi-camera-video"></i></div>`
+            : `<img src="${safeUrl}" class="img-fluid rounded-2" style="height:100px; width:100%; object-fit:cover;">`}
+          <div class="media-info small text-truncate mt-1 px-1">${mediaLabel}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderMediaGrid(items, search = '') {
+    const container = document.getElementById('mediaGrid');
+    if (!container) return;
+
+    if (items.length === 0) {
+      const searchText = escapeMediaText(search);
+      container.innerHTML = `<div class="text-center text-muted py-5 w-100">No media found${searchText ? ` for "${searchText}"` : ''}</div>`;
+      return;
+    }
+
+    container.innerHTML = items.map(mediaCardHtml).join('');
+  }
+
+  function filterMediaGrid(value) {
+    const search = String(value || '');
+    renderMediaGrid(loadedMediaItems.filter(item => mediaMatchesSearch(item, search)), search.trim());
+  }
+
   async function loadMediaLibrary(reset = false) {
+    if (reset && isMediaLoading) {
+        pendingMediaReload = true;
+        mediaRequestId++;
+        return;
+    }
     if (reset) {
         currentMediaPage = 1;
         hasMoreMedia = true;
@@ -607,6 +687,7 @@
     if (!hasMoreMedia || isMediaLoading) return;
     
     isMediaLoading = true;
+    const requestId = ++mediaRequestId;
     const container = document.getElementById('mediaGrid');
     
     const loadingIndicator = document.createElement('div');
@@ -616,51 +697,31 @@
 
     try {
       const search = document.getElementById('mediaSearchInput')?.value.trim() || '';
-      const res = await fetch(`/cms/media/all?page=${currentMediaPage}&limit=16&search=${encodeURIComponent(search)}`);
+      const res = await fetch('/cms/media/all?page=1&limit=500');
       const result = await res.json();
+      if (requestId !== mediaRequestId) {
+        finishMediaLibraryLoad();
+        return;
+      }
       
       const loader = container.querySelector('.media-loading-indicator');
       if (loader) loader.remove();
 
       if (result.success) {
-        if (reset && result.data.length === 0) {
-          const searchText = escapeMediaText(document.getElementById('mediaSearchInput')?.value.trim() || '');
-          container.innerHTML = `<div class="text-center text-muted py-5 w-100">No media found${searchText ? ` for "${searchText}"` : ''}</div>`;
-          return;
-        }
-        const html = result.data.map(m => {
-          const isVideo = m.url && m.url.match(/\.(mp4|webm|ogg|mov|avi)$/i);
-          const mediaUrl = JSON.stringify(m.url || '');
-          const mediaLabel = escapeMediaText(m.label || 'Unnamed');
-          return `
-          <div class="col-md-3 col-6 mb-3">
-            <div class="media-item border rounded-3 p-1 position-relative" style="cursor:pointer" onclick='selectMedia(${mediaUrl})'>
-              <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 py-0 px-1" style="z-index:2" title="Delete media" onclick="deleteMediaItem(event, ${m.id})">
-                <i class="bi bi-trash"></i>
-              </button>
-              ${isVideo 
-                ? `<video src="${m.url}" style="height:100px; width:100%; object-fit:cover; background:#000;" class="rounded-2" muted></video><div style="position:absolute; top:5px; right:5px; background:rgba(0,0,0,0.5); color:#fff; border-radius:4px; padding:2px 5px; font-size:10px;"><i class="bi bi-camera-video"></i></div>` 
-                : `<img src="${m.url}" class="img-fluid rounded-2" style="height:100px; width:100%; object-fit:cover;">`}
-              <div class="media-info small text-truncate mt-1 px-1">${mediaLabel}</div>
-            </div>
-          </div>
-        `}).join('');
-        container.insertAdjacentHTML('beforeend', html);
-        
-        hasMoreMedia = result.hasMore;
-        if (hasMoreMedia) {
-            const loadMoreBtn = document.createElement('div');
-            loadMoreBtn.className = 'col-12 text-center mt-3 mb-3 media-load-more-container';
-            loadMoreBtn.innerHTML = '<button type="button" class="btn btn-outline-primary btn-sm px-4 rounded-pill" onclick="loadMoreMedia()">Load More</button>';
-            container.appendChild(loadMoreBtn);
-        }
+        loadedMediaItems = result.data || [];
+        hasMoreMedia = false;
+        renderMediaGrid(loadedMediaItems.filter(item => mediaMatchesSearch(item, search)), search);
       }
     } catch (e) {
+      if (requestId !== mediaRequestId) {
+        finishMediaLibraryLoad();
+        return;
+      }
       const loader = container.querySelector('.media-loading-indicator');
       if (loader) loader.remove();
       container.insertAdjacentHTML('beforeend', '<div class="alert alert-danger w-100">Failed to load media</div>');
     }
-    isMediaLoading = false;
+    finishMediaLibraryLoad();
   }
 
   function loadMoreMedia() {
@@ -672,8 +733,17 @@
 
   function searchMediaLibrary() {
     clearTimeout(mediaSearchTimer);
-    mediaSearchTimer = setTimeout(() => loadMediaLibrary(true), 250);
+    mediaSearchTimer = setTimeout(() => {
+      const search = document.getElementById('mediaSearchInput')?.value || '';
+      filterMediaGrid(search);
+    }, 80);
   }
+
+  document.addEventListener('input', function (event) {
+    if (event.target && event.target.id === 'mediaSearchInput') {
+      searchMediaLibrary();
+    }
+  });
 
   function openMediaLibrary(btn) {
     activeMediaTarget = btn.closest('.media-selector-wrap') || btn.parentElement;
@@ -1241,7 +1311,7 @@
       <div class="modal-body p-4">
         <div class="input-group mb-3">
           <span class="input-group-text"><i class="bi bi-search"></i></span>
-          <input type="search" id="mediaSearchInput" class="form-control" placeholder="Search images" oninput="searchMediaLibrary()">
+          <input type="search" id="mediaSearchInput" class="form-control" placeholder="Search images" oninput="filterMediaGrid(this.value)" onkeyup="filterMediaGrid(this.value)" onchange="filterMediaGrid(this.value)">
         </div>
         <div id="mediaGrid" class="row g-3">
           <!-- Loaded via JS -->
