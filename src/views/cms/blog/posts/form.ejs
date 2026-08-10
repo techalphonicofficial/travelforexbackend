@@ -317,7 +317,8 @@
       const result = await res.json();
       if (result.success) {
         if (result.data.length === 0) {
-          container.innerHTML = '<div class="text-center text-muted py-5 w-100">No media found</div>';
+          const searchText = escapeMediaText(document.getElementById('mediaSearchInput')?.value.trim() || '');
+          container.innerHTML = `<div class="text-center text-muted py-5 w-100">No media found${searchText ? ` for "${searchText}"` : ''}</div>`;
           return;
         }
         container.innerHTML = result.data.map(m => {

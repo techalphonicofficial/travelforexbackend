@@ -624,7 +624,9 @@
 
       if (result.success) {
         if (reset && result.data.length === 0) {
-          container.innerHTML = '<div class="text-center text-muted py-5 w-100">No media found</div>';
+          const searchText = escapeMediaText(document.getElementById('mediaSearchInput')?.value.trim() || '');
+          container.innerHTML = `<div class="text-center text-muted py-5 w-100">No media found${searchText ? ` for "${searchText}"` : ''}</div>`;
+          return;
         }
         const html = result.data.map(m => {
           const isVideo = m.url && m.url.match(/\.(mp4|webm|ogg|mov|avi)$/i);

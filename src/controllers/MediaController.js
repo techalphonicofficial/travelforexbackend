@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { Op } = require('sequelize');
+const { Op, Sequelize } = require('sequelize');
 
 class MediaController {
     constructor(mediaRepo) {
@@ -13,11 +13,38 @@ class MediaController {
             const limit = parseInt(req.query.limit) || 20;
             const offset = (page - 1) * limit;
             const search = (req.query.search || '').trim();
+            const searchBase = search.replace(/\.[a-z0-9]+$/i, '');
+            const compactSearch = search.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const compactField = Sequelize.fn(
+                'regexp_replace',
+                Sequelize.fn(
+                    'lower',
+                    Sequelize.fn(
+                        'concat',
+                        Sequelize.fn('coalesce', Sequelize.col('label'), ''),
+                        ' ',
+                        Sequelize.fn('coalesce', Sequelize.col('alt_text'), ''),
+                        ' ',
+                        Sequelize.fn('coalesce', Sequelize.col('url'), '')
+                    )
+                ),
+                '[^a-z0-9]',
+                '',
+                'g'
+            );
             const where = search ? {
                 [Op.or]: [
                     { label: { [Op.iLike]: `%${search}%` } },
                     { alt_text: { [Op.iLike]: `%${search}%` } },
-                    { url: { [Op.iLike]: `%${search}%` } }
+                    { url: { [Op.iLike]: `%${search}%` } },
+                    ...(searchBase && searchBase !== search ? [
+                        { label: { [Op.iLike]: `%${searchBase}%` } },
+                        { alt_text: { [Op.iLike]: `%${searchBase}%` } },
+                        { url: { [Op.iLike]: `%${searchBase}%` } }
+                    ] : []),
+                    ...(compactSearch ? [
+                        Sequelize.where(compactField, { [Op.like]: `%${compactSearch}%` })
+                    ] : [])
                 ]
             } : {};
 
