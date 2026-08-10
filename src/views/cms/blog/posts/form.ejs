@@ -326,7 +326,7 @@
           const mediaLabel = escapeMediaText(m.label || 'Unnamed');
           return `
           <div class="col-md-3 col-6 mb-3">
-            <div class="media-item border rounded-3 p-1 position-relative" style="cursor:pointer" onclick="selectMedia(${mediaUrl})">
+            <div class="media-item border rounded-3 p-1 position-relative" style="cursor:pointer" onclick='selectMedia(${mediaUrl})'>
               <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 py-0 px-1" style="z-index:2" title="Delete media" onclick="deleteMediaItem(event, ${m.id})">
                 <i class="bi bi-trash"></i>
               </button>
