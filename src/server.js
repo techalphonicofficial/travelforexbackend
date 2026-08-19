@@ -457,6 +457,11 @@ app.use('/cms', isAuthenticated, enforceWebPermission, cmsRoutes);
 app.use('/newsletter-subscribers', isAuthenticated, enforceWebPermission, newsletterWebRoutes);
 app.use('/page', publicRoutes);
 
+// Shortcut redirects → Media Library
+app.get('/gallery', isAuthenticated, (req, res) => res.redirect('/cms/media'));
+app.get('/media', isAuthenticated, (req, res) => res.redirect('/cms/media'));
+
+
 const redirectTourLink = async (req, res) => {
   try {
     const rawSlug = String(req.params.slug || req.query.package || req.query.package_slug || req.query.slug || '').trim();

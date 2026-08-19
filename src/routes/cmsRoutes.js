@@ -119,6 +119,10 @@ router.post('/blog/categories', (req, res) => blogController.storeCategory(req, 
 // Blog Posts
 router.get('/blog/posts', (req, res) => blogController.index(req, res));
 router.get('/blog/posts/create', (req, res) => blogController.create(req, res));
+
+// Blog Posts
+router.get('/blog/posts', (req, res) => blogController.index(req, res));
+router.get('/blog/posts/create', (req, res) => blogController.create(req, res));
 router.get('/blog/posts/:id/edit', (req, res) => blogController.edit(req, res));
 router.post('/blog/posts/save', upload.single('featured_image'), (req, res) => blogController.store(req, res));
 router.post('/blog/posts/:id/update', upload.single('featured_image'), (req, res) => blogController.update(req, res));
@@ -126,6 +130,7 @@ router.post('/blog/posts/:id/duplicate', (req, res) => blogController.duplicate(
 router.delete('/blog/posts/:id', (req, res) => blogController.delete(req, res));
 
 // Media Library
+router.get('/media', (req, res) => res.render('cms/media/index', { title: 'Media Library' }));
 router.get('/media/all', (req, res) => mediaController.getAll(req, res));
 router.post('/media/upload', upload.single('media'), (req, res) => mediaController.upload(req, res));
 router.delete('/media/:id', (req, res) => mediaController.delete(req, res));

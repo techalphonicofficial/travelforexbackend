@@ -1248,16 +1248,17 @@
                         </div>
                     </li>
                     <li>
-                        <a class="nav-link-item <%= title && (title.includes('Page') || title === 'Footer Settings') ? 'active' : '' %>"
+                        <a class="nav-link-item <%= title && (title.includes('Page') || title === 'Footer Settings' || title === 'Media Library') ? 'active' : '' %>"
                             data-bs-toggle="collapse" href="#pagesCollapse"
-                            aria-expanded="<%= title && (title.includes('Page') || title === 'Footer Settings') ? 'true' : 'false' %>">
+                            aria-expanded="<%= title && (title.includes('Page') || title === 'Footer Settings' || title === 'Media Library') ? 'true' : 'false' %>">
                             <span class="nav-label-row"><i class="bi bi-file-earmark-richtext nav-icon"></i> Pages</span>
                             <i class="bi bi-chevron-down chevron"></i>
                         </a>
-                        <div class="collapse <%= title && (title.includes('Page') || title === 'Footer Settings') ? 'show' : '' %>" id="pagesCollapse">
+                        <div class="collapse <%= title && (title.includes('Page') || title === 'Footer Settings' || title === 'Media Library') ? 'show' : '' %>" id="pagesCollapse">
                             <ul class="nav-sub list-unstyled">
                                 <li><a href="/cms/pages" class="nav-link-item <%= title && title.includes('Page') && title !== 'Footer Settings' ? 'active' : '' %>"><i class="bi bi-file-earmark nav-icon"></i> All Pages</a></li>
                                 <li><a href="/cms/footer" class="nav-link-item <%= title === 'Footer Settings' ? 'active' : '' %>"><i class="bi bi-layout-text-window nav-icon"></i> Footer Settings</a></li>
+                                <li><a href="/cms/media" class="nav-link-item <%= title === 'Media Library' ? 'active' : '' %>"><i class="bi bi-images nav-icon"></i> Media Library</a></li>
                             </ul>
                         </div>
                     </li>
@@ -1275,6 +1276,7 @@
                             </ul>
                         </div>
                     </li>
+
                     <li>
                         <a class="nav-link-item <%= title && title.includes('Accounting') || title && (title.includes('Ledger')||title.includes('Trial')||title.includes('Profit')||title.includes('Journal')||title.includes('Voucher')||title.includes('Chart of')) ? 'active' : '' %>"
                             data-bs-toggle="collapse" href="#accountingCollapse"

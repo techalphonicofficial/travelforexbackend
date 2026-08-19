@@ -1,0 +1,329 @@
+<%- contentFor('body') %>
+
+<div class="container-fluid p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 fw-bold">Media Library</h1>
+            <p class="text-muted small mb-0" id="mediaSubtitle">Loading...</p>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <input type="file" id="pageUploadInput" class="d-none" accept="image/*,video/*" multiple onchange="uploadFromPage(this)">
+            <button type="button" class="btn btn-primary px-4" onclick="document.getElementById('pageUploadInput').click()">
+                <i class="bi bi-cloud-upload me-1"></i> Upload Media
+            </button>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <!-- Tabs + Search -->
+        <div class="card-header bg-white py-0 border-bottom">
+            <div class="d-flex justify-content-between align-items-center">
+                <ul class="nav nav-tabs border-0" id="mediaTabs">
+                    <li class="nav-item">
+                        <button class="nav-link active px-4 py-3 fw-semibold" data-tab="all" onclick="switchTab('all', this)" type="button">
+                            <i class="bi bi-grid-3x3-gap me-1"></i> All
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link px-4 py-3 fw-semibold" data-tab="image" onclick="switchTab('image', this)" type="button">
+                            <i class="bi bi-image me-1"></i> Images
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link px-4 py-3 fw-semibold" data-tab="video" onclick="switchTab('video', this)" type="button">
+                            <i class="bi bi-camera-video me-1"></i> Videos
+                        </button>
+                    </li>
+                </ul>
+                <div class="input-group" style="max-width:260px;">
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="search" id="mediaSearchInput" class="form-control border-start-0 bg-light" placeholder="Search..." oninput="onSearch()">
+                </div>
+            </div>
+        </div>
+
+        <!-- Grid -->
+        <div class="card-body" style="background:#f8f9fb; min-height:300px;">
+            <div id="mediaGrid" class="row g-3"></div>
+            <!-- Chunk loader -->
+            <div id="chunkLoader" class="text-center py-4" style="display:none">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="text-muted small mt-2 mb-0">Loading more...</p>
+            </div>
+            <!-- End marker (triggers infinite scroll) -->
+            <div id="scrollAnchor" style="height:1px;"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="card-footer bg-white border-top py-2 px-4">
+            <small class="text-muted" id="mediaFooter">—</small>
+        </div>
+    </div>
+</div>
+
+<style>
+#mediaTabs .nav-link {
+    color: #6b7280; border: none;
+    border-bottom: 3px solid transparent;
+    border-radius: 0; transition: all .2s;
+}
+#mediaTabs .nav-link:hover { color: #4f46e5; }
+#mediaTabs .nav-link.active {
+    color: #4f46e5;
+    border-bottom-color: #4f46e5;
+    background: transparent;
+}
+.media-card {
+    border-radius: 10px; overflow: hidden;
+    transition: transform .15s, box-shadow .15s;
+    border: 1px solid #e5e7eb !important;
+    background: #fff;
+}
+.media-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,.12)!important; }
+.media-card .del-btn,
+.media-card .copy-btn { opacity:0; transition: opacity .15s; }
+.media-card:hover .del-btn,
+.media-card:hover .copy-btn { opacity:1; }
+.media-thumb { height:130px; width:100%; object-fit:cover; display:block; background:#eee; }
+</style>
+
+<script>
+/* ── State ─────────────────────────────────────────────── */
+const CHUNK_SIZE   = 24;   // items per request
+let currentTab     = 'all';
+let currentSearch  = '';
+let currentPage    = 1;
+let isLoading      = false;
+let hasMore        = true;
+let totalItems     = 0;
+let loadedCount    = 0;
+let searchTimer    = null;
+let reqId          = 0;
+
+/* ── Init ───────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+    resetAndLoad();
+    setupInfiniteScroll();
+});
+
+/* ── Infinite Scroll via IntersectionObserver ───────────── */
+function setupInfiniteScroll() {
+    const anchor = document.getElementById('scrollAnchor');
+    const observer = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting && !isLoading && hasMore) {
+            loadChunk();
+        }
+    }, { rootMargin: '200px' });
+    observer.observe(anchor);
+}
+
+/* ── Tab / Search ───────────────────────────────────────── */
+function switchTab(tab, btn) {
+    currentTab = tab;
+    document.querySelectorAll('#mediaTabs .nav-link').forEach(el => el.classList.remove('active'));
+    btn.classList.add('active');
+    resetAndLoad();
+}
+
+function onSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+        currentSearch = (document.getElementById('mediaSearchInput')?.value || '').trim();
+        resetAndLoad();
+    }, 350);
+}
+
+/* ── Reset grid and start fresh ─────────────────────────── */
+function resetAndLoad() {
+    currentPage  = 1;
+    hasMore      = true;
+    loadedCount  = 0;
+    totalItems   = 0;
+    reqId++;
+    document.getElementById('mediaGrid').innerHTML = '';
+    document.getElementById('mediaFooter').textContent = '—';
+    document.getElementById('mediaSubtitle').textContent = 'Loading...';
+    loadChunk();
+}
+
+/* ── Load one chunk from server ─────────────────────────── */
+async function loadChunk() {
+    if (isLoading || !hasMore) return;
+    isLoading = true;
+    const myReqId = reqId;
+
+    showLoader(true);
+
+    try {
+        const params = new URLSearchParams({
+            page:  currentPage,
+            limit: CHUNK_SIZE,
+            ...(currentSearch  ? { search: currentSearch }  : {}),
+            ...(currentTab !== 'all' ? { type: currentTab } : {})
+        });
+
+        const res    = await fetch(`/cms/media/all?${params}`);
+        const result = await res.json();
+
+        if (myReqId !== reqId) return; // stale response — a new search/tab started
+
+        if (!result.success) {
+            showError('Failed to load media. Please try again.');
+            return;
+        }
+
+        const items = result.data || [];
+        hasMore     = result.hasMore ?? false;
+        totalItems  = result.total  ?? 0;
+        loadedCount += items.length;
+        currentPage++;
+
+        appendCards(items);
+        updateFooter();
+
+    } catch (e) {
+        if (myReqId !== reqId) return;
+        showError('Network error. Please refresh.');
+    } finally {
+        if (myReqId === reqId) {
+            isLoading = false;
+            showLoader(false);
+        }
+    }
+}
+
+/* ── Render cards ───────────────────────────────────────── */
+function appendCards(items) {
+    const grid = document.getElementById('mediaGrid');
+
+    if (items.length === 0 && loadedCount === 0) {
+        const msg = currentSearch
+            ? `No results for "<strong>${escHtml(currentSearch)}</strong>"`
+            : 'No media found. Upload some files to get started.';
+        grid.innerHTML = `<div class="text-center text-muted py-5 w-100">
+            <i class="bi bi-images fs-1 d-block mb-2 opacity-25"></i>${msg}</div>`;
+        return;
+    }
+
+    items.forEach(m => {
+        const isVideo = m.url && /\.(mp4|webm|ogg|mov|avi)$/i.test(m.url);
+        const safeUrl = escHtml(m.url || '');
+        const label   = escHtml(m.label || m.url?.split('/').pop() || 'Unnamed');
+        const jsonUrl = JSON.stringify(m.url || '');
+
+        const col = document.createElement('div');
+        col.className = 'col-xl-2 col-lg-3 col-md-4 col-sm-6 col-6';
+        col.innerHTML = `
+            <div class="media-card card h-100 shadow-sm border-0">
+                <div class="position-relative" style="overflow:hidden">
+                    <button class="btn btn-sm btn-danger del-btn position-absolute top-0 end-0 m-1 py-0 px-1 rounded-2"
+                        style="z-index:3;font-size:11px" title="Delete"
+                        onclick="deleteMedia(event,${m.id})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                    <button class="btn btn-sm btn-light copy-btn position-absolute top-0 start-0 m-1 py-0 px-1 rounded-2"
+                        style="z-index:3;font-size:11px" title="Copy URL"
+                        onclick="copyUrl(event,${jsonUrl})">
+                        <i class="bi bi-clipboard"></i>
+                    </button>
+                    ${isVideo
+                        ? `<video src="${safeUrl}" class="media-thumb" muted preload="metadata"></video>
+                           <span class="badge bg-dark position-absolute bottom-0 start-0 m-1"
+                                 style="font-size:9px"><i class="bi bi-camera-video"></i> Video</span>`
+                        : `<img src="${safeUrl}" class="media-thumb" loading="lazy"
+                               onerror="this.src='/assets/img/placeholder.png'">`}
+                </div>
+                <div class="card-body p-2">
+                    <small class="text-muted d-block text-truncate" title="${label}"
+                           style="font-size:11px">${label}</small>
+                </div>
+            </div>`;
+        grid.appendChild(col);
+    });
+}
+
+/* ── Footer text ────────────────────────────────────────── */
+function updateFooter() {
+    const sub  = document.getElementById('mediaSubtitle');
+    const foot = document.getElementById('mediaFooter');
+    const typ  = currentTab === 'all' ? 'items' : currentTab + 's';
+    sub.textContent  = `${totalItems} ${typ} total`;
+    foot.textContent = hasMore
+        ? `Showing ${loadedCount} of ${totalItems} ${typ}`
+        : `All ${loadedCount} ${typ} loaded`;
+}
+
+/* ── Loader ─────────────────────────────────────────────── */
+function showLoader(show) {
+    document.getElementById('chunkLoader').style.display = show ? 'block' : 'none';
+}
+
+function showError(msg) {
+    document.getElementById('mediaGrid').insertAdjacentHTML('beforeend',
+        `<div class="alert alert-danger w-100 mt-2">${msg}</div>`);
+}
+
+/* ── Upload ─────────────────────────────────────────────── */
+async function uploadFromPage(input) {
+    if (!input.files?.length) return;
+    const files = Array.from(input.files);
+
+    const grid   = document.getElementById('mediaGrid');
+    const banner = document.createElement('div');
+    banner.className = 'col-12';
+    banner.innerHTML = `<div class="alert alert-info mb-0">
+        <div class="spinner-border spinner-border-sm me-2"></div>
+        Uploading ${files.length} file(s)...</div>`;
+    grid.prepend(banner);
+
+    let uploaded = 0;
+    for (const file of files) {
+        const fd = new FormData();
+        fd.append('media', file);
+        fd.append('entity_type', 'page');
+        try {
+            const r = await fetch('/cms/media/upload', { method:'POST', body:fd });
+            if ((await r.json()).success) uploaded++;
+        } catch (_) {}
+    }
+
+    banner.remove();
+    input.value = '';
+    resetAndLoad();
+    if (uploaded < files.length)
+        alert(`Uploaded ${uploaded} of ${files.length} files. Some may have failed.`);
+}
+
+/* ── Delete ─────────────────────────────────────────────── */
+async function deleteMedia(event, id) {
+    event.preventDefault(); event.stopPropagation();
+    if (!confirm('Delete this media item? This cannot be undone.')) return;
+    try {
+        const r = await fetch(`/cms/media/${id}`, { method:'DELETE' });
+        const result = await r.json();
+        if (result.success) {
+            resetAndLoad();
+        } else {
+            alert('Delete failed: ' + result.message);
+        }
+    } catch (_) { alert('Error deleting media.'); }
+}
+
+/* ── Copy URL ───────────────────────────────────────────── */
+function copyUrl(event, url) {
+    event.preventDefault(); event.stopPropagation();
+    navigator.clipboard.writeText(url).then(() => {
+        const btn  = event.currentTarget;
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check text-success" style="font-size:11px"></i>';
+        setTimeout(() => btn.innerHTML = orig, 1500);
+    });
+}
+
+/* ── Helpers ────────────────────────────────────────────── */
+function escHtml(str) {
+    return String(str||'')
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+</script>

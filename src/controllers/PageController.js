@@ -161,8 +161,10 @@ class PageController {
     async store(req, res) {
         try {
             const data = req.body;
+            let imagePath = null;
             if (req.file) {
-                data.feature_image = `/uploads/pages/${req.file.filename}`;
+                imagePath = `/uploads/pages/${req.file.filename}`;
+                data.feature_image = imagePath;
             }
 
             // Parse sections from flat or nested body
