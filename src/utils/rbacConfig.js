@@ -104,10 +104,11 @@ const NAV_ITEMS = [
     href: '/cms/pages',
     icon: 'bi-file-earmark-richtext',
     stripIcon: 'bi-file-earmark-richtext-fill',
-    active: title => title && (title.includes('Page') || title === 'Footer Settings'),
+    active: title => title && (title.includes('Page') || title === 'Footer Settings' || title === 'Media Library'),
     children: [
       { key: 'all_pages', module: 'Pages', permission: 'All Pages', label: 'All Pages', href: '/cms/pages', icon: 'bi-file-earmark', active: title => title && title.includes('Page') && title !== 'Footer Settings', routePrefixes: ['/cms/pages'] },
-      { key: 'footer_settings', module: 'Pages', permission: 'Footer Settings', label: 'Footer Settings', href: '/cms/footer', icon: 'bi-layout-text-window', active: title => title === 'Footer Settings', routePrefixes: ['/cms/footer'] }
+      { key: 'footer_settings', module: 'Pages', permission: 'Footer Settings', label: 'Footer Settings', href: '/cms/footer', icon: 'bi-layout-text-window', active: title => title === 'Footer Settings', routePrefixes: ['/cms/footer'] },
+      { key: 'media_library', module: 'Pages', permission: 'Media Library', label: 'Media Library', href: '/cms/media', icon: 'bi-images', active: title => title === 'Media Library', routePrefixes: ['/cms/media'] }
     ]
   },
   {
