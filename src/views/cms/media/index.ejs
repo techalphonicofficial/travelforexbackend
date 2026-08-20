@@ -17,7 +17,7 @@
     <div class="card shadow-sm border-0">
         <!-- Tabs + Search -->
         <div class="card-header bg-white py-0 border-bottom">
-            <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <ul class="nav nav-tabs border-0" id="mediaTabs">
                     <li class="nav-item">
                         <button class="nav-link active px-4 py-3 fw-semibold" data-tab="all" onclick="switchTab('all', this)" type="button">
@@ -34,6 +34,11 @@
                             <i class="bi bi-camera-video me-1"></i> Videos
                         </button>
                     </li>
+                    <li class="nav-item">
+                        <button class="nav-link px-4 py-3 fw-semibold" data-tab="gallery" onclick="switchTab('gallery', this)" type="button">
+                            <i class="bi bi-layout-masonry me-1"></i> Gallery View
+                        </button>
+                    </li>
                 </ul>
                 <div class="input-group" style="max-width:260px;">
                     <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
@@ -43,20 +48,30 @@
         </div>
 
         <!-- Grid -->
-        <div class="card-body" style="background:#f8f9fb; min-height:300px;">
+        <div class="card-body p-3" style="background:#f8f9fb; min-height:300px;">
             <div id="mediaGrid" class="row g-3"></div>
-            <!-- Chunk loader -->
+
+            <!-- Loading spinner (shown during fetch) -->
             <div id="chunkLoader" class="text-center py-4" style="display:none">
                 <div class="spinner-border text-primary" role="status"></div>
                 <p class="text-muted small mt-2 mb-0">Loading more...</p>
             </div>
-            <!-- End marker (triggers infinite scroll) -->
+
+            <!-- Load More Button -->
+            <div id="loadMoreWrap" class="text-center py-3" style="display:none">
+                <button class="btn btn-outline-primary px-5 rounded-pill" onclick="loadChunk()">
+                    <i class="bi bi-arrow-down-circle me-1"></i> Load More
+                </button>
+            </div>
+
+            <!-- Invisible scroll anchor for IntersectionObserver -->
             <div id="scrollAnchor" style="height:1px;"></div>
         </div>
 
         <!-- Footer -->
-        <div class="card-footer bg-white border-top py-2 px-4">
+        <div class="card-footer bg-white border-top py-2 px-4 d-flex justify-content-between align-items-center">
             <small class="text-muted" id="mediaFooter">—</small>
+            <small class="text-muted" id="mediaPageInfo"></small>
         </div>
     </div>
 </div>
@@ -66,6 +81,7 @@
     color: #6b7280; border: none;
     border-bottom: 3px solid transparent;
     border-radius: 0; transition: all .2s;
+    white-space: nowrap;
 }
 #mediaTabs .nav-link:hover { color: #4f46e5; }
 #mediaTabs .nav-link.active {
@@ -73,6 +89,8 @@
     border-bottom-color: #4f46e5;
     background: transparent;
 }
+
+/* Grid view card */
 .media-card {
     border-radius: 10px; overflow: hidden;
     transition: transform .15s, box-shadow .15s;
@@ -85,46 +103,116 @@
 .media-card:hover .del-btn,
 .media-card:hover .copy-btn { opacity:1; }
 .media-thumb { height:130px; width:100%; object-fit:cover; display:block; background:#eee; }
+
+/* Gallery (masonry) view */
+#mediaGrid.gallery-mode {
+    column-count: 5;
+    column-gap: 12px;
+    display: block !important;
+}
+@media(max-width:1200px){ #mediaGrid.gallery-mode { column-count:4; } }
+@media(max-width:900px) { #mediaGrid.gallery-mode { column-count:3; } }
+@media(max-width:600px) { #mediaGrid.gallery-mode { column-count:2; } }
+
+#mediaGrid.gallery-mode .gallery-item {
+    break-inside: avoid;
+    margin-bottom: 12px;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    background: #111;
+}
+#mediaGrid.gallery-mode .gallery-item img,
+#mediaGrid.gallery-mode .gallery-item video {
+    width: 100%; display: block; border-radius: 10px;
+    transition: transform .2s;
+}
+#mediaGrid.gallery-mode .gallery-item:hover img,
+#mediaGrid.gallery-mode .gallery-item:hover video {
+    transform: scale(1.03);
+}
+#mediaGrid.gallery-mode .gallery-overlay {
+    position: absolute; inset:0; background: rgba(0,0,0,0.45);
+    opacity:0; transition: opacity .2s; border-radius:10px;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+}
+#mediaGrid.gallery-mode .gallery-item:hover .gallery-overlay { opacity:1; }
+
+/* Lightbox */
+#mediaLightbox { display:none; position:fixed; inset:0; background:rgba(0,0,0,.9);
+    z-index:9999; align-items:center; justify-content:center; flex-direction:column; }
+#mediaLightbox.open { display:flex; }
+#mediaLightbox img, #mediaLightbox video { max-width:90vw; max-height:80vh; border-radius:8px; }
+#mediaLightbox .lb-close {
+    position:absolute; top:20px; right:24px; font-size:2rem;
+    color:#fff; cursor:pointer; line-height:1;
+}
+#mediaLightbox .lb-label {
+    margin-top:12px; color:#ccc; font-size:13px; text-align:center;
+}
 </style>
+
+<!-- Lightbox -->
+<div id="mediaLightbox">
+    <span class="lb-close" onclick="closeLightbox()">&times;</span>
+    <img id="lbImg" src="" alt="" style="display:none">
+    <video id="lbVideo" src="" controls style="display:none"></video>
+    <div class="lb-label" id="lbLabel"></div>
+</div>
 
 <script>
 /* ── State ─────────────────────────────────────────────── */
-const CHUNK_SIZE   = 24;   // items per request
-let currentTab     = 'all';
-let currentSearch  = '';
-let currentPage    = 1;
-let isLoading      = false;
-let hasMore        = true;
-let totalItems     = 0;
-let loadedCount    = 0;
-let searchTimer    = null;
-let reqId          = 0;
+const CHUNK_SIZE  = 24;
+let currentTab    = 'all';
+let currentSearch = '';
+let currentPage   = 1;
+let isLoading     = false;
+let hasMore       = true;
+let totalItems    = 0;
+let loadedCount   = 0;
+let searchTimer   = null;
+let reqId         = 0;
+let galleryMode   = false;
 
 /* ── Init ───────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
     resetAndLoad();
     setupInfiniteScroll();
+    // Close lightbox on background click
+    document.getElementById('mediaLightbox').addEventListener('click', function(e){
+        if (e.target === this) closeLightbox();
+    });
 });
 
-/* ── Infinite Scroll via IntersectionObserver ───────────── */
+/* ── Infinite Scroll ────────────────────────────────────── */
 function setupInfiniteScroll() {
     const anchor = document.getElementById('scrollAnchor');
     const observer = new IntersectionObserver(entries => {
         if (entries[0].isIntersecting && !isLoading && hasMore) {
             loadChunk();
         }
-    }, { rootMargin: '200px' });
+    }, { rootMargin: '300px' });
     observer.observe(anchor);
 }
 
-/* ── Tab / Search ───────────────────────────────────────── */
+/* ── Tab switch ─────────────────────────────────────────── */
 function switchTab(tab, btn) {
-    currentTab = tab;
+    galleryMode = tab === 'gallery';
+    currentTab  = galleryMode ? 'all' : tab;
     document.querySelectorAll('#mediaTabs .nav-link').forEach(el => el.classList.remove('active'));
     btn.classList.add('active');
+
+    const grid = document.getElementById('mediaGrid');
+    if (galleryMode) {
+        grid.classList.add('gallery-mode');
+    } else {
+        grid.classList.remove('gallery-mode');
+    }
     resetAndLoad();
 }
 
+/* ── Search ─────────────────────────────────────────────── */
 function onSearch() {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => {
@@ -133,52 +221,61 @@ function onSearch() {
     }, 350);
 }
 
-/* ── Reset grid and start fresh ─────────────────────────── */
+/* ── Reset & reload from page 1 ─────────────────────────── */
 function resetAndLoad() {
-    currentPage  = 1;
-    hasMore      = true;
-    loadedCount  = 0;
-    totalItems   = 0;
+    currentPage = 1;
+    hasMore     = true;
+    loadedCount = 0;
+    totalItems  = 0;
     reqId++;
-    document.getElementById('mediaGrid').innerHTML = '';
+    const grid = document.getElementById('mediaGrid');
+    if (galleryMode) {
+        grid.classList.add('gallery-mode');
+        grid.innerHTML = '';
+    } else {
+        grid.classList.remove('gallery-mode');
+        grid.innerHTML = '';
+    }
     document.getElementById('mediaFooter').textContent = '—';
     document.getElementById('mediaSubtitle').textContent = 'Loading...';
+    document.getElementById('loadMoreWrap').style.display = 'none';
     loadChunk();
 }
 
-/* ── Load one chunk from server ─────────────────────────── */
+/* ── Load one chunk ──────────────────────────────────────── */
 async function loadChunk() {
     if (isLoading || !hasMore) return;
     isLoading = true;
     const myReqId = reqId;
 
-    showLoader(true);
+    document.getElementById('chunkLoader').style.display   = 'block';
+    document.getElementById('loadMoreWrap').style.display  = 'none';
 
     try {
         const params = new URLSearchParams({
             page:  currentPage,
             limit: CHUNK_SIZE,
-            ...(currentSearch  ? { search: currentSearch }  : {}),
-            ...(currentTab !== 'all' ? { type: currentTab } : {})
+            ...(currentSearch           ? { search: currentSearch } : {}),
+            ...(currentTab !== 'all'    ? { type:   currentTab }    : {})
         });
 
         const res    = await fetch(`/cms/media/all?${params}`);
         const result = await res.json();
+        if (myReqId !== reqId) return;
 
-        if (myReqId !== reqId) return; // stale response — a new search/tab started
+        if (!result.success) { showError('Failed to load media. Please try again.'); return; }
 
-        if (!result.success) {
-            showError('Failed to load media. Please try again.');
-            return;
-        }
-
-        const items = result.data || [];
-        hasMore     = result.hasMore ?? false;
-        totalItems  = result.total  ?? 0;
-        loadedCount += items.length;
+        const items   = result.data || [];
+        hasMore       = result.hasMore ?? false;
+        totalItems    = result.total   ?? 0;
+        loadedCount  += items.length;
         currentPage++;
 
-        appendCards(items);
+        if (galleryMode) {
+            appendGalleryCards(items);
+        } else {
+            appendGridCards(items);
+        }
         updateFooter();
 
     } catch (e) {
@@ -187,26 +284,28 @@ async function loadChunk() {
     } finally {
         if (myReqId === reqId) {
             isLoading = false;
-            showLoader(false);
+            document.getElementById('chunkLoader').style.display = 'none';
+            // Show Load More button if there are more items
+            document.getElementById('loadMoreWrap').style.display = hasMore ? 'block' : 'none';
         }
     }
 }
 
-/* ── Render cards ───────────────────────────────────────── */
-function appendCards(items) {
+/* ── Grid cards (normal tabs) ───────────────────────────── */
+function appendGridCards(items) {
     const grid = document.getElementById('mediaGrid');
 
     if (items.length === 0 && loadedCount === 0) {
         const msg = currentSearch
             ? `No results for "<strong>${escHtml(currentSearch)}</strong>"`
-            : 'No media found. Upload some files to get started.';
+            : 'No media found. Click <strong>Upload Media</strong> to get started.';
         grid.innerHTML = `<div class="text-center text-muted py-5 w-100">
             <i class="bi bi-images fs-1 d-block mb-2 opacity-25"></i>${msg}</div>`;
         return;
     }
 
     items.forEach(m => {
-        const isVideo = m.url && /\.(mp4|webm|ogg|mov|avi)$/i.test(m.url);
+        const isVideo = isVideoUrl(m.url);
         const safeUrl = escHtml(m.url || '');
         const label   = escHtml(m.label || m.url?.split('/').pop() || 'Unnamed');
         const jsonUrl = JSON.stringify(m.url || '');
@@ -217,21 +316,21 @@ function appendCards(items) {
             <div class="media-card card h-100 shadow-sm border-0">
                 <div class="position-relative" style="overflow:hidden">
                     <button class="btn btn-sm btn-danger del-btn position-absolute top-0 end-0 m-1 py-0 px-1 rounded-2"
-                        style="z-index:3;font-size:11px" title="Delete"
-                        onclick="deleteMedia(event,${m.id})">
+                        style="z-index:3;font-size:11px" title="Delete" onclick="deleteMedia(event,${m.id})">
                         <i class="bi bi-trash"></i>
                     </button>
                     <button class="btn btn-sm btn-light copy-btn position-absolute top-0 start-0 m-1 py-0 px-1 rounded-2"
-                        style="z-index:3;font-size:11px" title="Copy URL"
-                        onclick="copyUrl(event,${jsonUrl})">
+                        style="z-index:3;font-size:11px" title="Copy URL" onclick="copyUrl(event,${jsonUrl})">
                         <i class="bi bi-clipboard"></i>
                     </button>
                     ${isVideo
-                        ? `<video src="${safeUrl}" class="media-thumb" muted preload="metadata"></video>
+                        ? `<video src="${safeUrl}" class="media-thumb" muted preload="metadata"
+                               onclick="openLightbox(${jsonUrl},'${label}',true)" style="cursor:pointer"></video>
                            <span class="badge bg-dark position-absolute bottom-0 start-0 m-1"
                                  style="font-size:9px"><i class="bi bi-camera-video"></i> Video</span>`
                         : `<img src="${safeUrl}" class="media-thumb" loading="lazy"
-                               onerror="this.src='/assets/img/placeholder.png'">`}
+                               onerror="this.src='/assets/img/placeholder.png'"
+                               onclick="openLightbox(${jsonUrl},'${label}',false)" style="cursor:pointer">`}
                 </div>
                 <div class="card-body p-2">
                     <small class="text-muted d-block text-truncate" title="${label}"
@@ -242,26 +341,82 @@ function appendCards(items) {
     });
 }
 
-/* ── Footer text ────────────────────────────────────────── */
+/* ── Gallery (masonry) cards ────────────────────────────── */
+function appendGalleryCards(items) {
+    const grid = document.getElementById('mediaGrid');
+
+    if (items.length === 0 && loadedCount === 0) {
+        grid.classList.remove('gallery-mode');
+        grid.innerHTML = `<div class="text-center text-muted py-5 w-100">
+            <i class="bi bi-images fs-1 d-block mb-2 opacity-25"></i>No media found.</div>`;
+        return;
+    }
+
+    items.forEach(m => {
+        const isVideo = isVideoUrl(m.url);
+        const safeUrl = escHtml(m.url || '');
+        const label   = escHtml(m.label || m.url?.split('/').pop() || '');
+        const jsonUrl = JSON.stringify(m.url || '');
+
+        const item = document.createElement('div');
+        item.className = 'gallery-item';
+        item.innerHTML = `
+            ${isVideo
+                ? `<video src="${safeUrl}" muted preload="metadata"></video>`
+                : `<img src="${safeUrl}" loading="lazy" onerror="this.src='/assets/img/placeholder.png'">`}
+            <div class="gallery-overlay">
+                <button class="btn btn-sm btn-light py-1 px-2" onclick="openLightbox(${jsonUrl},'${label}',${isVideo})" title="View">
+                    <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn btn-sm btn-light py-1 px-2" onclick="copyUrl(event,${jsonUrl})" title="Copy URL">
+                    <i class="bi bi-clipboard"></i>
+                </button>
+                <button class="btn btn-sm btn-danger py-1 px-2" onclick="deleteMedia(event,${m.id})" title="Delete">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+            ${label ? `<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.6));color:#fff;font-size:10px;padding:18px 6px 5px;border-radius:0 0 10px 10px;pointer-events:none">${label}</div>` : ''}
+        `;
+        grid.appendChild(item);
+    });
+}
+
+/* ── Footer ─────────────────────────────────────────────── */
 function updateFooter() {
-    const sub  = document.getElementById('mediaSubtitle');
-    const foot = document.getElementById('mediaFooter');
     const typ  = currentTab === 'all' ? 'items' : currentTab + 's';
-    sub.textContent  = `${totalItems} ${typ} total`;
-    foot.textContent = hasMore
-        ? `Showing ${loadedCount} of ${totalItems} ${typ}`
+    document.getElementById('mediaSubtitle').textContent = `${totalItems} ${typ} total`;
+    document.getElementById('mediaFooter').textContent   = hasMore
+        ? `Showing ${loadedCount} of ${totalItems} — scroll down or click Load More`
         : `All ${loadedCount} ${typ} loaded`;
+    document.getElementById('mediaPageInfo').textContent = `Page ${currentPage - 1}`;
 }
 
-/* ── Loader ─────────────────────────────────────────────── */
-function showLoader(show) {
-    document.getElementById('chunkLoader').style.display = show ? 'block' : 'none';
+/* ── Lightbox ───────────────────────────────────────────── */
+function openLightbox(url, label, isVideo) {
+    const lb    = document.getElementById('mediaLightbox');
+    const img   = document.getElementById('lbImg');
+    const video = document.getElementById('lbVideo');
+    const lbl   = document.getElementById('lbLabel');
+    if (isVideo) {
+        video.src = url; video.style.display = 'block';
+        img.style.display = 'none'; img.src = '';
+    } else {
+        img.src = url; img.style.display = 'block';
+        video.style.display = 'none'; video.src = '';
+    }
+    lbl.textContent = label;
+    lb.classList.add('open');
+    document.body.style.overflow = 'hidden';
 }
-
-function showError(msg) {
-    document.getElementById('mediaGrid').insertAdjacentHTML('beforeend',
-        `<div class="alert alert-danger w-100 mt-2">${msg}</div>`);
+function closeLightbox() {
+    const lb    = document.getElementById('mediaLightbox');
+    const video = document.getElementById('lbVideo');
+    video.pause(); video.src = '';
+    document.getElementById('lbImg').src = '';
+    lb.classList.remove('open');
+    document.body.style.overflow = '';
 }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
 /* ── Upload ─────────────────────────────────────────────── */
 async function uploadFromPage(input) {
@@ -279,19 +434,14 @@ async function uploadFromPage(input) {
     let uploaded = 0;
     for (const file of files) {
         const fd = new FormData();
-        fd.append('media', file);
-        fd.append('entity_type', 'page');
-        try {
-            const r = await fetch('/cms/media/upload', { method:'POST', body:fd });
-            if ((await r.json()).success) uploaded++;
-        } catch (_) {}
+        fd.append('media', file); fd.append('entity_type', 'page');
+        try { if ((await (await fetch('/cms/media/upload',{method:'POST',body:fd})).json()).success) uploaded++; } catch(_){}
     }
 
-    banner.remove();
-    input.value = '';
+    banner.remove(); input.value = '';
     resetAndLoad();
     if (uploaded < files.length)
-        alert(`Uploaded ${uploaded} of ${files.length} files. Some may have failed.`);
+        alert(`Uploaded ${uploaded} of ${files.length} files.`);
 }
 
 /* ── Delete ─────────────────────────────────────────────── */
@@ -301,11 +451,8 @@ async function deleteMedia(event, id) {
     try {
         const r = await fetch(`/cms/media/${id}`, { method:'DELETE' });
         const result = await r.json();
-        if (result.success) {
-            resetAndLoad();
-        } else {
-            alert('Delete failed: ' + result.message);
-        }
+        if (result.success) resetAndLoad();
+        else alert('Delete failed: ' + result.message);
     } catch (_) { alert('Error deleting media.'); }
 }
 
@@ -313,7 +460,7 @@ async function deleteMedia(event, id) {
 function copyUrl(event, url) {
     event.preventDefault(); event.stopPropagation();
     navigator.clipboard.writeText(url).then(() => {
-        const btn  = event.currentTarget;
+        const btn = event.currentTarget;
         const orig = btn.innerHTML;
         btn.innerHTML = '<i class="bi bi-check text-success" style="font-size:11px"></i>';
         setTimeout(() => btn.innerHTML = orig, 1500);
@@ -321,9 +468,14 @@ function copyUrl(event, url) {
 }
 
 /* ── Helpers ────────────────────────────────────────────── */
+function isVideoUrl(url) { return url && /\.(mp4|webm|ogg|mov|avi)$/i.test(url); }
 function escHtml(str) {
     return String(str||'')
         .replace(/&/g,'&amp;').replace(/</g,'&lt;')
         .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+function showError(msg) {
+    document.getElementById('mediaGrid').insertAdjacentHTML('beforeend',
+        `<div class="alert alert-danger w-100 mt-2">${msg}</div>`);
 }
 </script>
