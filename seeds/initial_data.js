@@ -18,10 +18,10 @@ const {
 
 const seed = async () => {
   try {
-    console.log('\n🌱 Starting seed process...\n');
+
 
     // ─── CLEAR DATA ────────────────────────────────────────────────────────────
-    console.log('🗑️  Clearing existing data...');
+
     await sequelize.query(`
       TRUNCATE TABLE
         video_reviews, package_exclusions, package_inclusions, package_destinations, packages,
@@ -31,7 +31,7 @@ const seed = async () => {
         users, role_permissions, permissions, roles, modules, themes, app_settings
       RESTART IDENTITY CASCADE
     `);
-    console.log('✅ Data cleared.\n');
+
 
     // ─── APP SETTINGS ──────────────────────────────────────────────────────────
     await AppSetting.bulkCreate([
@@ -43,10 +43,10 @@ const seed = async () => {
       { key: 'forex_service_charge_value', value: '0.00' },
       { key: 'tax_types', value: '[{"name":"GST","percent":5},{"name":"IGST","percent":18},{"name":"SGST","percent":9},{"name":"CGST","percent":9}]' }
     ]);
-    console.log('✅ App settings seeded.');
+
 
     await Theme.bulkCreate(DEFAULT_THEME_PRESETS);
-    console.log('✅ Themes seeded.');
+
 
     // ─── MODULES ───────────────────────────────────────────────────────────────
     const modules = await Module.bulkCreate([
@@ -56,7 +56,7 @@ const seed = async () => {
       { name: 'Forex' },
       { name: 'Reports' }
     ]);
-    console.log('✅ Modules seeded.');
+
 
     // ─── ROLES ─────────────────────────────────────────────────────────────────
     const roles = await Role.bulkCreate([
@@ -67,7 +67,7 @@ const seed = async () => {
     const adminRole = roles.find(r => r.name === 'Admin');
     const managerRole = roles.find(r => r.name === 'Manager');
     const employeeRole = roles.find(r => r.name === 'Employee');
-    console.log('✅ Roles seeded.');
+
 
     // ─── PERMISSIONS ───────────────────────────────────────────────────────────
     const userModule = modules.find(m => m.name === 'User Management');
@@ -83,7 +83,7 @@ const seed = async () => {
       { name: 'edit_package', module_id: travelModule.id },
       { name: 'delete_package', module_id: travelModule.id }
     ]);
-    console.log('✅ Permissions seeded.');
+
 
     // ─── ROLE PERMISSIONS ──────────────────────────────────────────────────────
     // Admin gets all
@@ -104,7 +104,7 @@ const seed = async () => {
     await RolePermission.bulkCreate(
       employeePerms.map(p => ({ role_id: employeeRole.id, permission_id: p.id }))
     );
-    console.log('✅ Role permissions assigned.');
+
 
     // ─── USERS ─────────────────────────────────────────────────────────────────
     const hashedPassword = await bcrypt.hash('admin@1234', 10);
@@ -116,7 +116,7 @@ const seed = async () => {
       { name: 'Department Manager', email: 'manager@example.com', password: managerPassword, role_id: managerRole.id, status: true, type: 'employee' },
       { name: 'Regular Employee', email: 'employee@example.com', password: employeePassword, role_id: employeeRole.id, status: true, type: 'employee' }
     ]);
-    console.log('✅ Users seeded.');
+
 
     // ─── CONTINENTS ────────────────────────────────────────────────────────────
     const continents = await Continent.bulkCreate([
@@ -125,7 +125,7 @@ const seed = async () => {
     ]);
     const asia = continents.find(c => c.name === 'Asia');
     const europe = continents.find(c => c.name === 'Europe');
-    console.log('✅ Continents seeded.');
+
 
     // ─── COUNTRIES ─────────────────────────────────────────────────────────────
     const countries = await Country.bulkCreate([
@@ -140,7 +140,7 @@ const seed = async () => {
     const uae = countries.find(c => c.name === 'United Arab Emirates');
     const france = countries.find(c => c.name === 'France');
     const swiss = countries.find(c => c.name === 'Switzerland');
-    console.log('✅ Countries seeded.');
+
 
     // ─── CITIES ────────────────────────────────────────────────────────────────
     const cities = await City.bulkCreate([
@@ -155,7 +155,7 @@ const seed = async () => {
     const dubai = cities.find(c => c.name === 'Dubai');
     const paris = cities.find(c => c.name === 'Paris');
     const interlaken = cities.find(c => c.name === 'Interlaken');
-    console.log('✅ Cities seeded.');
+
 
     // ─── CATEGORIES ────────────────────────────────────────────────────────────
     const categories = await Category.bulkCreate([
@@ -168,7 +168,7 @@ const seed = async () => {
     const adventure = categories.find(c => c.name === 'Adventure');
     const luxury = categories.find(c => c.name === 'Luxury');
     const honeymoon = categories.find(c => c.name === 'Honeymoon');
-    console.log('✅ Categories seeded.');
+
 
     // ─── DESTINATIONS ──────────────────────────────────────────────────────────
     const destinations = await Destination.bulkCreate([
@@ -183,7 +183,7 @@ const seed = async () => {
     const destDubai = destinations.find(d => d.name === 'Dubai');
     const destParis = destinations.find(d => d.name === 'Paris');
     const destSwiss = destinations.find(d => d.name === 'Switzerland');
-    console.log('✅ Destinations seeded.');
+
 
     // ─── DESTINATION MAPPINGS ──────────────────────────────────────────────────
     await DestinationMapping.bulkCreate([
@@ -193,7 +193,7 @@ const seed = async () => {
       { destination_id: destParis.id, continent_id: europe.id, country_id: france.id, city_id: paris.id },
       { destination_id: destSwiss.id, continent_id: europe.id, country_id: swiss.id, city_id: interlaken.id }
     ]);
-    console.log('✅ Destination mappings seeded.');
+
 
     // ─── DESTINATION CATEGORIES ────────────────────────────────────────────────
     await DestinationCategory.bulkCreate([
@@ -204,7 +204,7 @@ const seed = async () => {
       { destination_id: destParis.id, category_id: honeymoon.id },
       { destination_id: destSwiss.id, category_id: adventure.id }
     ]);
-    console.log('✅ Destination categories seeded.');
+
 
     // ─── ACTIVITIES ────────────────────────────────────────────────────────────
     const activities = await Activity.bulkCreate([
@@ -224,7 +224,7 @@ const seed = async () => {
     const actDesertSafari = activities.find(a => a.name === 'Desert Safari');
     const actEiffel = activities.find(a => a.name === 'Eiffel Tower Tour');
     const actAlpsHike = activities.find(a => a.name === 'Swiss Alps Hiking');
-    console.log('✅ Activities seeded.');
+
 
     // ─── PACKAGES ──────────────────────────────────────────────────────────────
     const packages = await Package.bulkCreate([
@@ -239,7 +239,7 @@ const seed = async () => {
     const pkgDubai = packages.find(p => p.name === 'Dubai Luxury Experience');
     const pkgParis = packages.find(p => p.name === 'Paris Honeymoon Special');
     const pkgSwiss = packages.find(p => p.name === 'Swiss Alps Adventure');
-    console.log('✅ Packages seeded.');
+
 
     // ─── PACKAGE DESTINATIONS ──────────────────────────────────────────────────
     await PackageDestination.bulkCreate([
@@ -340,7 +340,7 @@ const seed = async () => {
         }
       }
     ]);
-    console.log('✅ Package destinations seeded.');
+
 
     // ─── INCLUSIONS & EXCLUSIONS ───────────────────────────────────────────────
     await PackageInclusion.bulkCreate([
@@ -355,7 +355,7 @@ const seed = async () => {
       { package_id: pkgGoa.id, text: 'Airfare / train ticket' },
       { package_id: pkgGoa.id, text: 'Personal expenses' }
     ]);
-    console.log('✅ Inclusions & Exclusions seeded.');
+
 
     // ─── VIDEO REVIEWS ─────────────────────────────────────────────────────────
     await VideoReview.bulkCreate([
@@ -396,25 +396,25 @@ const seed = async () => {
         package_id: pkgSwiss.id
       }
     ]);
-    console.log('✅ Video reviews seeded.');
+
 
     // ─── SUMMARY ───────────────────────────────────────────────────────────────
     const videoReviews = await VideoReview.findAll();
-    console.log('\n🎉 ===== SEED COMPLETED SUCCESSFULLY =====');
-    console.log('📊 Summary:');
-    console.log(`   Users:         3  (admin / manager / employee)`);
-    console.log(`   Continents:    ${continents.length}`);
-    console.log(`   Countries:     ${countries.length}`);
-    console.log(`   Cities:        ${cities.length}`);
-    console.log(`   Destinations:  ${destinations.length}`);
-    console.log(`   Categories:    ${categories.length}`);
-    console.log(`   Packages:      ${packages.length}`);
-    console.log(`   Activities:    ${activities.length}`);
-    console.log(`   Video Reviews: ${videoReviews.length}`);
-    console.log('\n🔑 Login Credentials:');
-    console.log('   Email: admin@example.com    | Password: admin@1234');
-    console.log('   Email: manager@example.com  | Password: manager123');
-    console.log('   Email: employee@example.com | Password: employee123\n');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     process.exit(0);
   } catch (error) {

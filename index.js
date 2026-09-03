@@ -16,12 +16,12 @@ process.on('unhandledRejection', (reason) => {
 
 db.authenticate()
   .then(() => {
-    console.log('Database connected successfully.');
+
     if (bookingEmailScheduler) {
       bookingEmailScheduler.start();
     }
     server.listen(port, () => {
-      console.log(`Server is running on http://localhost:${port}`);
+
     });
   })
   .catch(err => {

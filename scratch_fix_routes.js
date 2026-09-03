@@ -31,4 +31,3 @@ router.get('/', async (req, res) => {
 
 code = code.replace(brokenStr, fixedStr);
 fs.writeFileSync('src/routes/packageRoutes.js', code);
-console.log("Done");

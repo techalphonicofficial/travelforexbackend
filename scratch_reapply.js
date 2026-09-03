@@ -5,7 +5,7 @@ let repoStr = fs.readFileSync('src/repositories/PackageRepository.js', 'utf8');
 const findAllOld = `    async findAll() {
         return this.model.findAll({
             include: [
-                { 
+                {
                     model: this.packageDestinationModel, as: 'destinations',
                     include: [{ model: this.destinationModel, as: 'destination' }]
                 },
@@ -21,7 +21,7 @@ const findAllNew = findAllOld + `\n
         const offset = (page - 1) * limit;
         return this.model.findAndCountAll({
             include: [
-                { 
+                {
                     model: this.packageDestinationModel, as: 'destinations', attributes: { exclude: ['activities'] }, include: [{ model: this.destinationModel, as: 'destination' }]
                 },
                 { model: this.mediaModel, as: 'gallery' },
@@ -149,4 +149,3 @@ const swaggerResponseNew = ` *                 total:
 routesStr = routesStr.replace(swaggerResponseOld, swaggerResponseNew);
 
 fs.writeFileSync('src/routes/packageRoutes.js', routesStr);
-console.log("Done");

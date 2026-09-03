@@ -38,9 +38,7 @@ async function seedReviews() {
   });
 
   if (!packages.length) {
-    console.log(hasPackageId
-      ? `No package found with id ${packageId}.`
-      : 'No packages found. Add packages first, then run this seed.');
+
     return;
   }
 
@@ -56,7 +54,7 @@ async function seedReviews() {
     });
 
     if (existingSeedCount > 0) {
-      console.log(`Skipped package ${pkg.id} (${pkg.slug || pkg.name}) - seed reviews already exist.`);
+
       continue;
     }
 
@@ -83,10 +81,10 @@ async function seedReviews() {
     );
 
     created += reviewers.length;
-    console.log(`Created ${reviewers.length} reviews for package ${pkg.id} (${pkg.slug || pkg.name}).`);
+
   }
 
-  console.log(`Done. Created ${created} package reviews.`);
+
 }
 
 seedReviews()

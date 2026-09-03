@@ -1,13 +1,13 @@
 const fs = require('fs');
 const csv = require('csv-parser');
-const container = require('./src/container'); 
+const container = require('./src/container');
 const { models: { Airport } } = container;
 
 async function seedAirports() {
-    console.log('Connecting to database and syncing Airport model...');
-    await Airport.sync({ alter: true }); 
-    
-    console.log('Starting CSV seeding...');
+
+    await Airport.sync({ alter: true });
+
+
     const results = [];
     const BATCH_SIZE = 5000;
     let count = 0;
@@ -36,35 +36,35 @@ async function seedAirports() {
                     wikipedia_link: data.wikipedia_link || null,
                     keywords: data.keywords || null
                 };
-                
+
                 // Skip invalid rows like the initial <div> or empty lines
                 if (row.id === null || isNaN(row.id)) {
                     return;
                 }
-                
+
                 results.push(row);
                 count++;
-                
+
                 if (results.length >= BATCH_SIZE) {
                     stream.pause();
                     Airport.bulkCreate([...results], { ignoreDuplicates: true })
                         .then(() => {
-                            console.log(`Processed ${count} rows...`);
-                            results.length = 0; 
+
+                            results.length = 0;
                             stream.resume();
                         })
                         .catch((err) => {
                             console.error('Error in bulk insert:', err);
-                            stream.resume(); 
+                            stream.resume();
                         });
                 }
             })
             .on('end', async () => {
                 if (results.length > 0) {
                     await Airport.bulkCreate(results, { ignoreDuplicates: true }).catch(err => console.error('Final batch error', err));
-                    console.log(`Processed final ${results.length} rows.`);
+
                 }
-                console.log(`Finished seeding! Total processed: ${count}`);
+
                 resolve();
             })
             .on('error', (err) => {
@@ -75,7 +75,7 @@ async function seedAirports() {
 
 seedAirports()
     .then(() => {
-        console.log('Seed script completed successfully.');
+
         process.exit(0);
     })
     .catch((err) => {

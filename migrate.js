@@ -22,7 +22,7 @@ async function ensureMigrationsTable() {
                 primaryKey: true
             }
         });
-        console.log(`✅ Created "${MIGRATIONS_TABLE}" tracking table`);
+
     }
 }
 
@@ -39,9 +39,9 @@ async function recordMigration(name) {
 
 async function runMigrations() {
     try {
-        console.log('\n🔌 Connecting to database...');
+
         await sequelize.authenticate();
-        console.log('✅ Database connected!\n');
+
 
         await ensureMigrationsTable();
 
@@ -54,12 +54,12 @@ async function runMigrations() {
         const pending = files.filter(f => !completed.includes(f));
 
         if (pending.length === 0) {
-            console.log('✅ No pending migrations. Database is up to date!\n');
+
             await sequelize.close();
             return;
         }
 
-        console.log(`📋 Found ${pending.length} pending migration(s):\n`);
+
         const queryInterface = sequelize.getQueryInterface();
 
         for (const file of pending) {
@@ -70,16 +70,16 @@ async function runMigrations() {
             try {
                 await migration.up(queryInterface, require('sequelize'));
                 await recordMigration(file);
-                console.log(' ✅ Done');
+
             } catch (err) {
-                console.log(` ❌ FAILED\n`);
+
                 console.error(`Error in ${file}:\n`, err.message);
-                console.log('\n⛔ Migration stopped. Fix the error and try again.\n');
+
                 process.exit(1);
             }
         }
 
-        console.log(`\n🎉 All ${pending.length} migration(s) ran successfully!\n`);
+
         await sequelize.close();
 
     } catch (err) {

@@ -11,7 +11,7 @@ class AuthService {
 
   async login(email, password) {
 
-    console.log('STEP 1 - email:', email);
+
 
     let user;
 
@@ -19,64 +19,64 @@ class AuthService {
 
       user = await this.userRepo.findByEmail(email);
 
-      console.log('User found:', user);
+
 
     } catch (error) {
 
-      console.log('DB Error:', error);
+
 
       throw new Error('Database error while finding user');
     }
 
-    console.log('STEP 2 - user:', user);
+
 
     if (!user) {
-      console.log('STEP 3 - User not found');
+
       throw new Error('User not found');
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
 
-    console.log('STEP 4 - password match:', isMatch);
+
 
     if (!isMatch) {
-      console.log('STEP 5 - Invalid credentials');
+
       throw new Error('Invalid credentials');
     }
 
-    console.log('STEP 6 - user status:', user.status);
+
 
     if (!user.status) {
-      console.log('STEP 7 - Account deactivated');
+
       throw new Error('Account is deactivated');
     }
 
-    console.log('STEP 8 - user type:', user.type);
-    console.log('STEP 9 - role_id:', user.role_id);
+
+
 
     user.role_name = user.role ? user.role.name : null;
 
     // Role permissions only for admins and managers
     if (['admin', 'manager', 'employee'].includes(user.type) && user.role_id) {
 
-      console.log('STEP 10 - fetching permissions');
+
 
       const permissions = await this.roleRepo.getRolePermissions(user.role_id);
 
-      console.log('STEP 11 - permissions:', permissions);
+
 
       user.permissions = permissions.map(p => p.name);
 
-      console.log('STEP 12 - mapped permissions:', user.permissions);
+
 
     } else {
 
-      console.log('STEP 13 - no permissions');
+
 
       user.permissions = [];
     }
 
-    console.log('STEP 14 - final user:', user);
+
 
     return user;
   }
@@ -110,13 +110,13 @@ class AuthService {
 
   async changePassword(id, newPassword) {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    return this.userRepo.update(id, { 
+    return this.userRepo.update(id, {
       password: hashedPassword,
       reset_password_token: null,
       reset_password_expires: null
     });
   }
-  
+
   async requestPasswordReset(email) {
     const user = await this.userRepo.findByEmail(email);
     if (!user) throw new Error('User not found');

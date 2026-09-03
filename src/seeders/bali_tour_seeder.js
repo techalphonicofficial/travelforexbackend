@@ -1,20 +1,20 @@
 const { db, models: { Package, PackageDestination, PackageDay, PackageActivity, Destination } } = require('../container');
 
 async function seed() {
-    console.log('--- STARTING BALI TOUR SEEDER ---');
+
     let transaction;
     try {
         transaction = await db.transaction();
         // 1. Create Destinations if they don't exist
-        const [ubud] = await Destination.findOrCreate({ 
-            where: { name: 'Ubud' }, 
+        const [ubud] = await Destination.findOrCreate({
+            where: { name: 'Ubud' },
             defaults: { type: 'culture' },
-            transaction 
+            transaction
         });
-        const [kuta] = await Destination.findOrCreate({ 
-            where: { name: 'Kuta' }, 
+        const [kuta] = await Destination.findOrCreate({
+            where: { name: 'Kuta' },
             defaults: { type: 'beach' },
-            transaction 
+            transaction
         });
 
         // 2. Create Package
@@ -26,7 +26,7 @@ async function seed() {
             status: true
         }, { transaction });
 
-        console.log(`Created Package: ${pkg.name} (ID: ${pkg.id})`);
+
 
         // 3. Ubud Stay (nights: 3, order: 1)
         const ubudStay = await PackageDestination.create({
@@ -37,25 +37,25 @@ async function seed() {
         }, { transaction });
 
         const ubudDays = [
-            { 
-                day_number: 1, 
-                title: "Arrival in Bali & Transfer to Ubud", 
+            {
+                day_number: 1,
+                title: "Arrival in Bali & Transfer to Ubud",
                 activities: [
                     { title: "Airport Pickup", description: "Pickup from Ngurah Rai Airport", time_slot: "Morning", sort_order: 1 },
                     { title: "Hotel Check-in", description: "Check-in and relax", time_slot: "Afternoon", sort_order: 2 }
                 ]
             },
-            { 
-                day_number: 2, 
-                title: "Ubud Sightseeing", 
+            {
+                day_number: 2,
+                title: "Ubud Sightseeing",
                 activities: [
                     { title: "Tegallalang Rice Terrace", time_slot: "Morning", sort_order: 1 },
                     { title: "Ubud Monkey Forest", time_slot: "Afternoon", sort_order: 2 }
                 ]
             },
-            { 
-                day_number: 3, 
-                title: "Temple Tour", 
+            {
+                day_number: 3,
+                title: "Temple Tour",
                 activities: [
                     { title: "Tirta Empul Temple", time_slot: "Morning", sort_order: 1 }
                 ]
@@ -86,17 +86,17 @@ async function seed() {
         }, { transaction });
 
         const kutaDays = [
-            { 
-                day_number: 1, 
-                title: "Transfer to Kuta & Beach Time", 
+            {
+                day_number: 1,
+                title: "Transfer to Kuta & Beach Time",
                 activities: [
                     { title: "Hotel Transfer", time_slot: "Morning", sort_order: 1 },
                     { title: "Kuta Beach Visit", time_slot: "Evening", sort_order: 2 }
                 ]
             },
-            { 
-                day_number: 2, 
-                title: "Water Sports & Leisure", 
+            {
+                day_number: 2,
+                title: "Water Sports & Leisure",
                 activities: [
                     { title: "Parasailing", time_slot: "Morning", sort_order: 1 },
                     { title: "Banana Boat Ride", time_slot: "Afternoon", sort_order: 2 }
@@ -120,7 +120,7 @@ async function seed() {
         }
 
         await transaction.commit();
-        console.log('--- SEEDING COMPLETE ---');
+
         process.exit(0);
     } catch (err) {
         if (transaction) await transaction.rollback();

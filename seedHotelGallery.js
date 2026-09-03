@@ -24,7 +24,7 @@ async function seedHotelGallery() {
   });
 
   if (!hotels.length) {
-    console.log('No seed hotels found. Run node seedHotels.js first.');
+
     return;
   }
 
@@ -70,7 +70,7 @@ async function seedHotelGallery() {
     }
   }
 
-  console.log(`Created ${created} hotel gallery media rows.`);
+
 }
 
 seedHotelGallery()

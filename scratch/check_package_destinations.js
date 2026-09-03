@@ -12,14 +12,10 @@ async function check() {
             ]
         });
 
-        console.log('Total Packages:', pkgs.length);
+
         pkgs.forEach(p => {
-            console.log(`Package: ${p.name} (#${p.id})`);
-            console.log('Destinations:', p.destinations.map(d => ({
-                id: d.id,
-                destId: d.destination_id,
-                destName: d.destination ? d.destination.name : 'NULL'
-            })));
+
+
         });
         process.exit(0);
     } catch (err) {

@@ -86,7 +86,7 @@ async function updateExistingSeedHotels() {
   }
 
   if (existingHotels.length) {
-    console.log(`Updated details for ${existingHotels.length} existing seed hotels.`);
+
   }
 }
 
@@ -99,7 +99,7 @@ async function seedHotels() {
   });
 
   if (!destinations.length) {
-    console.log('No destinations found. Add destinations before seeding hotels.');
+
     return;
   }
 
@@ -110,7 +110,7 @@ async function seedHotels() {
   const remaining = TARGET_COUNT - existingSeedCount;
   if (remaining <= 0) {
     await updateExistingSeedHotels();
-    console.log(`${existingSeedCount} seed hotels already exist. Nothing to add.`);
+
     return;
   }
 
@@ -142,7 +142,7 @@ async function seedHotels() {
   }
 
   await updateExistingSeedHotels();
-  console.log(`Created ${hotels.length} hotels. Total seed hotels: ${TARGET_COUNT}.`);
+
 }
 
 seedHotels()

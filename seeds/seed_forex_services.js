@@ -35,7 +35,7 @@ async function seedForexServices() {
       const country = countryByName.get(row.country.toLowerCase());
       if (!country) {
         skipped += 1;
-        console.log(`Skipped ${row.code} (${row.country}) - country not found`);
+
         continue;
       }
 
@@ -56,7 +56,7 @@ async function seedForexServices() {
       else existing += 1;
     }
 
-    console.log(`Forex services seeded. Created: ${created}, existing: ${existing}, skipped: ${skipped}`);
+
   } catch (error) {
     console.error('Forex services seed failed:', error.message);
     process.exitCode = 1;

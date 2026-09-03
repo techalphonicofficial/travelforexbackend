@@ -18,7 +18,7 @@ const fixedStr = `                order: [
     async findAll() {
         return this.model.findAll({
             include: [
-                { 
+                {
                     model: this.packageDestinationModel, as: 'destinations',
                     include: [{ model: this.destinationModel, as: 'destination' }]
                 },
@@ -32,7 +32,7 @@ const fixedStr = `                order: [
         const offset = (page - 1) * limit;
         return this.model.findAndCountAll({
             include: [
-                { 
+                {
                     model: this.packageDestinationModel, as: 'destinations', attributes: { exclude: ['activities'] }, include: [{ model: this.destinationModel, as: 'destination' }]
                 },
                 { model: this.mediaModel, as: 'gallery' },
@@ -47,4 +47,3 @@ const fixedStr = `                order: [
 
 code = code.replace(brokenStr, fixedStr);
 fs.writeFileSync('src/repositories/PackageRepository.js', code);
-console.log("Done");

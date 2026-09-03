@@ -66,7 +66,7 @@ async function bulkCreateInChunks(model, rows, chunkSize = 5000) {
     const chunk = rows.slice(i, i + chunkSize);
     await model.bulkCreate(chunk, { validate: false });
     created += chunk.length;
-    console.log(`   ${model.tableName}: ${created}/${rows.length}`);
+
   }
 }
 
@@ -95,13 +95,13 @@ async function remapExistingDestinations(cityLookup, cityCountryLookup) {
 }
 
 async function seedGeoData() {
-  console.log('Starting geo seed...');
+
 
   await sequelize.query('TRUNCATE TABLE destination_mappings, cities, countries, continents RESTART IDENTITY CASCADE');
 
   const continents = await Continent.bulkCreate(CONTINENTS, { returning: true });
   const continentByName = new Map(continents.map(continent => [continent.name, continent]));
-  console.log(`Seeded continents: ${continents.length}`);
+
 
   const sourceCountries = CSCountry.getAllCountries();
   const countryRows = sourceCountries.map(country => ({
@@ -116,7 +116,7 @@ async function seedGeoData() {
   sourceCountries.forEach((country, index) => {
     countryByCode.set(country.isoCode, countries[index]);
   });
-  console.log(`Seeded countries: ${countries.length}`);
+
 
   const sourceCities = CSCity.getAllCities();
   const cityRows = sourceCities
@@ -148,16 +148,16 @@ async function seedGeoData() {
 
   const remapped = await remapExistingDestinations(cityLookup, cityCountryLookup);
 
-  console.log('Geo seed completed.');
-  console.log(`Continents: ${continents.length}`);
-  console.log(`Countries: ${countries.length}`);
-  console.log(`Cities: ${cityRows.length}`);
-  console.log(`Destination mappings restored by city name: ${remapped}`);
+
+
+
+
+
 }
 
 seedGeoData()
   .then(() => {
-    console.log('Done.');
+
     process.exit(0);
   })
   .catch(err => {

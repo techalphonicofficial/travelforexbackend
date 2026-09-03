@@ -2,8 +2,8 @@ const { db, models, services } = require('./src/container');
 
 async function seedTrips() {
     try {
-        console.log('Starting seed...');
-        
+
+
         const { tripBuilderService } = services;
         const { Customer, Destination, Activity, Hotel, Booking } = models;
 
@@ -20,7 +20,7 @@ async function seedTrips() {
         // Get a destination
         const destination = await Destination.findOne();
         if (!destination) {
-            console.log('No destination found. Please seed basic data first.');
+
             process.exit(1);
         }
 
@@ -68,14 +68,14 @@ async function seedTrips() {
             });
         }
 
-        console.log('Creating 4 custom trips and bookings...');
+
 
         for (let i = 0; i < 4; i++) {
             // Initialize trip
             let trip = await tripBuilderService.initializeTrip(
-                customer.id, 
-                destination.id, 
-                '2026-06-01', 
+                customer.id,
+                destination.id,
+                '2026-06-01',
                 '2026-06-05' // 4 nights
             );
 
@@ -102,10 +102,10 @@ async function seedTrips() {
                 payment_status: 'paid',
                 booking_status: 'confirmed'
             });
-            console.log(`Created booking for custom trip ${trip.id}`);
+
         }
 
-        console.log('Seed completed successfully!');
+
         process.exit(0);
 
     } catch (error) {

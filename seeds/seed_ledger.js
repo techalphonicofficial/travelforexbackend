@@ -10,23 +10,23 @@ const { v4: uuidv4 } = require('uuid');
 
 const seed = async () => {
   try {
-    console.log('\n📒 Starting Ledger & Debit/Credit Seed...\n');
+
 
     const now = new Date();
 
     // ─────────────────────────────────────────────────────────
     // STEP 1 – Clear existing ledger data (safe order)
     // ─────────────────────────────────────────────────────────
-    console.log('🗑️  Clearing old ledger data...');
+
     await sequelize.query(`DELETE FROM journal_entry_lines`);
     await sequelize.query(`DELETE FROM journal_entries`);
     await sequelize.query(`DELETE FROM accounts`);
-    console.log('✅ Cleared.\n');
+
 
     // ─────────────────────────────────────────────────────────
     // STEP 2 – Chart of Accounts
     // ─────────────────────────────────────────────────────────
-    console.log('📂 Seeding Chart of Accounts...');
+
 
     const accountData = [
       // ── Assets ──
@@ -77,12 +77,12 @@ const seed = async () => {
     // Helper: find account id by code
     const acc = (code) => accounts.find(a => a.code === code).id;
 
-    console.log(`✅ ${accounts.length} accounts seeded.\n`);
+
 
     // ─────────────────────────────────────────────────────────
     // STEP 3 – Journal Entries + Lines
     // ─────────────────────────────────────────────────────────
-    console.log('📒 Seeding Journal Entries & Debit/Credit Lines...\n');
+
 
     // Helper to insert a complete journal entry with its lines.
     // Lines: [{ account_code, debit, credit, memo }]
@@ -107,7 +107,7 @@ const seed = async () => {
 
       const totalDebit  = lines.reduce((s, l) => s + (l.debit  || 0), 0);
       const totalCredit = lines.reduce((s, l) => s + (l.credit || 0), 0);
-      console.log(`  ✅ [${entry.label}]  Dr ₹${totalDebit.toLocaleString()}  |  Cr ₹${totalCredit.toLocaleString()}`);
+
     };
 
     // ── 1. Capital Injection ────────────────────────────────
@@ -309,13 +309,13 @@ const seed = async () => {
     const [totalDr]      = await sequelize.query(`SELECT COALESCE(SUM(debit),0) AS total FROM journal_entry_lines`);
     const [totalCr]      = await sequelize.query(`SELECT COALESCE(SUM(credit),0) AS total FROM journal_entry_lines`);
 
-    console.log('\n🎉 ══════════════ LEDGER SEED COMPLETE ══════════════');
-    console.log(`   Accounts:        ${accounts.length}`);
-    console.log(`   Journal Entries: ${entriesCount[0].cnt}`);
-    console.log(`   Ledger Lines:    ${linesCount[0].cnt}`);
-    console.log(`   Total Debits:    ₹${Number(totalDr[0].total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`);
-    console.log(`   Total Credits:   ₹${Number(totalCr[0].total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`);
-    console.log('═════════════════════════════════════════════════════\n');
+
+
+
+
+
+
+
 
     process.exit(0);
   } catch (err) {

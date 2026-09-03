@@ -26,4 +26,3 @@ const routeNew = `router.get('/packages', async (req, res) => {
 
 content = content.replace(routeOld, routeNew);
 fs.writeFileSync('src/routes/travelWebRoutes.js', content);
-console.log("Fixed dashboard packages fetch");

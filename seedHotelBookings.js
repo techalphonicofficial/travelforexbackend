@@ -86,7 +86,7 @@ async function main() {
     created += 1;
   }
 
-  console.log(`Hotel booking seed complete. Created ${created}, skipped ${skipped}.`);
+
 }
 
 main()

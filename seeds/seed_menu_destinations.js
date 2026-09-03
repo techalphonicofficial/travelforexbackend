@@ -205,7 +205,7 @@ const seed = async () => {
     }
 
     await transaction.commit();
-    console.log(`Seeded ${packageDestinations.length} customizable destinations and sample packages.`);
+
   } catch (error) {
     await transaction.rollback();
     console.error(error);

@@ -14,7 +14,7 @@ const {
 
 const seed = async () => {
   try {
-    console.log('\n🏪 Starting Vendor + Wallet Seed...\n');
+
 
     // ── Fetch existing destinations to link packages ──────────────────────────
     const destinations = await Destination.findAll({ limit: 20 });
@@ -208,7 +208,7 @@ const seed = async () => {
     const results = [];
 
     for (const v of vendorDefs) {
-      console.log(`\n📦 Seeding vendor: ${v.name}`);
+
 
       // 1. Create vendor user
       const hashedPwd = await bcrypt.hash(v.password, 10);
@@ -223,7 +223,7 @@ const seed = async () => {
           status: true
         }
       });
-      console.log(`   ${userCreated ? '✅' : '⚠️ exists'} User: ${v.email}`);
+
 
       // 2. Create wallet (set balance to final expected balance)
       const [wallet, walletCreated] = await Wallet.findOrCreate({
@@ -233,7 +233,7 @@ const seed = async () => {
       if (!walletCreated) {
         await wallet.update({ balance: v.finalBalance });
       }
-      console.log(`   ✅ Wallet: ₹${v.finalBalance.toLocaleString('en-IN')}`);
+
 
       // 3. Create wallet transactions
       let txCount = 0;
@@ -251,7 +251,7 @@ const seed = async () => {
         });
         if (txCreated) txCount++;
       }
-      console.log(`   ✅ Wallet transactions: ${txCount} created (${v.transactions.length} total)`);
+
 
       // 4. Create packages
       let pkgCount = 0;
@@ -307,32 +307,30 @@ const seed = async () => {
           }
         }
       }
-      console.log(`   ✅ Packages: ${pkgCount} created`);
+
 
       results.push({ name: v.name, email: v.email, balance: v.finalBalance, packages: v.packages.length, txns: v.transactions.length });
     }
 
     // ── Summary ───────────────────────────────────────────────────────────────
-    console.log('\n🎉 ═══════════════ VENDOR SEED COMPLETE ═══════════════');
-    console.log('\n📋 Vendor Summary:\n');
-    console.log('  Vendor                      Email                              Balance           Pkgs  Txns');
-    console.log('  ' + '─'.repeat(100));
+
+
+
+
     for (const r of results) {
-      console.log(
-        `  ${r.name.padEnd(28)} ${r.email.padEnd(35)} ₹${String(r.balance.toLocaleString('en-IN')).padStart(12)}  ${r.packages}     ${r.txns}`
-      );
+
     }
 
     const totalBalance = results.reduce((s, r) => s + r.balance, 0);
-    console.log('  ' + '─'.repeat(100));
-    console.log(`  ${'TOTAL'.padEnd(65)} ₹${String(totalBalance.toLocaleString('en-IN')).padStart(12)}  ${results.reduce((s,r)=>s+r.packages,0)}     ${results.reduce((s,r)=>s+r.txns,0)}`);
 
-    console.log('\n🔑 All vendor logins (password: vendor@1234):');
+
+
+
     for (const r of results) {
-      console.log(`   📧 ${r.email}`);
+
     }
-    console.log('\n   Vendor portal: http://localhost:3000/vendor/login\n');
-    console.log('═══════════════════════════════════════════════════════\n');
+
+
 
     process.exit(0);
   } catch (err) {

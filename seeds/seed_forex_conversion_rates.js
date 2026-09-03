@@ -197,13 +197,13 @@ async function seedForexConversionRates() {
 
     await transaction.commit();
 
-    console.log('Forex conversion rates seeded.');
-    console.log(`Countries checked: ${countries.length}`);
-    console.log(`Created: ${created}`);
-    console.log(`Updated: ${updated}`);
-    console.log(`Skipped: ${skipped}`);
+
+
+
+
+
     if (skippedRows.length) {
-      console.log(`Skipped countries: ${skippedRows.join('; ')}`);
+
     }
   } catch (error) {
     if (transaction) await transaction.rollback();

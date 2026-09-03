@@ -590,9 +590,9 @@
               <div class="col-md-12">
                 <label class="form-label fw-bold">Package Categories</label>
                 <div class="d-flex flex-wrap gap-3 mt-2">
-                  <% 
+                  <%
                     const selectedCatIds = (pkg.package_categories || []).map(c => c.id);
-                    (packageCategories || []).forEach(cat => { 
+                    (packageCategories || []).forEach(cat => {
                   %>
                     <div class="form-check">
                       <input class="form-check-input f-package-category-checkbox" type="checkbox" value="<%= cat.id %>" id="f_cat_<%= cat.id %>" <%= selectedCatIds.includes(cat.id) ? 'checked' : '' %>>
@@ -1659,7 +1659,7 @@
 
     // ============ AUTO FILL EXISTING DATA ============
     function autoFillExistingData() {
-      console.log('Auto-filling existing data:', PKG_DATA);
+
 
       if (!PKG_DATA) return;
 

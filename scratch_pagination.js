@@ -59,5 +59,3 @@ pkgRoutesStr = pkgRoutesStr.replace(/res\.json\(\{ success: true, data \}\);/, "
 
 
 fs.writeFileSync('src/routes/packageRoutes.js', pkgRoutesStr);
-
-console.log("Done");

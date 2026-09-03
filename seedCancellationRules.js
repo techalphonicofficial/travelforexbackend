@@ -68,7 +68,7 @@ async function main() {
     }
   }
 
-  console.log(`Cancellation rules seed complete. Created ${created}, updated ${updated}.`);
+
 }
 
 main()

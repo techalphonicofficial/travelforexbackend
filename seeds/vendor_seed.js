@@ -4,7 +4,7 @@ const { User, Package, Wallet, WalletTransaction, Destination, PackageDestinatio
 
 const seedVendor = async () => {
     try {
-        console.log('🌱 Seeding Vendor Data...');
+
 
         // 1. Create Vendor User
         const hashedPassword = await bcrypt.hash('vendor123', 10);
@@ -18,8 +18,6 @@ const seedVendor = async () => {
             }
         });
 
-        if (created) console.log('✅ Vendor user created.');
-
         // 2. Create Wallet for Vendor
         const [wallet] = await Wallet.findOrCreate({
             where: { user_id: vendor.id },
@@ -28,7 +26,7 @@ const seedVendor = async () => {
                 currency: 'INR'
             }
         });
-        console.log('✅ Vendor wallet created/found.');
+
 
         // 3. Add some transactions
         await WalletTransaction.findOrCreate({
@@ -53,7 +51,7 @@ const seedVendor = async () => {
         // Get some destinations to link
         const availableDestinations = await Destination.findAll({ limit: 10 });
         if (availableDestinations.length < 2) {
-            console.log('⚠️ Not enough destinations in DB to link. Please run initial seeds first.');
+
         }
 
         for (const p of pkgData) {
@@ -80,10 +78,10 @@ const seedVendor = async () => {
                 });
             }
         }
-        console.log('✅ Vendor packages seeded with destinations.');
 
-        console.log('\n🎉 Vendor Seeding Completed!');
-        console.log('Login: vendor@example.com / vendor123');
+
+
+
         process.exit(0);
     } catch (error) {
         console.error('❌ Seeding failed:', error);

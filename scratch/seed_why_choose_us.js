@@ -25,9 +25,9 @@ async function seed() {
         };
 
         const [detail, created] = await PageDetail.findOrCreate({
-            where: { 
-                page_id: 1, 
-                section: 'why_choose_us' 
+            where: {
+                page_id: 1,
+                section: 'why_choose_us'
             },
             defaults: {
                 key: 'why-choose-us-home',
@@ -37,16 +37,16 @@ async function seed() {
         });
 
         if (!created) {
-            console.log('Section already exists, updating...');
+
             await detail.update({
                 title: 'Why Choose ITS TRAVELS AND TOURS?',
                 json_data: jsonData
             });
         } else {
-            console.log('Inserting new section...');
+
         }
 
-        console.log('Seeding successful!');
+
         process.exit(0);
     } catch (err) {
         console.error('Seeding failed:', err);

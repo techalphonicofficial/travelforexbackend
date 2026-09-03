@@ -64,56 +64,63 @@
                   <button type="button" class="btn-icon btn-icon-del position-absolute" style="top:1rem;right:1rem"
                     onclick="removeSection(this)"><i class="bi bi-trash3"></i></button>
 
-                  <% let content={}; try { content = typeof detail.json_data === 'string' ? JSON.parse(detail.json_data) : (detail.json_data || {}); } catch(e) {} %>
-                  <div class="row g-3">
-                    <div class="col-md-3">
-                      <label class="small fw-bold text-muted mb-1 uppercase">Block ID (Key)</label>
-                      <input type="text" name="sections[<%= index %>][key]" class="form-control form-control-sm"
-                        placeholder="e.g. hero-section" value="<%= detail.key %>">
-                    </div>
-                    <div class="col-md-3">
-                      <label class="small fw-bold text-muted mb-1 uppercase">Block Heading</label>
-                      <input type="text" name="sections[<%= index %>][title]" class="form-control form-control-sm"
-                        placeholder="Display Title" value="<%= detail.title %>">
-                    </div>
-                    <div class="col-md-3">
-                      <label class="small fw-bold text-muted mb-1 uppercase">Heading Content</label>
-                      <input type="text" class="form-control form-control-sm item-heading-content"
-                        placeholder="Heading Content" value="<%= content.heading_content || '' %>">
-                    </div>
-                    <div class="col-md-3">
-                      <label class="small fw-bold text-muted mb-1 uppercase">Block Layout</label>
-                      <select name="sections[<%= index %>][section]" class="form-select form-select-sm"
-                        onchange="toggleSectionType(this)">
-                        <option value="standard" <%=detail.section==='standard' ? 'selected' : '' %>>Standard (Text +
-                          Desc)</option>
-                        <option value="image_text" <%=detail.section==='image_text' ? 'selected' : '' %>>Media + Text
-                        </option>
-                        <option value="rich_text" <%=detail.section==='rich_text' ? 'selected' : '' %>>Rich Text Block
-                        </option>
-                        <option value="cta_banner" <%=detail.section==='cta_banner' ? 'selected' : '' %>>CTA Banner
-                        </option>
-                        <option value="faq_accordion" <%=detail.section==='faq_accordion' ? 'selected' : '' %>>FAQ
-                          Accordion</option>
-                        <option value="stats_bar" <%=detail.section==='stats_bar' ? 'selected' : '' %>>Stats Bar
-                        </option>
-                        <option value="timeline" <%=detail.section==='timeline' ? 'selected' : '' %>>Timeline</option>
-                        <option value="feature_grid" <%=detail.section==='feature_grid' ? 'selected' : '' %>>Feature
-                          Grid</option>
-                        <option value="testimonial_grid" <%=detail.section==='testimonial_grid' ? 'selected' : '' %>
-                          >Testimonials</option>
-                        <option value="gallery" <%=detail.section==='gallery' ? 'selected' : '' %>>Gallery (Photos)
-                        </option>
-                        <option value="why_choose_us" <%=detail.section==='why_choose_us' ? 'selected' : '' %>>Why Choose Us</option>
-                        <option value="story_grid" <%=detail.section==='story_grid' ? 'selected' : '' %>>Story (Text + Stats + Images)</option>
-                        <option value="team_grid" <%=detail.section==='team_grid' ? 'selected' : '' %>>Team Grid</option>
-                        <option value="tabs_section" <%=detail.section==='tabs_section' ? 'selected' : '' %>>Tabs Content (Image + Rich Text)</option>
-                        <option value="destination_tabs" <%=detail.section==='destination_tabs' ? 'selected' : '' %>>Destination Tabs (Cards Array)</option>
-                        <option value="offer_grid" <%=detail.section==='offer_grid' ? 'selected' : '' %>>Exclusive Offers (Dynamic Cards)</option>
-                      </select>
-                    </div>
+                  <% let content={}; try { content=typeof detail.json_data==='string' ? JSON.parse(detail.json_data) :
+                    (detail.json_data || {}); } catch(e) {} %>
+                    <div class="row g-3">
+                      <div class="col-md-3">
+                        <label class="small fw-bold text-muted mb-1 uppercase">Block ID (Key)</label>
+                        <input type="text" name="sections[<%= index %>][key]" class="form-control form-control-sm"
+                          placeholder="e.g. hero-section" value="<%= detail.key %>">
+                      </div>
+                      <div class="col-md-3">
+                        <label class="small fw-bold text-muted mb-1 uppercase">Block Heading</label>
+                        <input type="text" name="sections[<%= index %>][title]" class="form-control form-control-sm"
+                          placeholder="Display Title" value="<%= detail.title %>">
+                      </div>
+                      <div class="col-md-3">
+                        <label class="small fw-bold text-muted mb-1 uppercase">Heading Content</label>
+                        <input type="text" class="form-control form-control-sm item-heading-content"
+                          placeholder="Heading Content" value="<%= content.heading_content || '' %>">
+                      </div>
+                      <div class="col-md-3">
+                        <label class="small fw-bold text-muted mb-1 uppercase">Block Layout</label>
+                        <select name="sections[<%= index %>][section]" class="form-select form-select-sm"
+                          onchange="toggleSectionType(this)">
+                          <option value="standard" <%=detail.section==='standard' ? 'selected' : '' %>>Standard (Text +
+                            Desc)</option>
+                          <option value="image_text" <%=detail.section==='image_text' ? 'selected' : '' %>>Media + Text
+                          </option>
+                          <option value="rich_text" <%=detail.section==='rich_text' ? 'selected' : '' %>>Rich Text Block
+                          </option>
+                          <option value="cta_banner" <%=detail.section==='cta_banner' ? 'selected' : '' %>>CTA Banner
+                          </option>
+                          <option value="faq_accordion" <%=detail.section==='faq_accordion' ? 'selected' : '' %>>FAQ
+                            Accordion</option>
+                          <option value="stats_bar" <%=detail.section==='stats_bar' ? 'selected' : '' %>>Stats Bar
+                          </option>
+                          <option value="timeline" <%=detail.section==='timeline' ? 'selected' : '' %>>Timeline</option>
+                          <option value="feature_grid" <%=detail.section==='feature_grid' ? 'selected' : '' %>>Feature
+                            Grid</option>
+                          <option value="testimonial_grid" <%=detail.section==='testimonial_grid' ? 'selected' : '' %>
+                            >Testimonials</option>
+                          <option value="gallery" <%=detail.section==='gallery' ? 'selected' : '' %>>Gallery (Photos)
+                          </option>
+                          <option value="why_choose_us" <%=detail.section==='why_choose_us' ? 'selected' : '' %>>Why
+                            Choose Us</option>
+                          <option value="story_grid" <%=detail.section==='story_grid' ? 'selected' : '' %>>Story (Text +
+                            Stats + Images)</option>
+                          <option value="team_grid" <%=detail.section==='team_grid' ? 'selected' : '' %>>Team Grid
+                          </option>
+                          <option value="tabs_section" <%=detail.section==='tabs_section' ? 'selected' : '' %>>Tabs
+                            Content (Image + Rich Text)</option>
+                          <option value="destination_tabs" <%=detail.section==='destination_tabs' ? 'selected' : '' %>
+                            >Destination Tabs (Cards Array)</option>
+                          <option value="offer_grid" <%=detail.section==='offer_grid' ? 'selected' : '' %>>Exclusive
+                            Offers (Dynamic Cards)</option>
+                        </select>
+                      </div>
 
-                    <div class="col-12 mt-3 content-area">
+                      <div class="col-12 mt-3 content-area">
 
                         <!-- Standard -->
                         <div class="type-standard section-content"
@@ -127,37 +134,43 @@
                           style="display: <%= detail.section === 'image_text' ? 'block' : 'none' %>">
                           <div class="row g-2">
                             <div class="col-md-8">
-                                <textarea class="form-control item-body"
-                                  placeholder="Body Content"><%= content.body || '' %></textarea>
-                                <div class="mt-2">
-                                  <label class="small fw-bold text-muted mb-1">Points (Optional)</label>
-                                  <div class="image-text-points-list d-flex flex-column gap-2 mb-2">
-                                    <% (content.points || []).forEach(pt => { %>
-                                      <div class="item-row d-flex gap-2 align-items-center bg-white p-1 rounded border">
-                                        <input type="text" class="form-control form-control-sm f1" placeholder="Point Title" value="<%= pt.title %>">
-                                        <button type="button" class="btn btn-sm btn-light text-danger border py-0 px-2" onclick="this.parentElement.remove()"><i class="bi bi-x-lg"></i></button>
-                                      </div>
+                              <textarea class="form-control item-body"
+                                placeholder="Body Content"><%= content.body || '' %></textarea>
+                              <div class="mt-2">
+                                <label class="small fw-bold text-muted mb-1">Points (Optional)</label>
+                                <div class="image-text-points-list d-flex flex-column gap-2 mb-2">
+                                  <% (content.points || []).forEach(pt=> { %>
+                                    <div class="item-row d-flex gap-2 align-items-center bg-white p-1 rounded border">
+                                      <input type="text" class="form-control form-control-sm f1"
+                                        placeholder="Point Title" value="<%= pt.title %>">
+                                      <button type="button" class="btn btn-sm btn-light text-danger border py-0 px-2"
+                                        onclick="this.parentElement.remove()"><i class="bi bi-x-lg"></i></button>
+                                    </div>
                                     <% }) %>
-                                  </div>
-                                  <button type="button" class="btn btn-xs btn-outline-secondary" onclick="addItem(<%= index %>, 'image_text_point')">+ Add Point</button>
                                 </div>
+                                <button type="button" class="btn btn-xs btn-outline-secondary"
+                                  onclick="addItem(<%= index %>, 'image_text_point')">+ Add Point</button>
+                              </div>
                             </div>
                             <div class="col-md-4">
                               <div class="media-selector-wrap bg-white border rounded-3 p-2 text-center mb-1">
-                                <% const isVideo = content.media_url && content.media_url.match(/\.(mp4|webm|ogg|mov|avi)$/i); %>
-                                <img src="<%= !isVideo ? (content.media_url || '/assets/img/placeholder.png') : '' %>"
-                                  class="img-preview mb-2 rounded"
-                                  style="max-height: 80px; display: <%= content.media_url && !isVideo ? 'block' : 'none' %>; margin: 0 auto;">
-                                <video class="video-preview mb-2 rounded" src="<%= isVideo ? content.media_url : '' %>"
-                                  style="max-height: 80px; display: <%= isVideo ? 'block' : 'none' %>; margin: 0 auto;" controls autoplay muted loop></video>
-                                <div class="placeholder-icon mb-2 text-muted"
-                                  style="display: <%= content.media_url ? 'none' : 'block' %>"><i
-                                    class="bi bi-camera-video fs-4"></i></div>
-                                <input type="text" class="form-control form-control-sm item-img mb-1"
-                                  placeholder="Media URL" value="<%= content.media_url || '' %>"
-                                  onchange="updatePreview(this)">
-                                <button type="button" class="btn btn-xs btn-outline-primary w-100 py-1"
-                                  onclick="openMediaLibrary(this)" style="font-size: 0.7rem;">Select Media</button>
+                                <% const isVideo=content.media_url &&
+                                  content.media_url.match(/\.(mp4|webm|ogg|mov|avi)$/i); %>
+                                  <img src="<%= !isVideo ? (content.media_url || '/assets/img/placeholder.png') : '' %>"
+                                    class="img-preview mb-2 rounded"
+                                    style="max-height: 80px; display: <%= content.media_url && !isVideo ? 'block' : 'none' %>; margin: 0 auto;">
+                                  <video class="video-preview mb-2 rounded"
+                                    src="<%= isVideo ? content.media_url : '' %>"
+                                    style="max-height: 80px; display: <%= isVideo ? 'block' : 'none' %>; margin: 0 auto;"
+                                    controls autoplay muted loop></video>
+                                  <div class="placeholder-icon mb-2 text-muted"
+                                    style="display: <%= content.media_url ? 'none' : 'block' %>"><i
+                                      class="bi bi-camera-video fs-4"></i></div>
+                                  <input type="text" class="form-control form-control-sm item-img mb-1"
+                                    placeholder="Media URL" value="<%= content.media_url || '' %>"
+                                    onchange="updatePreview(this)">
+                                  <button type="button" class="btn btn-xs btn-outline-primary w-100 py-1"
+                                    onclick="openMediaLibrary(this)" style="font-size: 0.7rem;">Select Media</button>
                               </div>
                               <select class="form-select form-select-sm item-side">
                                 <option value="right" <%=content.side==='right' ? 'selected' : '' %>>Media Right
@@ -193,13 +206,15 @@
                           style="display: <%= ['faq_accordion', 'stats_bar', 'timeline', 'feature_grid', 'testimonial_grid', 'gallery', 'team_grid'].includes(detail.section) ? 'block' : 'none' %>">
                           <div class="mb-3">
                             <label class="small fw-bold text-muted mb-1">Block Description (Optional)</label>
-                            <textarea class="form-control form-control-sm item-block-desc" rows="2" placeholder="Brief text under heading..."><%= content.block_desc || '' %></textarea>
+                            <textarea class="form-control form-control-sm item-block-desc" rows="2"
+                              placeholder="Brief text under heading..."><%= content.block_desc || '' %></textarea>
                           </div>
                           <div class="items-list d-flex flex-column gap-2 mb-3">
                             <% const listKey={ 'faq_accordion' : 'faqs' , 'stats_bar' : 'stats' , 'timeline' : 'items'
-                              , 'feature_grid' : 'features' , 'testimonial_grid' : 'testimonials' , 'gallery' : 'images' , 'team_grid': 'team'
-                              }[detail.section] || 'items' ; const items=Array.isArray(content[listKey]) ?
-                              content[listKey] : []; items.forEach((item, i)=> { %>
+                              , 'feature_grid' : 'features' , 'testimonial_grid' : 'testimonials' , 'gallery' : 'images'
+                              , 'team_grid' : 'team' }[detail.section] || 'items' ; const
+                              items=Array.isArray(content[listKey]) ? content[listKey] : []; items.forEach((item, i)=> {
+                              %>
                               <div class="item-row d-flex gap-2 align-items-center bg-white p-2 rounded-3 border">
                                 <% if (detail.section==='faq_accordion' ) { %>
                                   <input type="text" class="form-control form-control-sm f1" placeholder="Question"
@@ -210,7 +225,8 @@
                                     <div class="d-flex flex-column gap-2 flex-grow-1">
                                       <input type="text" class="form-control form-control-sm f1" placeholder="Value"
                                         value="<%= item.value %>">
-                                      <textarea class="form-control form-control-sm f2 rich-editor" placeholder="Label"><%= item.label %></textarea>
+                                      <textarea class="form-control form-control-sm f2 rich-editor"
+                                        placeholder="Label"><%= item.label %></textarea>
                                     </div>
                                     <% } else if (detail.section==='timeline' ) { %>
                                       <input type="text" class="form-control form-control-sm f1" placeholder="Year"
@@ -238,23 +254,34 @@
                                               placeholder="Image URL" value="<%= item.img %>">
                                             <input type="text" class="form-control form-control-sm f2"
                                               placeholder="Label" value="<%= item.lbl %>">
-                                          <% } else if (detail.section==='team_grid' ) { %>
-                                            <div class="d-flex flex-column flex-grow-1 gap-2 align-items-start">
-                                              <div class="d-flex gap-2 align-items-center mb-1 media-selector-wrap">
-                                                <img src="<%= item.img || '/assets/img/placeholder.png' %>" class="img-preview rounded" style="width: 40px; height: 40px; object-fit: cover; display: <%= item.img ? 'block' : 'none' %>;">
-                                                <input type="text" class="form-control form-control-sm f1" placeholder="Image URL" value="<%= item.img %>" onchange="updatePreview(this)">
-                                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="openMediaLibrary(this)"><i class="bi bi-folder2-open"></i></button>
+                                            <% } else if (detail.section==='team_grid' ) { %>
+                                              <div class="d-flex flex-column flex-grow-1 gap-2 align-items-start">
+                                                <div class="d-flex gap-2 align-items-center mb-1 media-selector-wrap">
+                                                  <img src="<%= item.img || '/assets/img/placeholder.png' %>"
+                                                    class="img-preview rounded"
+                                                    style="width: 40px; height: 40px; object-fit: cover; display: <%= item.img ? 'block' : 'none' %>;">
+                                                  <input type="text" class="form-control form-control-sm f1"
+                                                    placeholder="Image URL" value="<%= item.img %>"
+                                                    onchange="updatePreview(this)">
+                                                  <button type="button" class="btn btn-sm btn-outline-primary"
+                                                    onclick="openMediaLibrary(this)"><i
+                                                      class="bi bi-folder2-open"></i></button>
+                                                </div>
+                                                <div class="row g-2 w-100 m-0">
+                                                  <div class="col-md-6 p-0 pe-1"><input type="text"
+                                                      class="form-control form-control-sm f2" placeholder="Name"
+                                                      value="<%= item.name %>"></div>
+                                                  <div class="col-md-6 p-0 ps-1"><input type="text"
+                                                      class="form-control form-control-sm f3"
+                                                      placeholder="Role/Designation" value="<%= item.role %>"></div>
+                                                </div>
+                                                <textarea class="form-control form-control-sm f4"
+                                                  placeholder="Short Bio" rows="2"><%= item.bio %></textarea>
                                               </div>
-                                              <div class="row g-2 w-100 m-0">
-                                                <div class="col-md-6 p-0 pe-1"><input type="text" class="form-control form-control-sm f2" placeholder="Name" value="<%= item.name %>"></div>
-                                                <div class="col-md-6 p-0 ps-1"><input type="text" class="form-control form-control-sm f3" placeholder="Role/Designation" value="<%= item.role %>"></div>
-                                              </div>
-                                              <textarea class="form-control form-control-sm f4" placeholder="Short Bio" rows="2"><%= item.bio %></textarea>
-                                            </div>
-                                          <% } %>
-                                              <button type="button" class="btn btn-sm btn-light text-danger border"
-                                                onclick="this.parentElement.remove()"><i
-                                                  class="bi bi-x-lg"></i></button>
+                                              <% } %>
+                                                <button type="button" class="btn btn-sm btn-light text-danger border"
+                                                  onclick="this.parentElement.remove()"><i
+                                                    class="bi bi-x-lg"></i></button>
                               </div>
                               <% }); %>
                           </div>
@@ -272,49 +299,64 @@
                             <div class="col-12">
                               <label class="small fw-bold text-indigo mb-2 d-block">1. Stats (Numbers)</label>
                               <div class="stats-list d-flex flex-column gap-2 mb-2">
-                                <% (content.stats || []).forEach(st => { %>
+                                <% (content.stats || []).forEach(st=> { %>
                                   <div class="item-row d-flex gap-2 align-items-center bg-white p-2 rounded-3 border">
-                                    <input type="text" class="form-control form-control-sm f1" placeholder="Value (e.g. 3400+)" value="<%= st.value %>">
-                                    <input type="text" class="form-control form-control-sm f2" placeholder="Label" value="<%= st.label %>">
-                                    <button type="button" class="btn btn-sm btn-light text-danger border" onclick="this.parentElement.remove()"><i class="bi bi-x-lg"></i></button>
+                                    <input type="text" class="form-control form-control-sm f1"
+                                      placeholder="Value (e.g. 3400+)" value="<%= st.value %>">
+                                    <input type="text" class="form-control form-control-sm f2" placeholder="Label"
+                                      value="<%= st.label %>">
+                                    <button type="button" class="btn btn-sm btn-light text-danger border"
+                                      onclick="this.parentElement.remove()"><i class="bi bi-x-lg"></i></button>
                                   </div>
-                                <% }) %>
+                                  <% }) %>
                               </div>
-                              <button type="button" class="btn btn-xs btn-outline-indigo" onclick="addItem(<%= index %>, 'stat')">+ Add Stat</button>
+                              <button type="button" class="btn btn-xs btn-outline-indigo"
+                                onclick="addItem(<%= index %>, 'stat')">+ Add Stat</button>
                             </div>
                             <!-- Features List -->
                             <div class="col-12">
                               <label class="small fw-bold text-indigo mb-2 d-block">2. Features (Points)</label>
                               <div class="features-list d-flex flex-column gap-2 mb-2">
-                                <% (content.features || []).forEach(ft => { %>
+                                <% (content.features || []).forEach(ft=> { %>
                                   <div class="item-row d-flex gap-2 align-items-center bg-white p-2 rounded-3 border">
-                                    <input type="text" class="form-control form-control-sm f1" placeholder="Title" value="<%= ft.title %>">
-                                    <input type="text" class="form-control form-control-sm f2" placeholder="Description" value="<%= ft.desc %>">
-                                    <button type="button" class="btn btn-sm btn-light text-danger border" onclick="this.parentElement.remove()"><i class="bi bi-x-lg"></i></button>
+                                    <input type="text" class="form-control form-control-sm f1" placeholder="Title"
+                                      value="<%= ft.title %>">
+                                    <input type="text" class="form-control form-control-sm f2" placeholder="Description"
+                                      value="<%= ft.desc %>">
+                                    <button type="button" class="btn btn-sm btn-light text-danger border"
+                                      onclick="this.parentElement.remove()"><i class="bi bi-x-lg"></i></button>
                                   </div>
-                                <% }) %>
+                                  <% }) %>
                               </div>
-                              <button type="button" class="btn btn-xs btn-outline-indigo" onclick="addItem(<%= index %>, 'feature')">+ Add Feature</button>
+                              <button type="button" class="btn btn-xs btn-outline-indigo"
+                                onclick="addItem(<%= index %>, 'feature')">+ Add Feature</button>
                             </div>
                             <!-- Gallery List -->
                             <div class="col-12">
                               <label class="small fw-bold text-indigo mb-2 d-block">3. Gallery Images</label>
                               <div class="gallery-list d-flex flex-column gap-2 mb-2">
-                                <% (content.gallery || []).forEach(gl => { %>
+                                <% (content.gallery || []).forEach(gl=> { %>
                                   <div class="item-row d-flex gap-2 align-items-center bg-white p-2 rounded-3 border">
                                     <div class="d-flex flex-column flex-grow-1">
                                       <div class="d-flex gap-2 align-items-center mb-1 media-selector-wrap">
-                                        <img src="<%= gl.img || '/assets/img/placeholder.png' %>" class="img-preview rounded" style="width: 40px; height: 40px; object-fit: cover; display: <%= gl.img ? 'block' : 'none' %>;">
-                                        <input type="text" class="form-control form-control-sm f1" placeholder="Image URL" value="<%= gl.img %>" onchange="updatePreview(this)">
-                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="openMediaLibrary(this)"><i class="bi bi-folder2-open"></i></button>
+                                        <img src="<%= gl.img || '/assets/img/placeholder.png' %>"
+                                          class="img-preview rounded"
+                                          style="width: 40px; height: 40px; object-fit: cover; display: <%= gl.img ? 'block' : 'none' %>;">
+                                        <input type="text" class="form-control form-control-sm f1"
+                                          placeholder="Image URL" value="<%= gl.img %>" onchange="updatePreview(this)">
+                                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                          onclick="openMediaLibrary(this)"><i class="bi bi-folder2-open"></i></button>
                                       </div>
-                                      <input type="text" class="form-control form-control-sm f2" placeholder="Label" value="<%= gl.lbl %>">
+                                      <input type="text" class="form-control form-control-sm f2" placeholder="Label"
+                                        value="<%= gl.lbl %>">
                                     </div>
-                                    <button type="button" class="btn btn-sm btn-light text-danger border" onclick="this.parentElement.remove()"><i class="bi bi-x-lg"></i></button>
+                                    <button type="button" class="btn btn-sm btn-light text-danger border"
+                                      onclick="this.parentElement.remove()"><i class="bi bi-x-lg"></i></button>
                                   </div>
-                                <% }) %>
+                                  <% }) %>
                               </div>
-                              <button type="button" class="btn btn-xs btn-outline-indigo" onclick="addItem(<%= index %>, 'gallery')">+ Add Image</button>
+                              <button type="button" class="btn btn-xs btn-outline-indigo"
+                                onclick="addItem(<%= index %>, 'gallery')">+ Add Image</button>
                             </div>
                           </div>
                         </div>
@@ -326,41 +368,53 @@
                             <!-- Story Description -->
                             <div class="col-12">
                               <label class="small fw-bold text-indigo mb-2 d-block">1. Story Description</label>
-                              <textarea class="form-control item-story-desc rich-editor" rows="4" placeholder="Detailed story text goes here..."><%= content.story_desc || '' %></textarea>
+                              <textarea class="form-control item-story-desc rich-editor" rows="4"
+                                placeholder="Detailed story text goes here..."><%= content.story_desc || '' %></textarea>
                             </div>
                             <!-- Stats List -->
                             <div class="col-12">
                               <label class="small fw-bold text-indigo mb-2 d-block">2. Labels / Stats (Array)</label>
                               <div class="story-stats-list d-flex flex-column gap-2 mb-2">
-                                <% (content.stats || []).forEach(st => { %>
+                                <% (content.stats || []).forEach(st=> { %>
                                   <div class="item-row d-flex gap-2 align-items-center bg-white p-2 rounded-3 border">
-                                    <input type="text" class="form-control form-control-sm f1" placeholder="Label/Value (e.g. 50K+)" value="<%= st.value %>">
-                                    <input type="text" class="form-control form-control-sm f2" placeholder="Description (e.g. Happy Travelers)" value="<%= st.desc %>">
-                                    <button type="button" class="btn btn-sm btn-light text-danger border" onclick="this.parentElement.remove()"><i class="bi bi-x-lg"></i></button>
+                                    <input type="text" class="form-control form-control-sm f1"
+                                      placeholder="Label/Value (e.g. 50K+)" value="<%= st.value %>">
+                                    <input type="text" class="form-control form-control-sm f2"
+                                      placeholder="Description (e.g. Happy Travelers)" value="<%= st.desc %>">
+                                    <button type="button" class="btn btn-sm btn-light text-danger border"
+                                      onclick="this.parentElement.remove()"><i class="bi bi-x-lg"></i></button>
                                   </div>
-                                <% }) %>
+                                  <% }) %>
                               </div>
-                              <button type="button" class="btn btn-xs btn-outline-indigo" onclick="addItem(<%= index %>, 'story_stat')">+ Add Label</button>
+                              <button type="button" class="btn btn-xs btn-outline-indigo"
+                                onclick="addItem(<%= index %>, 'story_stat')">+ Add Label</button>
                             </div>
                             <!-- Gallery List with Alt -->
                             <div class="col-12">
                               <label class="small fw-bold text-indigo mb-2 d-block">3. Images (Array)</label>
                               <div class="story-gallery-list d-flex flex-column gap-2 mb-2">
-                                <% (content.gallery || []).forEach(gl => { %>
+                                <% (content.gallery || []).forEach(gl=> { %>
                                   <div class="item-row d-flex gap-2 align-items-center bg-white p-2 rounded-3 border">
                                     <div class="d-flex flex-column flex-grow-1">
                                       <div class="d-flex gap-2 align-items-center mb-1 media-selector-wrap">
-                                        <img src="<%= gl.img || '/assets/img/placeholder.png' %>" class="img-preview rounded" style="width: 40px; height: 40px; object-fit: cover; display: <%= gl.img ? 'block' : 'none' %>;">
-                                        <input type="text" class="form-control form-control-sm f1" placeholder="Image URL" value="<%= gl.img %>" onchange="updatePreview(this)">
-                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="openMediaLibrary(this)"><i class="bi bi-folder2-open"></i></button>
+                                        <img src="<%= gl.img || '/assets/img/placeholder.png' %>"
+                                          class="img-preview rounded"
+                                          style="width: 40px; height: 40px; object-fit: cover; display: <%= gl.img ? 'block' : 'none' %>;">
+                                        <input type="text" class="form-control form-control-sm f1"
+                                          placeholder="Image URL" value="<%= gl.img %>" onchange="updatePreview(this)">
+                                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                          onclick="openMediaLibrary(this)"><i class="bi bi-folder2-open"></i></button>
                                       </div>
-                                      <input type="text" class="form-control form-control-sm f2" placeholder="Image Alt Text" value="<%= gl.alt %>">
+                                      <input type="text" class="form-control form-control-sm f2"
+                                        placeholder="Image Alt Text" value="<%= gl.alt %>">
                                     </div>
-                                    <button type="button" class="btn btn-sm btn-light text-danger border" onclick="this.parentElement.remove()"><i class="bi bi-x-lg"></i></button>
+                                    <button type="button" class="btn btn-sm btn-light text-danger border"
+                                      onclick="this.parentElement.remove()"><i class="bi bi-x-lg"></i></button>
                                   </div>
-                                <% }) %>
+                                  <% }) %>
                               </div>
-                              <button type="button" class="btn btn-xs btn-outline-indigo" onclick="addItem(<%= index %>, 'story_gallery')">+ Add Image</button>
+                              <button type="button" class="btn btn-xs btn-outline-indigo"
+                                onclick="addItem(<%= index %>, 'story_gallery')">+ Add Image</button>
                             </div>
                           </div>
                         </div>
@@ -370,37 +424,50 @@
                           style="display: <%= detail.section === 'tabs_section' ? 'block' : 'none' %>">
                           <div class="mb-3">
                             <label class="small fw-bold text-muted mb-1">Block Description (Optional)</label>
-                            <textarea class="form-control form-control-sm item-block-desc" rows="2" placeholder="Brief text under heading..."><%= content.block_desc || '' %></textarea>
+                            <textarea class="form-control form-control-sm item-block-desc" rows="2"
+                              placeholder="Brief text under heading..."><%= content.block_desc || '' %></textarea>
                           </div>
                           <div class="tabs-list d-flex flex-column gap-2 mb-3">
-                            <% (content.tabs || []).forEach((tab, i) => { %>
+                            <% (content.tabs || []).forEach((tab, i)=> { %>
                               <div class="item-row d-flex flex-column gap-2 bg-white p-3 rounded-3 border shadow-sm">
                                 <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
-                                  <span class="fw-bold text-primary small"><i class="bi bi-window-stack me-1"></i> Tab Item</span>
-                                  <button type="button" class="btn btn-sm btn-light text-danger border py-0 px-2" onclick="this.closest('.item-row').remove()"><i class="bi bi-x-lg"></i></button>
+                                  <span class="fw-bold text-primary small"><i class="bi bi-window-stack me-1"></i> Tab
+                                    Item</span>
+                                  <button type="button" class="btn btn-sm btn-light text-danger border py-0 px-2"
+                                    onclick="this.closest('.item-row').remove()"><i class="bi bi-x-lg"></i></button>
                                 </div>
                                 <div class="row g-3">
                                   <div class="col-md-4">
                                     <label class="small fw-bold text-muted">Tab Title / Key</label>
-                                    <input type="text" class="form-control form-control-sm f1 mb-2" placeholder="e.g. Inside Cabin" value="<%= tab.title %>">
+                                    <input type="text" class="form-control form-control-sm f1 mb-2"
+                                      placeholder="e.g. Inside Cabin" value="<%= tab.title %>">
                                     <label class="small fw-bold text-muted">Badge (Optional)</label>
-                                    <input type="text" class="form-control form-control-sm f2 mb-2" placeholder="e.g. BEST VALUE" value="<%= tab.badge %>">
+                                    <input type="text" class="form-control form-control-sm f2 mb-2"
+                                      placeholder="e.g. BEST VALUE" value="<%= tab.badge %>">
                                     <label class="small fw-bold text-muted">Tab Image</label>
                                     <div class="media-selector-wrap border rounded p-2 text-center bg-light">
-                                      <img src="<%= tab.img || '/assets/img/placeholder.png' %>" class="img-preview rounded shadow-sm" style="width:100%; height:80px; object-fit:cover; display:<%= tab.img ? 'block' : 'none' %>;">
-                                      <input type="text" class="form-control form-control-sm f3 mt-2" placeholder="Image URL" value="<%= tab.img %>" onchange="updatePreview(this)">
-                                      <button type="button" class="btn btn-sm btn-outline-primary mt-1 w-100" onclick="openMediaLibrary(this)"><i class="bi bi-image me-1"></i> Select</button>
+                                      <img src="<%= tab.img || '/assets/img/placeholder.png' %>"
+                                        class="img-preview rounded shadow-sm"
+                                        style="width:100%; height:80px; object-fit:cover; display:<%= tab.img ? 'block' : 'none' %>;">
+                                      <input type="text" class="form-control form-control-sm f3 mt-2"
+                                        placeholder="Image URL" value="<%= tab.img %>" onchange="updatePreview(this)">
+                                      <button type="button" class="btn btn-sm btn-outline-primary mt-1 w-100"
+                                        onclick="openMediaLibrary(this)"><i class="bi bi-image me-1"></i>
+                                        Select</button>
                                     </div>
                                   </div>
                                   <div class="col-md-8">
                                     <label class="small fw-bold text-muted">Tab Content (Rich Text)</label>
-                                    <textarea class="form-control f4 rich-editor" placeholder="Tab Content (Rich Text)"><%= tab.content %></textarea>
+                                    <textarea class="form-control f4 rich-editor"
+                                      placeholder="Tab Content (Rich Text)"><%= tab.content %></textarea>
                                   </div>
                                 </div>
                               </div>
-                            <% }) %>
+                              <% }) %>
                           </div>
-                          <button type="button" class="btn btn-sm btn-light border fw-bold text-primary" onclick="addItem(<%= index %>, 'tabs_section')"><i class="bi bi-plus-lg me-1"></i> Add Tab</button>
+                          <button type="button" class="btn btn-sm btn-light border fw-bold text-primary"
+                            onclick="addItem(<%= index %>, 'tabs_section')"><i class="bi bi-plus-lg me-1"></i> Add
+                            Tab</button>
                         </div>
 
                         <!-- Destination Tabs -->
@@ -412,12 +479,14 @@
                               placeholder="e.g. Click on any country to check visa requirements and apply."><%= content.description || '' %></textarea>
                           </div>
                           <div class="destination-tabs-list d-flex flex-column gap-3 mb-3">
-                            <% (content.tabs || []).forEach((tab) => { %>
+                            <% (content.tabs || []).forEach((tab)=> { %>
                               <div class="destination-tab-row bg-white p-3 rounded-3 border shadow-sm">
                                 <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
-                                  <span class="fw-bold text-primary"><i class="bi bi-collection me-1"></i> Destination Tab</span>
+                                  <span class="fw-bold text-primary"><i class="bi bi-collection me-1"></i> Destination
+                                    Tab</span>
                                   <button type="button" class="btn btn-sm btn-light text-danger border"
-                                    onclick="this.closest('.destination-tab-row').remove()"><i class="bi bi-trash3"></i></button>
+                                    onclick="this.closest('.destination-tab-row').remove()"><i
+                                      class="bi bi-trash3"></i></button>
                                 </div>
                                 <div class="row g-2 mb-3">
                                   <div class="col-md-6">
@@ -432,28 +501,53 @@
                                   </div>
                                 </div>
                                 <div class="destination-cards-list d-flex flex-column gap-2 mb-2">
-                                  <% (tab.destinations || tab.items || []).forEach((destination) => { %>
+                                  <% (tab.destinations || tab.items || []).forEach((destination)=> { %>
                                     <div class="destination-card-row bg-light border rounded-3 p-2">
                                       <div class="row g-2 align-items-end">
-                                        <div class="col-md-3"><label class="small text-muted">Name</label><input type="text" class="form-control form-control-sm card-name" value="<%= destination.name || '' %>" placeholder="Nepal"></div>
-                                        <div class="col-md-3"><label class="small text-muted">Slug</label><input type="text" class="form-control form-control-sm card-slug" value="<%= destination.slug || '' %>" placeholder="nepal"></div>
-                                        <div class="col-md-4"><label class="small text-muted">Image URL</label><div class="input-group input-group-sm media-selector-wrap"><input type="text" class="form-control card-image" value="<%= destination.image || destination.img || '' %>" placeholder="/uploads/..." onchange="updatePreview(this)"><button type="button" class="btn btn-outline-primary" onclick="openMediaLibrary(this.previousElementSibling)"><i class="bi bi-folder2-open"></i></button></div></div>
-                                        <div class="col-md-2"><label class="small text-muted">Badge</label><input type="text" class="form-control form-control-sm card-badge" value="<%= destination.badge || '' %>" placeholder="VISA REQUIRED"></div>
-                                        <div class="col-md-3"><label class="small text-muted">CTA Text</label><input type="text" class="form-control form-control-sm card-cta-text" value="<%= destination.cta_text || 'Apply Now' %>" placeholder="Apply Now"></div>
-                                        <div class="col-md-7"><label class="small text-muted">CTA Link</label><input type="text" class="form-control form-control-sm card-cta-link" value="<%= destination.cta_link || destination.link || '' %>" placeholder="/visa/nepal"></div>
-                                        <div class="col-md-2"><button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="this.closest('.destination-card-row').remove()"><i class="bi bi-x-lg"></i> Remove</button></div>
+                                        <div class="col-md-3"><label class="small text-muted">Name</label><input
+                                            type="text" class="form-control form-control-sm card-name"
+                                            value="<%= destination.name || '' %>" placeholder="Nepal"></div>
+                                        <div class="col-md-3"><label class="small text-muted">Slug</label><input
+                                            type="text" class="form-control form-control-sm card-slug"
+                                            value="<%= destination.slug || '' %>" placeholder="nepal"></div>
+                                        <div class="col-md-4"><label class="small text-muted">Image URL</label>
+                                          <div class="input-group input-group-sm media-selector-wrap"><input type="text"
+                                              class="form-control card-image"
+                                              value="<%= destination.image || destination.img || '' %>"
+                                              placeholder="/uploads/..." onchange="updatePreview(this)"><button
+                                              type="button" class="btn btn-outline-primary"
+                                              onclick="openMediaLibrary(this.previousElementSibling)"><i
+                                                class="bi bi-folder2-open"></i></button></div>
+                                        </div>
+                                        <div class="col-md-2"><label class="small text-muted">Badge</label><input
+                                            type="text" class="form-control form-control-sm card-badge"
+                                            value="<%= destination.badge || '' %>" placeholder="VISA REQUIRED"></div>
+                                        <div class="col-md-3"><label class="small text-muted">CTA Text</label><input
+                                            type="text" class="form-control form-control-sm card-cta-text"
+                                            value="<%= destination.cta_text || 'Apply Now' %>" placeholder="Apply Now">
+                                        </div>
+                                        <div class="col-md-7"><label class="small text-muted">CTA Link</label><input
+                                            type="text" class="form-control form-control-sm card-cta-link"
+                                            value="<%= destination.cta_link || destination.link || '' %>"
+                                            placeholder="/visa/nepal"></div>
+                                        <div class="col-md-2"><button type="button"
+                                            class="btn btn-sm btn-outline-danger w-100"
+                                            onclick="this.closest('.destination-card-row').remove()"><i
+                                              class="bi bi-x-lg"></i> Remove</button></div>
                                       </div>
                                     </div>
-                                  <% }) %>
+                                    <% }) %>
                                 </div>
-                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="addDestinationCard(this)">
+                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                  onclick="addDestinationCard(this)">
                                   <i class="bi bi-plus-lg me-1"></i> Add Destination
                                 </button>
                               </div>
-                            <% }) %>
+                              <% }) %>
                           </div>
                           <button type="button" class="btn btn-sm btn-light border fw-bold text-primary"
-                            onclick="addItem(<%= index %>, 'destination_tab')"><i class="bi bi-plus-lg me-1"></i> Add Tab</button>
+                            onclick="addItem(<%= index %>, 'destination_tab')"><i class="bi bi-plus-lg me-1"></i> Add
+                            Tab</button>
                         </div>
 
                         <!-- Exclusive Offers -->
@@ -465,33 +559,60 @@
                               placeholder="Grab the best deals on flights, hotels, and holiday packages."><%= content.description || '' %></textarea>
                           </div>
                           <div class="offers-list d-flex flex-column gap-3 mb-3">
-                            <% (content.offers || []).forEach((offer) => { %>
+                            <% (content.offers || []).forEach((offer)=> { %>
                               <div class="offer-card-row bg-white p-3 rounded-3 border shadow-sm">
                                 <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
                                   <span class="fw-bold text-primary"><i class="bi bi-tags me-1"></i> Offer Card</span>
                                   <button type="button" class="btn btn-sm btn-light text-danger border"
-                                    onclick="this.closest('.offer-card-row').remove()"><i class="bi bi-trash3"></i></button>
+                                    onclick="this.closest('.offer-card-row').remove()"><i
+                                      class="bi bi-trash3"></i></button>
                                 </div>
                                 <div class="row g-2 align-items-end">
-                                  <div class="col-md-3"><label class="small text-muted">Offer Type</label><input type="text" class="form-control form-control-sm offer-type" value="<%= offer.type || '' %>" placeholder="FLIGHT OFFER"></div>
-                                  <div class="col-md-6"><label class="small text-muted">Offer Title</label><input type="text" class="form-control form-control-sm offer-title" value="<%= offer.title || '' %>" placeholder="Flat 10% Off on International Flights"></div>
-                                  <div class="col-md-3"><label class="small text-muted">Card Size</label><select class="form-select form-select-sm offer-size"><option value="standard" <%= offer.size === 'standard' ? 'selected' : '' %>>Standard</option><option value="wide" <%= offer.size === 'wide' ? 'selected' : '' %>>Wide</option><option value="featured" <%= offer.size === 'featured' ? 'selected' : '' %>>Featured Large</option></select></div>
-                                  <div class="col-md-4"><label class="small text-muted">Image URL</label><div class="input-group input-group-sm media-selector-wrap"><input type="text" class="form-control offer-image" value="<%= offer.image || offer.img || '' %>" placeholder="/uploads/..." onchange="updatePreview(this)"><button type="button" class="btn btn-outline-primary" onclick="openMediaLibrary(this)"><i class="bi bi-folder2-open"></i></button></div></div>
-                                  <div class="col-md-3"><label class="small text-muted">Validity Text</label><input type="text" class="form-control form-control-sm offer-validity" value="<%= offer.validity || offer.valid_until || '' %>" placeholder="Valid till 30th Nov"></div>
-                                  <div class="col-md-2"><label class="small text-muted">Coupon Code</label><input type="text" class="form-control form-control-sm offer-code" value="<%= offer.code || offer.coupon_code || '' %>" placeholder="INTL10"></div>
-                                  <div class="col-md-3"><label class="small text-muted">Offer Link</label><input type="text" class="form-control form-control-sm offer-link" value="<%= offer.link || '' %>" placeholder="/offers/flight"></div>
+                                  <div class="col-md-3"><label class="small text-muted">Offer Type</label><input
+                                      type="text" class="form-control form-control-sm offer-type"
+                                      value="<%= offer.type || '' %>" placeholder="FLIGHT OFFER"></div>
+                                  <div class="col-md-6"><label class="small text-muted">Offer Title</label><input
+                                      type="text" class="form-control form-control-sm offer-title"
+                                      value="<%= offer.title || '' %>"
+                                      placeholder="Flat 10% Off on International Flights"></div>
+                                  <div class="col-md-3"><label class="small text-muted">Card Size</label><select
+                                      class="form-select form-select-sm offer-size">
+                                      <option value="standard" <%=offer.size==='standard' ? 'selected' : '' %>>Standard
+                                      </option>
+                                      <option value="wide" <%=offer.size==='wide' ? 'selected' : '' %>>Wide</option>
+                                      <option value="featured" <%=offer.size==='featured' ? 'selected' : '' %>>Featured
+                                        Large</option>
+                                    </select></div>
+                                  <div class="col-md-4"><label class="small text-muted">Image URL</label>
+                                    <div class="input-group input-group-sm media-selector-wrap"><input type="text"
+                                        class="form-control offer-image" value="<%= offer.image || offer.img || '' %>"
+                                        placeholder="/uploads/..." onchange="updatePreview(this)"><button type="button"
+                                        class="btn btn-outline-primary" onclick="openMediaLibrary(this)"><i
+                                          class="bi bi-folder2-open"></i></button></div>
+                                  </div>
+                                  <div class="col-md-3"><label class="small text-muted">Validity Text</label><input
+                                      type="text" class="form-control form-control-sm offer-validity"
+                                      value="<%= offer.validity || offer.valid_until || '' %>"
+                                      placeholder="Valid till 30th Nov"></div>
+                                  <div class="col-md-2"><label class="small text-muted">Coupon Code</label><input
+                                      type="text" class="form-control form-control-sm offer-code"
+                                      value="<%= offer.code || offer.coupon_code || '' %>" placeholder="INTL10"></div>
+                                  <div class="col-md-3"><label class="small text-muted">Offer Link</label><input
+                                      type="text" class="form-control form-control-sm offer-link"
+                                      value="<%= offer.link || '' %>" placeholder="/offers/flight"></div>
                                 </div>
                               </div>
-                            <% }) %>
+                              <% }) %>
                           </div>
                           <button type="button" class="btn btn-sm btn-light border fw-bold text-primary"
-                            onclick="addItem(<%= index %>, 'offer')"><i class="bi bi-plus-lg me-1"></i> Add Offer</button>
+                            onclick="addItem(<%= index %>, 'offer')"><i class="bi bi-plus-lg me-1"></i> Add
+                            Offer</button>
                         </div>
 
                         <input type="hidden" name="sections[<%= index %>][json_data]"
                           value='<%= detail.json_data || "{}" %>' class="json-data-input">
+                      </div>
                     </div>
-                  </div>
                 </div>
                 <% }) %>
                   <% } %>
@@ -647,8 +768,8 @@
             <i class="bi bi-trash"></i>
           </button>
           ${isVideo
-            ? `<video src="${safeUrl}" style="height:100px; width:100%; object-fit:cover; background:#000;" class="rounded-2" muted></video><div style="position:absolute; top:5px; right:5px; background:rgba(0,0,0,0.5); color:#fff; border-radius:4px; padding:2px 5px; font-size:10px;"><i class="bi bi-camera-video"></i></div>`
-            : `<img src="${safeUrl}" class="img-fluid rounded-2" style="height:100px; width:100%; object-fit:cover;">`}
+        ? `<video src="${safeUrl}" style="height:100px; width:100%; object-fit:cover; background:#000;" class="rounded-2" muted></video><div style="position:absolute; top:5px; right:5px; background:rgba(0,0,0,0.5); color:#fff; border-radius:4px; padding:2px 5px; font-size:10px;"><i class="bi bi-camera-video"></i></div>`
+        : `<img src="${safeUrl}" class="img-fluid rounded-2" style="height:100px; width:100%; object-fit:cover;">`}
           <div class="media-info small text-truncate mt-1 px-1">${mediaLabel}</div>
         </div>
       </div>
@@ -675,21 +796,21 @@
 
   async function loadMediaLibrary(reset = false) {
     if (reset && isMediaLoading) {
-        pendingMediaReload = true;
-        mediaRequestId++;
-        return;
+      pendingMediaReload = true;
+      mediaRequestId++;
+      return;
     }
     if (reset) {
-        currentMediaPage = 1;
-        hasMoreMedia = true;
-        document.getElementById('mediaGrid').innerHTML = '';
+      currentMediaPage = 1;
+      hasMoreMedia = true;
+      document.getElementById('mediaGrid').innerHTML = '';
     }
     if (!hasMoreMedia || isMediaLoading) return;
-    
+
     isMediaLoading = true;
     const requestId = ++mediaRequestId;
     const container = document.getElementById('mediaGrid');
-    
+
     const loadingIndicator = document.createElement('div');
     loadingIndicator.className = 'text-center py-5 w-100 media-loading-indicator';
     loadingIndicator.innerHTML = '<div class="spinner-border text-primary"></div>';
@@ -703,7 +824,7 @@
         finishMediaLibraryLoad();
         return;
       }
-      
+
       const loader = container.querySelector('.media-loading-indicator');
       if (loader) loader.remove();
 
@@ -836,7 +957,7 @@
     const section = document.querySelector(`.section-item[data-index="${index}"]`);
     const type = section.querySelector('select[name*="[section]"]').value;
     let list = section.querySelector('.items-list');
-    
+
     if (type === 'why_choose_us') {
       const listMap = { 'stat': 'stats-list', 'feature': 'features-list', 'gallery': 'gallery-list' };
       list = section.querySelector(`.${listMap[subType]}`);
@@ -858,7 +979,7 @@
     const delBtn = '<button type="button" class="btn btn-sm btn-light text-danger border" onclick="this.parentElement.remove()"><i class="bi bi-x-lg"></i></button>';
 
     if (type === 'image_text' && subType === 'image_text_point') {
-        html = `<div class="${rowClass} p-1"><input type="text" class="form-control form-control-sm f1" placeholder="Point Title">${delBtn}</div>`;
+      html = `<div class="${rowClass} p-1"><input type="text" class="form-control form-control-sm f1" placeholder="Point Title">${delBtn}</div>`;
     } else if (type === 'why_choose_us') {
       if (subType === 'stat') html = `<div class="${rowClass}"><input type="text" class="form-control form-control-sm f1" placeholder="Value"><input type="text" class="form-control form-control-sm f2" placeholder="Label">${delBtn}</div>`;
       if (subType === 'feature') html = `<div class="${rowClass}"><input type="text" class="form-control form-control-sm f1" placeholder="Title"><input type="text" class="form-control form-control-sm f2" placeholder="Desc">${delBtn}</div>`;
@@ -996,16 +1117,16 @@
               </div>`;
     }
     list.insertAdjacentHTML('beforeend', html);
-    
+
     // Initialize CKEditor on newly added rich-editors in the item row
     setTimeout(() => {
-        if (list.lastElementChild) {
-            list.lastElementChild.querySelectorAll('.rich-editor').forEach(textarea => {
-                ClassicEditor.create(textarea).then(editor => {
-                    textarea.ckeditorInstance = editor;
-                }).catch(err => console.error(err));
-            });
-        }
+      if (list.lastElementChild) {
+        list.lastElementChild.querySelectorAll('.rich-editor').forEach(textarea => {
+          ClassicEditor.create(textarea, { extraPlugins: [MediaUploadAdapterPlugin] }).then(editor => {
+            textarea.ckeditorInstance = editor;
+          }).catch(err => console.error(err));
+        });
+      }
     }, 100);
   }
 
@@ -1133,18 +1254,18 @@
         </div>
       </div>`;
     container.insertAdjacentHTML('beforeend', html);
-    
+
     // Initialize CKEditor on newly added rich-editors
     setTimeout(() => {
-        const newSection = document.querySelector(`.section-item[data-index="${sectionCount}"]`);
-        if (newSection) {
-            newSection.querySelectorAll('.rich-editor').forEach(textarea => {
-                ClassicEditor.create(textarea).then(editor => {
-                    textarea.ckeditorInstance = editor;
-                }).catch(err => console.error(err));
-            });
-        }
-        sectionCount++;
+      const newSection = document.querySelector(`.section-item[data-index="${sectionCount}"]`);
+      if (newSection) {
+        newSection.querySelectorAll('.rich-editor').forEach(textarea => {
+          ClassicEditor.create(textarea, { extraPlugins: [MediaUploadAdapterPlugin] }).then(editor => {
+            textarea.ckeditorInstance = editor;
+          }).catch(err => console.error(err));
+        });
+      }
+      sectionCount++;
     }, 100);
   }
 
@@ -1172,12 +1293,12 @@
 
   document.getElementById('pageForm').addEventListener('submit', async e => {
     e.preventDefault();
-    
+
     // Update all textarea values from CKEditor instances before saving
     document.querySelectorAll('.rich-editor').forEach(textarea => {
-        if (textarea.ckeditorInstance) {
-            textarea.value = textarea.ckeditorInstance.getData();
-        }
+      if (textarea.ckeditorInstance) {
+        textarea.value = textarea.ckeditorInstance.getData();
+      }
     });
 
     document.querySelectorAll('.section-item').forEach(section => {
@@ -1243,7 +1364,7 @@
       } else if (['faq_accordion', 'stats_bar', 'timeline', 'feature_grid', 'testimonial_grid', 'gallery', 'team_grid'].includes(type)) {
         const rows = section.querySelectorAll('.type-list-based .items-list .item-row');
         const listKey = { 'faq_accordion': 'faqs', 'stats_bar': 'stats', 'timeline': 'items', 'feature_grid': 'features', 'testimonial_grid': 'testimonials', 'gallery': 'images', 'team_grid': 'team' }[type];
-        
+
         // Capture block description if present
         const blockDesc = section.querySelector('.type-list-based .item-block-desc') ? section.querySelector('.type-list-based .item-block-desc').value : '';
         if (blockDesc) data.block_desc = blockDesc;
@@ -1253,7 +1374,7 @@
           const f2 = row.querySelector('.f2') ? row.querySelector('.f2').value : null;
           const f3 = row.querySelector('.f3') ? row.querySelector('.f3').value : null;
           const f4 = row.querySelector('.f4') ? row.querySelector('.f4').value : null;
-          
+
           if (type === 'faq_accordion') return { q: f1, a: f2 };
           if (type === 'stats_bar') return { value: f1, label: f2 };
           if (type === 'timeline') return { year: f1, title: f2, desc: f3 };
@@ -1275,16 +1396,41 @@
   });
 </script>
 
-<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        document.querySelectorAll('.rich-editor').forEach(textarea => {
-            ClassicEditor.create(textarea).then(editor => {
-                // Store instance on the element for easy access on submit
-                textarea.ckeditorInstance = editor;
-            }).catch(error => console.error(error));
-        });
+  class MediaUploadAdapter {
+    constructor(loader) { this.loader = loader; }
+    upload() {
+      return this.loader.file.then(file => new Promise((resolve, reject) => {
+        const formData = new FormData();
+        formData.append('media', file);
+        formData.append('entity_type', 'page');
+        fetch('/cms/media/upload', { method: 'POST', body: formData })
+          .then(res => res.json())
+          .then(result => {
+            if (result.success) resolve({ default: result.data.url });
+            else reject(result.message || 'Upload failed');
+          })
+          .catch(err => reject(err.message || 'Upload failed'));
+      }));
+    }
+  }
+  function MediaUploadAdapterPlugin(editor) {
+    editor.plugins.get('FileRepository').createUploadAdapter = loader => new MediaUploadAdapter(loader);
+  }
+</script>
+
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js">
+
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.rich-editor').forEach(textarea => {
+      ClassicEditor.create(textarea, { extraPlugins: [MediaUploadAdapterPlugin] }).then(editor => {
+        // Store instance on the element for easy access on submit
+        textarea.ckeditorInstance = editor;
+      }).catch(error => console.error(error));
     });
+  });
 </script>
 
 <style>
@@ -1300,7 +1446,8 @@
       <div class="modal-header bg-light border-bottom d-flex justify-content-between">
         <h5 class="modal-title fw-bold"><i class="bi bi-images text-primary me-2"></i> Media Library</h5>
         <div class="d-flex gap-2">
-          <input type="file" id="modalUploadInput" class="d-none" accept="image/*,video/*" onchange="uploadFromModal(this)">
+          <input type="file" id="modalUploadInput" class="d-none" accept="image/*,video/*"
+            onchange="uploadFromModal(this)">
           <button type="button" class="btn btn-sm btn-primary"
             onclick="document.getElementById('modalUploadInput').click()">
             <i class="bi bi-upload me-1"></i> Upload New
@@ -1311,7 +1458,9 @@
       <div class="modal-body p-4">
         <div class="input-group mb-3">
           <span class="input-group-text"><i class="bi bi-search"></i></span>
-          <input type="search" id="mediaSearchInput" class="form-control" placeholder="Search images" oninput="filterMediaGrid(this.value)" onkeyup="filterMediaGrid(this.value)" onchange="filterMediaGrid(this.value)">
+          <input type="search" id="mediaSearchInput" class="form-control" placeholder="Search images"
+            oninput="filterMediaGrid(this.value)" onkeyup="filterMediaGrid(this.value)"
+            onchange="filterMediaGrid(this.value)">
         </div>
         <div id="mediaGrid" class="row g-3">
           <!-- Loaded via JS -->

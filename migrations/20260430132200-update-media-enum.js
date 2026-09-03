@@ -9,7 +9,7 @@ module.exports = {
       await queryInterface.sequelize.query('ALTER TYPE "enum_media_entity_type" ADD VALUE IF NOT EXISTS \'banner\'');
       await queryInterface.sequelize.query('ALTER TYPE "enum_media_entity_type" ADD VALUE IF NOT EXISTS \'blog_post\'');
     } catch (err) {
-      console.log('Enum update failed (probably not Postgres or already exists):', err.message);
+
     }
   },
 

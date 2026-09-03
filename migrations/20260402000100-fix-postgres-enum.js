@@ -8,7 +8,7 @@ module.exports = {
       await queryInterface.sequelize.query('ALTER TYPE "enum_media_entity_type" ADD VALUE \'package_day\'');
     } catch (err) {
       // If it already exists, ignore (Postgres doesn't have IF NOT EXISTS for ADD VALUE before v12, but catching error is safer)
-      console.log('ENUM value might already exist or error occurred:', err.message);
+
     }
   },
 

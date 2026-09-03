@@ -6,7 +6,7 @@ const User = require('../models/User');
 
 async function seed() {
     try {
-        console.log('Connecting to database...');
+
         await sequelize.authenticate();
         await sequelize.sync({ alter: true }); // Ensure tables/associations exist
 
@@ -23,7 +23,7 @@ async function seed() {
             }
         });
 
-        console.log('Generating 1000 blogs... This may take a moment.');
+
 
         const posts = [];
         const now = new Date();
@@ -46,8 +46,8 @@ async function seed() {
 
         // Bulk insert blogs to be fast
         const createdPosts = await BlogPost.bulkCreate(posts, { returning: true });
-        
-        console.log(`Successfully seeded 1000 blogs. Creating details for the first 10 blogs...`);
+
+
 
         // Create details for just the first 10 to save time
         const details = [];
@@ -61,7 +61,7 @@ async function seed() {
         }
         await BlogDetail.bulkCreate(details);
 
-        console.log('Blog seeding completed successfully!');
+
         process.exit(0);
     } catch (err) {
         console.error('Error seeding blogs:', err);

@@ -4,7 +4,7 @@ const { Pipeline, PipelineStage, LeadFormField, Lead } = require('./src/containe
 async function seed() {
     try {
         await sequelize.authenticate();
-        console.log('Database connected.');
+
 
         // 1. Create the Custom Bookings Pipeline
         const [pipeline, created] = await Pipeline.findOrCreate({
@@ -13,9 +13,9 @@ async function seed() {
         });
 
         if (created) {
-            console.log('Created pipeline: Custom Bookings');
+
         } else {
-            console.log('Pipeline "Custom Bookings" already exists.');
+
         }
 
         // 2. Create Stages
@@ -36,7 +36,7 @@ async function seed() {
             });
             stages.push(stg);
         }
-        console.log(`Seeded ${stages.length} stages for pipeline.`);
+
 
         // 3. Create LeadFormFields for this pipeline
         const fieldsData = [
@@ -57,7 +57,7 @@ async function seed() {
                 defaults: field
             });
         }
-        console.log('Seeded form fields for Custom Bookings pipeline.');
+
 
         // 4. Seed a few demo leads
         const demoLeads = [
@@ -122,9 +122,9 @@ async function seed() {
             });
             if (leadCreated) createdLeadsCount++;
         }
-        console.log(`Seeded ${createdLeadsCount} demo leads.`);
 
-        console.log('Seeding completed successfully!');
+
+
     } catch (error) {
         console.error('Seeding error:', error);
     } finally {

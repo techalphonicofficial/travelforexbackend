@@ -94,7 +94,7 @@ class MediaController {
         try {
             if (!req.file) throw new Error('No file uploaded');
             const url = `/uploads/media/${req.file.filename}`;
-            console.log('[MediaController.upload] Uploaded File:', req.file);
+
             const media = await this.mediaRepo.create({
                 entity_type: req.body.entity_type || 'page',
                 entity_id:   req.body.entity_id   || 0,
