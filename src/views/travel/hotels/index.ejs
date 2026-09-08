@@ -787,10 +787,10 @@
                                         <td>
                                             <div class="hotel-actions">
                                                 <a href="/travel/hotels/<%= hotel.id %>/edit" class="hotel-action-btn edit" title="Edit hotel" <%= hotelSourceMode === 'third_party' ? 'style="pointer-events: none; opacity: 0.5;"' : '' %>>
-                                                    <i class="fas fa-edit"></i>
+                                                    Edit
                                                 </a>
-                                                <button type="button" class="hotel-action-btn delete" title="Delete hotel" onclick="deleteHotel(<%= hotel.id %>)" <%= hotelSourceMode === 'third_party' ? 'disabled' : '' %>>
-                                                    <i class="fas fa-trash"></i>
+                                                <button type="button" style="width: 60px;" class="hotel-action-btn delete" title="Delete hotel" onclick="deleteHotel(<%= hotel.id %>)" <%= hotelSourceMode === 'third_party' ? 'disabled' : '' %>>
+                                                    Delete
                                                 </button>
                                             </div>
                                         </td>

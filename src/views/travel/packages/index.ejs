@@ -1,3 +1,64 @@
+<style>
+  /* ===== View Toggle Fix ===== */
+  .tf-view-toggle {
+    display: inline-flex;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+    height: 42px;
+  }
+  .tf-view-toggle button {
+    border: none;
+    background: #fff;
+    color: #64748b;
+    width: 42px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .tf-view-toggle button:not(:last-child) {
+    border-right: 1px solid #e2e8f0;
+  }
+  .tf-view-toggle button.active {
+    background: #6366f1;
+    color: #fff;
+  }
+  .tf-view-toggle button:hover:not(.active) {
+    background: #f1f5f9;
+  }
+
+  /* ===== Card Grid Responsive Fix ===== */
+  .package-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .package-card .p-3 {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+  }
+  .package-card .mt-auto {
+    margin-top: auto !important;
+  }
+
+  @media (max-width: 575.98px) {
+    .package-card h6 {
+      font-size: 0.9rem;
+    }
+    .package-card .p-3 {
+      padding: 0.75rem !important;
+    }
+    .package-card .text-muted.small {
+      font-size: 0.75rem;
+    }
+  }
+</style>
+
 <div class="tf-page-header">
   <div>
     <h1 class="tf-page-title">Tour Packages</h1>
@@ -45,6 +106,7 @@
     if (currentView === 'list') {
       container.innerHTML = `
       <div class="tf-table-card">
+        <div class="table-responsive">
         <table class="table align-middle mb-0">
           <thead class="bg-light">
             <tr>
@@ -95,12 +157,13 @@
             `).join('')}
           </tbody>
         </table>
+        </div>
       </div>
     `;
     } else {
-      container.innerHTML = `<div class="row g-4">${paginated.map(p => `
-      <div class="col-md-3">
-        <div class="tf-card h-100 p-0 overflow-hidden">
+      container.innerHTML = `<div class="row g-3 g-md-4">${paginated.map(p => `
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="tf-card package-card h-100 p-0 overflow-hidden">
           <div style="width: 100%; aspect-ratio: 16/9; background: #f8fafc; position: relative; border-bottom: 1px solid #eee;">
             ${p.main_image ? `<img src="${p.main_image}" alt="${p.main_image_alt || p.name}" style="width: 100%; height: 100%; object-fit: cover;">` : `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #ccc;"><i class="bi bi-image fs-1"></i></div>`}
             <div style="position: absolute; top: 10px; left: 10px;">
@@ -108,25 +171,23 @@
             </div>
           </div>
           <div class="p-3">
-            <div class="d-flex justify-content-between mb-2">
-           
-          </div>
-          <h6 class="fw-bold text-dark mb-1 d-flex justify-content-between align-items-start gap-2">
-            <span>${p.name}</span>
-            <span class="d-inline-flex gap-2">
-              ${p.show_in_home_page ? '<i class="bi bi-house-door-fill text-success" style="font-size: 0.9rem;" title="Shown on Home Page"></i>' : ''}
-            </span>
-          </h6>
-          <div class="text-muted small mb-3">
-             <i class="bi bi-geo-alt me-1"></i> ${formatStaysJS(p.destinations)}
-          </div>
-          <div class="mt-auto d-flex justify-content-between align-items-center">
-            <span class="fw-bold text-primary" style="font-size: 1.05rem;">₹${p.price || 0}</span>
-            <div class="d-flex gap-1">
-              <a href="/travel/packages/${p.id}/edit" class="btn-icon btn-icon-edit btn-sm"><i class="bi bi-pencil"></i></a>
-              <a href="/travel/packages/${p.id}/reviews" class="btn-icon btn-icon-view btn-sm" title="Package reviews"><i class="bi bi-star"></i></a>
-              <button class="btn-icon btn-icon-view btn-sm" onclick="duplicatePkg('${p.id}')" title="Duplicate package"><i class="bi bi-copy"></i></button>
-              <button class="btn-icon btn-icon-del btn-sm" onclick="deletePkg('${p.id}')"><i class="bi bi-trash3"></i></button>
+            <h6 class="fw-bold text-dark mb-1 d-flex justify-content-between align-items-start gap-2">
+              <span>${p.name}</span>
+              <span class="d-inline-flex gap-2">
+                ${p.show_in_home_page ? '<i class="bi bi-house-door-fill text-success" style="font-size: 0.9rem;" title="Shown on Home Page"></i>' : ''}
+              </span>
+            </h6>
+            <div class="text-muted small mb-3">
+              <i class="bi bi-geo-alt me-1"></i> ${formatStaysJS(p.destinations)}
+            </div>
+            <div class="mt-auto d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <span class="fw-bold text-primary" style="font-size: 1.05rem;">₹${p.price || 0}</span>
+              <div class="d-flex gap-1">
+                <a href="/travel/packages/${p.id}/edit" class="btn-icon btn-icon-edit btn-sm"><i class="bi bi-pencil"></i></a>
+                <a href="/travel/packages/${p.id}/reviews" class="btn-icon btn-icon-view btn-sm" title="Package reviews"><i class="bi bi-star"></i></a>
+                <button class="btn-icon btn-icon-view btn-sm" onclick="duplicatePkg('${p.id}')" title="Duplicate package"><i class="bi bi-copy"></i></button>
+                <button class="btn-icon btn-icon-del btn-sm" onclick="deletePkg('${p.id}')"><i class="bi bi-trash3"></i></button>
+              </div>
             </div>
           </div>
         </div>
