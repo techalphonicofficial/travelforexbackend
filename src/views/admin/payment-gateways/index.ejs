@@ -1,0 +1,1058 @@
+<style>
+    .gateway-shell {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .gateway-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .gateway-title {
+        font-size: 1.65rem;
+        font-weight: 800;
+        color: #111827;
+        margin: 0;
+    }
+
+    .gateway-muted {
+        color: #64748b;
+        font-size: .88rem;
+        margin: .25rem 0 0;
+    }
+
+    .gateway-add-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: .45rem;
+        height: 42px;
+        border: 0;
+        border-radius: 8px;
+        background: #4f46e5;
+        color: #fff;
+        padding: 0 1rem;
+        font-size: .84rem;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    .gateway-panel {
+        background: #fff;
+        border: 1px solid #e0e7ff;
+        border-radius: 8px;
+        box-shadow: 0 4px 16px rgba(79, 70, 229, .06);
+        overflow: hidden;
+    }
+
+    .gateway-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .gateway-table {
+        width: 100%;
+        min-width: 1250px;
+        border-collapse: collapse;
+    }
+
+    .gateway-table th {
+        background: #f8fafc;
+        color: #475569;
+        font-size: .72rem;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        padding: .85rem 1rem;
+        border-bottom: 1px solid #e0e7ff;
+        text-align: left;
+    }
+
+    .gateway-table td {
+        padding: .9rem 1rem;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+        color: #334155;
+        font-size: .86rem;
+    }
+
+    .gateway-table tr:last-child td {
+        border-bottom: 0;
+    }
+
+    .gateway-main {
+        font-weight: 800;
+        color: #111827;
+    }
+
+    .gateway-sub {
+        font-size: .76rem;
+        color: #64748b;
+        margin-top: .25rem;
+        word-break: break-all;
+    }
+
+    .gateway-env {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: .25rem .65rem;
+        font-size: .73rem;
+        font-weight: 800;
+    }
+
+    .gateway-env-uat {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .gateway-env-production {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .gateway-status {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        border-radius: 999px;
+        padding: .25rem .65rem;
+        font-size: .73rem;
+        font-weight: 800;
+    }
+
+    .gateway-status-active {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .gateway-status-inactive {
+        background: #f1f5f9;
+        color: #64748b;
+    }
+
+    .gateway-key {
+        font-family: monospace;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: .35rem .5rem;
+        font-size: .76rem;
+    }
+
+    .gateway-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: .4rem;
+        flex-wrap: wrap;
+    }
+
+    .gateway-action {
+        border: 1px solid #dbe3ef;
+        border-radius: 8px;
+        padding: .42rem .72rem;
+        font-size: .78rem;
+        font-weight: 800;
+        cursor: pointer;
+        background: #fff;
+    }
+
+    .gateway-edit {
+        color: #4338ca;
+        background: #eef2ff;
+        border-color: #c7d2fe;
+    }
+
+    .gateway-toggle {
+        color: #0369a1;
+        background: #e0f2fe;
+        border-color: #bae6fd;
+    }
+
+    .gateway-delete {
+        color: #b91c1c;
+        background: #fef2f2;
+        border-color: #fecaca;
+    }
+
+    .gateway-empty {
+        padding: 3rem 1rem;
+        text-align: center;
+        color: #64748b;
+    }
+
+    /* Modal */
+
+    .gateway-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        background: rgba(15, 23, 42, .45);
+    }
+
+    .gateway-modal.show {
+        display: flex;
+    }
+
+    .gateway-modal-card {
+        width: 100%;
+        max-width: 720px;
+        max-height: 90vh;
+        overflow-y: auto;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, .2);
+    }
+
+    .gateway-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1.1rem 1.25rem;
+        border-bottom: 1px solid #eef2f7;
+    }
+
+    .gateway-modal-title {
+        margin: 0;
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: #111827;
+    }
+
+    .gateway-close {
+        width: 34px;
+        height: 34px;
+        border: 0;
+        border-radius: 8px;
+        background: #f1f5f9;
+        color: #475569;
+        cursor: pointer;
+        font-size: 1.1rem;
+    }
+
+    .gateway-form {
+        padding: 1.25rem;
+    }
+
+    .gateway-form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .gateway-field {
+        display: flex;
+        flex-direction: column;
+        gap: .4rem;
+    }
+
+    .gateway-field.full {
+        grid-column: 1 / -1;
+    }
+
+    .gateway-field label {
+        font-size: .8rem;
+        font-weight: 800;
+        color: #475569;
+    }
+
+    .gateway-field input,
+    .gateway-field select {
+        width: 100%;
+        height: 42px;
+        box-sizing: border-box;
+        border: 1px solid #dbe3ef;
+        border-radius: 8px;
+        padding: 0 .8rem;
+        color: #1f2937;
+        background: #fff;
+        outline: none;
+    }
+
+    .gateway-field input:focus,
+    .gateway-field select:focus {
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, .1);
+    }
+
+    .gateway-help {
+        color: #94a3b8;
+        font-size: .72rem;
+    }
+
+    .gateway-modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: .6rem;
+        padding: 1rem 1.25rem;
+        border-top: 1px solid #eef2f7;
+    }
+
+    .gateway-cancel {
+        height: 42px;
+        border: 1px solid #dbe3ef;
+        border-radius: 8px;
+        background: #f8fafc;
+        color: #475569;
+        padding: 0 1rem;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    .gateway-save {
+        height: 42px;
+        border: 0;
+        border-radius: 8px;
+        background: #4f46e5;
+        color: #fff;
+        padding: 0 1.1rem;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    @media (max-width: 700px) {
+        .gateway-form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .gateway-field.full {
+            grid-column: auto;
+        }
+    }
+</style>
+
+
+<section class="gateway-shell">
+
+    <!-- Header -->
+
+    <div class="gateway-header">
+
+        <div>
+            <h1 class="gateway-title">
+                Payment Gateway Configuration
+            </h1>
+
+            <p class="gateway-muted">
+                Manage payment gateway credentials, environments and API endpoints.
+            </p>
+        </div>
+
+        <button
+            type="button"
+            class="gateway-add-btn"
+            onclick="openGatewayModal('create')">
+
+            <i class="bi bi-plus-lg"></i>
+            Add Gateway
+
+        </button>
+
+    </div>
+
+
+    <!-- Success -->
+
+    <% if (success) { %>
+
+        <div
+            class="alert alert-success border-0"
+            style="border-radius:8px;">
+
+            <%= success %>
+
+        </div>
+
+    <% } %>
+
+
+    <!-- Error -->
+
+    <% if (error) { %>
+
+        <div
+            class="alert alert-danger border-0"
+            style="border-radius:8px;">
+
+            <%= error %>
+
+        </div>
+
+    <% } %>
+
+
+    <!-- Gateway Table -->
+
+    <div class="gateway-panel">
+
+        <div class="gateway-table-wrap">
+
+            <table class="gateway-table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>Gateway</th>
+
+                        <th>Environment</th>
+
+                        <th>Merchant ID</th>
+
+                        <th>Aggregator ID</th>
+
+                        <th>Base URL</th>
+
+                        <th>Secure Key</th>
+
+                        <th>Status</th>
+
+                        <th>Actions</th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    <% if (configs && configs.length) { %>
+
+                        <% configs.forEach(config => { %>
+
+                            <tr>
+
+                                <!-- Gateway -->
+
+                                <td>
+
+                                    <div class="gateway-main">
+                                        <%= config.gateway %>
+                                    </div>
+
+                                    <div class="gateway-sub">
+                                        ID: <%= config.id %>
+                                    </div>
+
+                                </td>
+
+
+                                <!-- Environment -->
+
+                                <td>
+
+                                    <span
+                                        class="gateway-env <%= config.environment === 'PRODUCTION'
+                                            ? 'gateway-env-production'
+                                            : 'gateway-env-uat' %>">
+
+                                        <%= config.environment %>
+
+                                    </span>
+
+                                </td>
+
+
+                                <!-- Merchant -->
+
+                                <td>
+
+                                    <div class="gateway-sub">
+                                        <%= config.merchant_id || 'Not configured' %>
+                                    </div>
+
+                                </td>
+
+
+                                <!-- Aggregator -->
+
+                                <td>
+
+                                    <div class="gateway-sub">
+                                        <%= config.aggregator_id || 'Not configured' %>
+                                    </div>
+
+                                </td>
+
+
+                                <!-- Base URL -->
+
+                                <td>
+
+                                    <div class="gateway-sub">
+                                        <%= config.base_url || 'Not configured' %>
+                                    </div>
+
+                                </td>
+
+
+                                <!-- Secure Key -->
+
+                                <td>
+
+                                    <span class="gateway-key">
+                                        <%= config.secure_key
+                                            ? '••••••••••••'
+                                            : 'Not configured' %>
+                                    </span>
+
+                                </td>
+
+
+                                <!-- Status -->
+
+                                <td>
+
+                                    <span
+                                        class="gateway-status <%= config.is_active
+                                            ? 'gateway-status-active'
+                                            : 'gateway-status-inactive' %>">
+
+                                        <i class="bi <%= config.is_active
+                                            ? 'bi-check-circle-fill'
+                                            : 'bi-x-circle-fill' %>"></i>
+
+                                        <%= config.is_active
+                                            ? 'Active'
+                                            : 'Inactive' %>
+
+                                    </span>
+
+                                </td>
+
+
+                                <!-- Actions -->
+
+                                <td>
+
+                                    <div class="gateway-actions">
+
+                                        <!-- Edit -->
+
+                                        <button
+                                            type="button"
+                                            class="gateway-action gateway-edit"
+                                            onclick='editGateway(<%- JSON.stringify(config) %>)'>
+
+                                            <i class="bi bi-pencil"></i>
+                                            Edit
+
+                                        </button>
+
+
+                                        <!-- Toggle -->
+
+                                        <form
+                                            method="POST"
+                                            action="/admin/payment-gateways/<%= config.id %>/toggle"
+                                            style="display:inline;">
+
+                                            <input
+                                                type="hidden"
+                                                name="is_active"
+                                                value="<%= config.is_active ? 'false' : 'true' %>">
+
+                                            <button
+                                                type="submit"
+                                                class="gateway-action gateway-toggle">
+
+                                                <i class="bi <%= config.is_active
+                                                    ? 'bi-pause-circle'
+                                                    : 'bi-play-circle' %>"></i>
+
+                                                <%= config.is_active
+                                                    ? 'Disable'
+                                                    : 'Enable' %>
+
+                                            </button>
+
+                                        </form>
+
+
+                                        <!-- Delete -->
+
+                                        <form
+                                            method="POST"
+                                            action="/admin/payment-gateways/<%= config.id %>/delete"
+                                            onsubmit="return confirm('Are you sure you want to delete this payment gateway configuration?');"
+                                            style="display:inline;">
+
+                                            <button
+                                                type="submit"
+                                                class="gateway-action gateway-delete">
+
+                                                <i class="bi bi-trash"></i>
+                                                Delete
+
+                                            </button>
+
+                                        </form>
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+
+                        <% }) %>
+
+
+                    <% } else { %>
+
+                        <tr>
+
+                            <td colspan="8">
+
+                                <div class="gateway-empty">
+
+                                    <i class="bi bi-credit-card fs-1 d-block mb-2 text-light"></i>
+
+                                    <div class="fw-bold">
+                                        No payment gateway configured.
+                                    </div>
+
+                                    <div class="mt-1">
+                                        Add your first payment gateway configuration to get started.
+                                    </div>
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+                    <% } %>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ===================================================== -->
+<!-- Add / Edit Gateway Modal -->
+<!-- ===================================================== -->
+
+<div
+    id="gatewayModal"
+    class="gateway-modal">
+
+    <div class="gateway-modal-card">
+
+
+        <!-- Modal Header -->
+
+        <div class="gateway-modal-header">
+
+            <h2
+                id="gatewayModalTitle"
+                class="gateway-modal-title">
+
+                Add Payment Gateway
+
+            </h2>
+
+            <button
+                type="button"
+                class="gateway-close"
+                onclick="closeGatewayModal()">
+
+                ×
+
+            </button>
+
+        </div>
+
+
+        <!-- Form -->
+
+        <form
+            id="gatewayForm"
+            class="gateway-form"
+            method="POST"
+            action="/admin/payment-gateways">
+
+
+            <div class="gateway-form-grid">
+
+
+                <!-- Gateway -->
+
+                <div class="gateway-field">
+
+                    <label for="gateway">
+                        Gateway
+                    </label>
+
+                    <select
+                        id="gateway"
+                        name="gateway"
+                        required>
+
+                        <option value="ICICI_ORANGE_PG">
+                            ICICI Orange PG
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- Environment -->
+
+                <div class="gateway-field">
+
+                    <label for="environment">
+                        Environment
+                    </label>
+
+                    <select
+                        id="environment"
+                        name="environment"
+                        required>
+
+                        <option value="UAT">
+                            UAT
+                        </option>
+
+                        <option value="PRODUCTION">
+                            PRODUCTION
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- Merchant ID -->
+
+                <div class="gateway-field">
+
+                    <label for="merchant_id">
+                        Merchant ID
+                    </label>
+
+                    <input
+                        type="text"
+                        id="merchant_id"
+                        name="merchant_id"
+                        placeholder="Enter merchant ID"
+                        required>
+
+                </div>
+
+
+                <!-- Aggregator ID -->
+
+                <div class="gateway-field">
+
+                    <label for="aggregator_id">
+                        Aggregator ID
+                    </label>
+
+                    <input
+                        type="text"
+                        id="aggregator_id"
+                        name="aggregator_id"
+                        placeholder="Enter aggregator ID"
+                        required>
+
+                </div>
+
+
+                <!-- Base URL -->
+
+                <div class="gateway-field full">
+
+                    <label for="base_url">
+                        Base URL
+                    </label>
+
+                    <input
+                        type="url"
+                        id="base_url"
+                        name="base_url"
+                        placeholder="https://pgpayuat.icicibank.com"
+                        required>
+
+                </div>
+
+
+                <!-- Initiate Sale URL -->
+
+                <div class="gateway-field">
+
+                    <label for="initiate_sale_url">
+                        Initiate Sale URL
+                    </label>
+
+                    <input
+                        type="text"
+                        id="initiate_sale_url"
+                        name="initiate_sale_url"
+                        placeholder="/tsp/pg/api/v2/initiateSale">
+
+                </div>
+
+
+                <!-- Redirect URL -->
+
+                <div class="gateway-field">
+
+                    <label for="redirect_url">
+                        Redirect URL
+                    </label>
+
+                    <input
+                        type="url"
+                        id="redirect_url"
+                        name="redirect_url"
+                        placeholder="https://...">
+
+                </div>
+
+
+                <!-- Currency -->
+
+                <div class="gateway-field">
+
+                    <label for="currency">
+                        Currency
+                    </label>
+
+                    <input
+                        type="text"
+                        id="currency"
+                        name="currency"
+                        value="INR"
+                        maxlength="10"
+                        required>
+
+                </div>
+
+
+                <!-- Secure Key -->
+
+                <div class="gateway-field">
+
+                    <label for="secure_key">
+                        Secure Key
+                    </label>
+
+                    <input
+                        type="password"
+                        id="secure_key"
+                        name="secure_key"
+                        placeholder="Enter gateway secure key">
+
+                    <span
+                        id="secureKeyHelp"
+                        class="gateway-help">
+
+                        Secure key is required when creating a gateway.
+
+                    </span>
+
+                </div>
+
+
+            </div>
+
+
+            <!-- Footer -->
+
+            <div class="gateway-modal-footer">
+
+                <button
+                    type="button"
+                    class="gateway-cancel"
+                    onclick="closeGatewayModal()">
+
+                    Cancel
+
+                </button>
+
+                <button
+                    type="submit"
+                    class="gateway-save">
+
+                    Save Gateway
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    const gatewayModal =
+        document.getElementById('gatewayModal');
+
+    const gatewayForm =
+        document.getElementById('gatewayForm');
+
+    const gatewayModalTitle =
+        document.getElementById('gatewayModalTitle');
+
+    const secureKeyInput =
+        document.getElementById('secure_key');
+
+    const secureKeyHelp =
+        document.getElementById('secureKeyHelp');
+
+
+    /**
+     * Open create modal
+     */
+    function openGatewayModal(mode) {
+
+        gatewayModal.classList.add('show');
+
+        if (mode === 'create') {
+
+            gatewayModalTitle.textContent =
+                'Add Payment Gateway';
+
+            gatewayForm.action =
+                '/admin/payment-gateways';
+
+            gatewayForm.reset();
+
+            document.getElementById('currency').value =
+                'INR';
+
+            document.getElementById('gateway').value =
+                'ICICI_ORANGE_PG';
+
+            document.getElementById('environment').value =
+                'UAT';
+
+            secureKeyInput.required = true;
+
+            secureKeyHelp.textContent =
+                'Secure key is required when creating a gateway.';
+
+        }
+
+    }
+
+
+    /**
+     * Open edit modal
+     */
+    function editGateway(config) {
+
+        gatewayModal.classList.add('show');
+
+        gatewayModalTitle.textContent =
+            'Edit Payment Gateway';
+
+        gatewayForm.action =
+            '/admin/payment-gateways/' +
+            config.id +
+            '/update';
+
+
+        document.getElementById('gateway').value =
+            config.gateway || 'ICICI_ORANGE_PG';
+
+        document.getElementById('environment').value =
+            config.environment || 'UAT';
+
+        document.getElementById('merchant_id').value =
+            config.merchant_id || '';
+
+        document.getElementById('aggregator_id').value =
+            config.aggregator_id || '';
+
+        document.getElementById('base_url').value =
+            config.base_url || '';
+
+        document.getElementById('initiate_sale_url').value =
+            config.initiate_sale_url || '';
+
+        document.getElementById('redirect_url').value =
+            config.redirect_url || '';
+
+        document.getElementById('currency').value =
+            config.currency || 'INR';
+
+
+        /*
+         * Secure key intentionally NOT loaded.
+         * Leave blank to keep existing key.
+         */
+
+        secureKeyInput.value = '';
+
+        secureKeyInput.required = false;
+
+        secureKeyHelp.textContent =
+            'Leave blank to keep the existing secure key.';
+
+    }
+
+
+    /**
+     * Close modal
+     */
+    function closeGatewayModal() {
+
+        gatewayModal.classList.remove('show');
+
+    }
+
+
+    /**
+     * Close when clicking outside modal
+     */
+    gatewayModal.addEventListener(
+        'click',
+        function (event) {
+
+            if (event.target === gatewayModal) {
+
+                closeGatewayModal();
+
+            }
+
+        }
+    );
+
+
+    /**
+     * Close with Escape
+     */
+    document.addEventListener(
+        'keydown',
+        function (event) {
+
+            if (event.key === 'Escape') {
+
+                closeGatewayModal();
+
+            }
+
+        }
+    );
+
+</script>

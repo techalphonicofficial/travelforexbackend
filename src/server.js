@@ -13,6 +13,11 @@ const seedRbac = require('./utils/seedRbac');
 const adminProviderRoutes = require('./routes/adminProviderRoutes');
 const tripJackHotelRoutes =
   require('./routes/tripJackHotelRoutes');
+const paymentRoutes = require('./routes/payment.routes');
+
+const paymentGatewayConfigRoutes = require(
+    './routes/paymentGatewayConfig.routes'
+);
 
 const {
   repositories: { appSettingRepo, themeRepo },
@@ -531,6 +536,18 @@ app.use(
   adminProviderRoutes
 );
 
+
+app.use(
+    '/admin/payment-gateways',
+    isAuthenticated,
+    enforceWebPermission,
+    paymentGatewayConfigRoutes
+);
+
+
+app.use('/api/v1/payments', paymentRoutes);
+
+
 app.use(
   '/api/v1/tripjack/hotels',
   tripJackHotelRoutes
@@ -543,7 +560,7 @@ app.use(
 );
 
 
-app.use('/api/tripjack/flight', TripJackFlightRoutes);
+app.use('/api/v1/tripjack/flight', TripJackFlightRoutes);
 
 app.use('/api/v1/tripjack/content', require('./routes/tripJackContent'));
 

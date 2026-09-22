@@ -24,13 +24,25 @@ class TripJackFlightService {
     }
 
     async review(payload) {
-        return this.tripJackClient.post(
-            '/fms/v1/review',
-            payload,
-            {
-                service: 'flight'
-            }
-        );
+        try {
+            const response = await this.tripJackClient.post(
+                '/fms/v1/review',
+                payload,
+                {
+                    service: 'flight'
+                }
+            );
+
+            return response;
+        } catch (error) {
+            console.error('Error in review:', error);
+
+            return {
+                success: false,
+                message: error.message || 'Flight review failed',
+                error: error.data || null
+            };
+        }
     }
 
     async seat(payload) {

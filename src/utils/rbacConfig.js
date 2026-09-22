@@ -146,7 +146,18 @@ const NAV_ITEMS = [
   },
   { key: 'reports', module: 'Reports', permission: 'Reports', label: 'Reports', href: '#', icon: 'bi-bar-chart', stripIcon: 'bi-bar-chart-fill', active: () => false, routePrefixes: [] },
   { key: 'crm_settings', module: 'CRM Settings', permission: 'CRM Settings', label: 'Crm Setting', href: '/crm/settings', icon: 'bi-gear', stripIcon: 'bi-gear-fill', active: title => title === 'CRM Settings', routePrefixes: ['/crm/settings'] },
-  { key: 'provider_api_setting', module: 'Provider Api Settings', permission: 'Api Settings', label: 'Tripjack Api Setting', href: '/admin/providers', icon: 'bi-gear', stripIcon: 'bi-gear-fill', active: title => title === 'API Settings', routePrefixes: ['/admin/providers'] }
+  { key: 'provider_api_setting', module: 'Provider Api Settings', permission: 'Api Settings', label: 'Tripjack Api Setting', href: '/admin/providers', icon: 'bi-gear', stripIcon: 'bi-gear-fill', active: title => title === 'API Settings', routePrefixes: ['/admin/providers'] },
+  {
+    key: 'payment_gateway_setting',
+    module: 'Payment Gateway Settings',
+    permission: 'Payment Gateway Settings',
+    label: 'Payment Gateway Setting',
+    href: '/admin/payment-gateways',
+    icon: 'bi-credit-card',
+    stripIcon: 'bi-credit-card-fill',
+    active: title => title === 'Payment Gateway Configuration',
+    routePrefixes: ['/admin/payment-gateways']
+  }
 ];
 
 const flattenNavItems = (items = NAV_ITEMS) => items.flatMap(item => [item, ...flattenNavItems(item.children || [])]);

@@ -49,7 +49,8 @@ class TripJackClient {
 
             return response.data;
 
-        } catch (error) {
+        }
+        catch (error) {
             const tripJackError = error.response?.data;
 
             console.error('TripJack API Error:', {
@@ -61,13 +62,21 @@ class TripJackClient {
             });
 
             const apiError = new Error(
+                tripJackError?.errors?.[0]?.message ||
                 tripJackError?.message ||
-                tripJackError?.error ||
                 error.message ||
                 'TripJack API request failed'
             );
 
-            apiError.status = error.response?.status || 500;
+            apiError.status =
+                tripJackError?.status?.httpStatus ||
+                error.response?.status ||
+                500;
+
+            apiError.code =
+                tripJackError?.errors?.[0]?.errCode ||
+                null;
+
             apiError.data = tripJackError || null;
 
             throw apiError;
