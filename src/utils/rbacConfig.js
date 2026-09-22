@@ -145,7 +145,8 @@ const NAV_ITEMS = [
     ]
   },
   { key: 'reports', module: 'Reports', permission: 'Reports', label: 'Reports', href: '#', icon: 'bi-bar-chart', stripIcon: 'bi-bar-chart-fill', active: () => false, routePrefixes: [] },
-  { key: 'crm_settings', module: 'CRM Settings', permission: 'CRM Settings', label: 'Crm Setting', href: '/crm/settings', icon: 'bi-gear', stripIcon: 'bi-gear-fill', active: title => title === 'CRM Settings', routePrefixes: ['/crm/settings'] }
+  { key: 'crm_settings', module: 'CRM Settings', permission: 'CRM Settings', label: 'Crm Setting', href: '/crm/settings', icon: 'bi-gear', stripIcon: 'bi-gear-fill', active: title => title === 'CRM Settings', routePrefixes: ['/crm/settings'] },
+  { key: 'provider_api_setting', module: 'Provider Api Settings', permission: 'Api Settings', label: 'Tripjack Api Setting', href: '/admin/providers', icon: 'bi-gear', stripIcon: 'bi-gear-fill', active: title => title === 'API Settings', routePrefixes: ['/admin/providers'] }
 ];
 
 const flattenNavItems = (items = NAV_ITEMS) => items.flatMap(item => [item, ...flattenNavItems(item.children || [])]);

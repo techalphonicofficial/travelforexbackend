@@ -10,6 +10,10 @@ const container = require('./container');
 const { DEFAULT_THEME_COLOURS, buildThemeCssVariables, loadThemeColours } = require('./utils/themeColours');
 const { NAV_ITEMS, canAccessItem, hasPermission, findPermissionForPath, isFullAccessUser } = require('./utils/rbacConfig');
 const seedRbac = require('./utils/seedRbac');
+const adminProviderRoutes = require('./routes/adminProviderRoutes');
+const tripJackHotelRoutes =
+  require('./routes/tripJackHotelRoutes');
+
 const {
   repositories: { appSettingRepo, themeRepo },
   models: { PackageBooking, PackageReturnRequest, Package, User, Role, Module, Permission, Lead, Customer, VendorProfile, Country, ForexService, ForexConversionRate, ForexConversionRequest, Newsletter }
@@ -23,7 +27,18 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://192.168.0.166:3000',
+];
+
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
@@ -121,12 +136,12 @@ app.use(async (req, res, next) => {
       res.locals.unreadNotificationCount = 0;
       res.locals.recentNotifications = [];
     }
-    
+
     if (LeadFollowUp) {
-      res.locals.pendingFollowUpCount = await LeadFollowUp.count({ 
-        where: { 
+      res.locals.pendingFollowUpCount = await LeadFollowUp.count({
+        where: {
           status: 'pending'
-        } 
+        }
       });
     } else {
       res.locals.pendingFollowUpCount = 0;
@@ -280,26 +295,26 @@ const getDashboardData = async () => {
       }).catch(() => []) : [],
       (async () => {
         try {
-            const { Pipeline, PipelineStage, Lead } = require('./container').models;
-            if (!Pipeline || !Lead) return [];
-            const pipelines = await Pipeline.findAll({
-                include: [{ model: PipelineStage, as: 'stages' }],
-                order: [['id', 'ASC']]
+          const { Pipeline, PipelineStage, Lead } = require('./container').models;
+          if (!Pipeline || !Lead) return [];
+          const pipelines = await Pipeline.findAll({
+            include: [{ model: PipelineStage, as: 'stages' }],
+            order: [['id', 'ASC']]
+          });
+          const leadCounts = await Lead.findAll({
+            attributes: ['pipeline_id', 'stage_id', [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'count']],
+            group: ['pipeline_id', 'stage_id'],
+            raw: true
+          });
+          return pipelines.map(p => {
+            const stagesList = (p.stages || []).sort((a, b) => a.order - b.order).map(s => {
+              const match = leadCounts.find(lc => lc.pipeline_id === p.id && lc.stage_id === s.id);
+              return { name: s.name, color: s.color, count: match ? parseInt(match.count) : 0 };
             });
-            const leadCounts = await Lead.findAll({
-                attributes: ['pipeline_id', 'stage_id', [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'count']],
-                group: ['pipeline_id', 'stage_id'],
-                raw: true
-            });
-            return pipelines.map(p => {
-                const stagesList = (p.stages || []).sort((a,b) => a.order - b.order).map(s => {
-                    const match = leadCounts.find(lc => lc.pipeline_id === p.id && lc.stage_id === s.id);
-                    return { name: s.name, color: s.color, count: match ? parseInt(match.count) : 0 };
-                });
-                return { pipeline_id: p.id, pipeline: p.name, stages: stagesList };
-            });
+            return { pipeline_id: p.id, pipeline: p.name, stages: stagesList };
+          });
         } catch (e) {
-            return [];
+          return [];
         }
       })(),
       (async () => {
@@ -408,6 +423,7 @@ const activityRoutes = require('./routes/activityRoutes');
 const hotelRoutes = require('./routes/hotelRoutes');
 const videoReviewRoutes = require('./routes/videoReviewRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
+const bookingRoutes=require('./routes/bookingRoutes')
 
 app.use('/api/v1/continents', continentRoutes);
 app.use('/api/v1/countries', countryRoutes);
@@ -505,7 +521,31 @@ app.use('/admin/vendors', isAuthenticated, enforceWebPermission, adminVendorRout
 
 // ===== Admin Booking Web Routes =====
 const adminBookingRoutes = require('./routes/adminBookingRoutes');
+const TripJackFlightRoutes = require('./routes/TripJackFlightRoutes');
 app.use('/admin/bookings', isAuthenticated, enforceWebPermission, adminBookingRoutes);
+
+app.use(
+  '/admin/providers',
+  isAuthenticated,
+  enforceWebPermission,
+  adminProviderRoutes
+);
+
+app.use(
+  '/api/v1/tripjack/hotels',
+  tripJackHotelRoutes
+);
+
+
+app.use(
+    '/api/v1/bookings',
+    bookingRoutes
+);
+
+
+app.use('/api/tripjack/flight', TripJackFlightRoutes);
+
+app.use('/api/v1/tripjack/content', require('./routes/tripJackContent'));
 
 app.get('/', isAuthenticated, enforceWebPermission, async (req, res) => {
   const dashboardData = await getDashboardData();
