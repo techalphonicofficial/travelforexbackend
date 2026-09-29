@@ -33,8 +33,8 @@ const port = process.env.PORT || 3000;
 
 // Middleware
 const allowedOrigins = [
-  'https://tripogramclub.com',
-  'https://www.tripogramclub.com'
+  'http://localhost:3000',
+  'http://192.168.0.166:3000',
 ];
 
 app.use(
