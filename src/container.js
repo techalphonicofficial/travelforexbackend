@@ -47,7 +47,7 @@ const TripJackClient =
 const TripJackHotelService =
   require('./services/TripJackHotelService');
 
-  const TripJackFlightService = require('./services/TripJackFlightService');
+const TripJackFlightService = require('./services/TripJackFlightService');
 
 const TripJackCityRegionSyncService =
   require('./services/tripJackCityRegionSyncService');
@@ -57,6 +57,18 @@ const TripJackContentService =
 
 const TripJackContentController =
   require('./controllers/tripJackContentController');
+
+const IciciPaymentService =
+  require('./services/iciciPayment.service');
+
+const PaymentController =
+  require('./controllers/payment.controller');
+
+const BookingController = require('./controllers/bookingController');
+
+
+const BookingService =
+  require('./services/bookingService');
 
 const Activity = require('./models/Activity');
 const AppSetting = require('./models/AppSetting');
@@ -1419,8 +1431,13 @@ const tripJackClient =
 const tripJackHotelService =
   new TripJackHotelService(tripJackClient);
 
-  const tripJackFlightService = new TripJackFlightService(
-    tripJackClient
+const tripJackFlightService = new TripJackFlightService(
+  tripJackClient
+);
+// Initialize payment service with both services
+const iciciPaymentService = new IciciPaymentService(
+    tripJackFlightService,
+    tripJackHotelService
 );
 
 const tripJackCityRegionSyncService =
@@ -1441,6 +1458,28 @@ const tripJackContentController =
     tripJackCityRegionSyncService
   );
 
+
+const paymentController =
+  new PaymentController(
+    iciciPaymentService
+  );
+
+  
+
+// const bookingService =
+//   new BookingService(
+//     iciciPaymentService
+//   );
+
+const bookingService =
+    new BookingService(
+        tripJackFlightService,
+        tripJackHotelService,
+        iciciPaymentService
+    );
+
+  const bookingController =
+    new BookingController(bookingService);
 // ===== INITIALIZE EXISTING CONTROLLERS =====
 
 const roleController =
@@ -1675,8 +1714,8 @@ const TripJackHotelController =
   require('./controllers/TripJackHotelController');
 const TripJackFlightController = require('./controllers/TripJackFlightController');
 
-  const tripJackFlightController =
-    new TripJackFlightController(tripJackFlightService);
+const tripJackFlightController =
+  new TripJackFlightController(tripJackFlightService);
 
 const tripJackHotelController =
   new TripJackHotelController(
@@ -1838,7 +1877,9 @@ module.exports = {
     tripJackConfigService,
     tripJackClient,
     tripJackHotelService,
-    tripJackFlightService
+    tripJackFlightService,
+    iciciPaymentService,
+    bookingService
   },
 
   controllers: {
@@ -1880,6 +1921,8 @@ module.exports = {
     tripJackHotelController,
     tripJackContentController,
     tripJackFlightController,
+    paymentController,
+    bookingController
   },
 
   middleware: {

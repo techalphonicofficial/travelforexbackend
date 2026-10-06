@@ -22,6 +22,17 @@ const NAV_ITEMS = [
     routePrefixes: ['/newsletter-subscribers']
   },
   {
+    key: 'tripjack_bookings',
+    module: 'TripJack Bookings',
+    permission: 'TripJack Bookings',
+    label: 'TripJack Bookings',
+    href: '/admin/providers/tripjack-bookings',
+    icon: 'bi-calendar-check',
+    stripIcon: 'bi-calendar-check-fill',
+    active: title => title === 'TripJack Bookings',
+    routePrefixes: ['/admin/providers/tripjack-bookings']
+},
+  {
     key: 'access_control',
     module: 'Access Control',
     permission: 'Access Control',

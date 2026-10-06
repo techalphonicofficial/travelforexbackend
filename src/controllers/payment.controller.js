@@ -1,6 +1,8 @@
-const iciciPaymentService = require('../services/iciciPayment.service');
-
 class PaymentController {
+
+    constructor(iciciPaymentService) {
+        this.iciciPaymentService = iciciPaymentService;
+    }
 
     /**
      * @swagger
@@ -58,6 +60,7 @@ class PaymentController {
      *         description: Payment initiation failed
      */
     async initiate(req, res) {
+
         try {
 
             const {
@@ -84,7 +87,7 @@ class PaymentController {
             }
 
             const result =
-                await iciciPaymentService.initiateSale({
+                await this.iciciPaymentService.initiateSale({
                     userId,
                     bookingId,
                     customTripId,
@@ -117,14 +120,14 @@ class PaymentController {
 
 
     /**
- * ICICI Payment Advice / Callback
- */
+     * ICICI Payment Advice / Callback
+     */
     async iciciPaymentAdvice(req, res) {
 
         try {
 
             const result =
-                await iciciPaymentService.handlePaymentAdvice(
+                await this.iciciPaymentService.handlePaymentAdvice(
                     req.body
                 );
 
@@ -151,4 +154,5 @@ class PaymentController {
     }
 }
 
-module.exports = new PaymentController();
+
+module.exports = PaymentController;

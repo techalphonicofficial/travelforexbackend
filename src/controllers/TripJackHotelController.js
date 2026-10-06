@@ -84,6 +84,27 @@ class TripJackHotelController {
             });
         }
     }
+
+    async bookHotel(req, res) {
+        try {
+            const payload = req.body;
+
+            const data = await this.tripJackHotelService.book(payload);
+
+            return res.status(200).json({
+                success: true,
+                data
+            });
+        } catch (error) {
+            console.error('TripJack Hotel Booking Error:', error);
+
+            return res.status(error.status || 500).json({
+                success: false,
+                message: error.message || 'Unable to book hotel with TripJack',
+                data: error.data || null
+            });
+        }
+    }   
 }
 
 module.exports = TripJackHotelController;

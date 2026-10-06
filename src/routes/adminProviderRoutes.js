@@ -10,6 +10,9 @@ const ap = (method) => (req, res) =>
 // List all providers
 router.get('/', ap('index'));
 
+// TripJack Bookings
+router.get('/tripjack-bookings', ap('tripjackBookings'));
+
 // Create provider
 router.post('/', ap('create'));
 

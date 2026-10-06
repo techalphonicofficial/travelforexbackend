@@ -29,8 +29,8 @@ const Payment = sequelize.define(
 
         // User who made the payment
         user_id: {
-            type: DataTypes.BIGINT,
-            allowNull: false
+            type: DataTypes.UUID,
+            allowNull: true,
         },
 
         amount: {

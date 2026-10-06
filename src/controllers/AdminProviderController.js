@@ -39,6 +39,19 @@ class AdminProviderController {
         }
     }
 
+    async tripjackBookings(req, res) {
+        try {
+            return res.render('admin/tripjack-bookings/index', {
+                title: 'TripJack Bookings',
+                user: req.session.user
+            });
+        } catch (error) {
+            console.error('Admin TripJack bookings error:', error);
+
+            return res.status(500).send('Internal Server Error');
+        }
+    }
+
     async create(req, res) {
         try {
             if (!this.ProviderConfig) {
@@ -51,6 +64,7 @@ class AdminProviderController {
                 provider_name,
                 api_key,
                 hotel_url,
+                hotel_book_url,
                 flight_url,
                 environment
             } = req.body;
@@ -59,6 +73,7 @@ class AdminProviderController {
                 !provider_name ||
                 !api_key ||
                 !hotel_url ||
+                !hotel_book_url ||
                 !flight_url ||
                 !environment
             ) {
@@ -83,6 +98,7 @@ class AdminProviderController {
                 provider_name: provider_name.trim(),
                 api_key: api_key.trim(),
                 hotel_url: hotel_url.trim(),
+                hotel_book_url: hotel_book_url.trim(),
                 flight_url: flight_url.trim(),
                 environment:
                     String(environment).toUpperCase(),
@@ -129,6 +145,7 @@ class AdminProviderController {
                 provider_name,
                 api_key,
                 hotel_url,
+                hotel_book_url,
                 flight_url,
                 environment
             } = req.body;
@@ -136,6 +153,7 @@ class AdminProviderController {
             if (
                 !provider_name ||
                 !hotel_url ||
+                !hotel_book_url ||
                 !flight_url ||
                 !environment
             ) {
@@ -157,13 +175,14 @@ class AdminProviderController {
             const updateData = {
                 provider_name: provider_name.trim(),
                 hotel_url: hotel_url.trim(),
+                hotel_book_url: hotel_book_url.trim(),
                 flight_url: flight_url.trim(),
                 environment:
                     String(environment).toUpperCase(),
                 updated_at: new Date()
             };
 
-            // API key only update when a new key is provided
+            // Update API key only when a new key is provided
             if (api_key && api_key.trim()) {
                 updateData.api_key = api_key.trim();
             }

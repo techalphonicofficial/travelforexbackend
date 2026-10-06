@@ -18,7 +18,7 @@ const Booking = sequelize.define(
         },
 
         user_id: {
-            type: DataTypes.BIGINT,
+            type: DataTypes.UUID,
             allowNull: true
         },
 

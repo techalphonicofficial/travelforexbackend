@@ -6,6 +6,7 @@ class ApiCustomerController {
     }
 
     async register(req, res) {
+
         try {
             const { name, email, password, phone } = req.body;
 
@@ -30,6 +31,7 @@ class ApiCustomerController {
                 }
             });
         } catch (error) {
+            console.error('Customer Registration Error:', error);
             res.status(500).json({ success: false, message: error.message });
         }
     }

@@ -20,29 +20,27 @@ class TripJackConfigService {
         ).toUpperCase();
 
         if (!config.api_key) {
-            throw new Error(
-                'TripJack API key is not configured'
-            );
+            throw new Error('TripJack API key is not configured');
         }
 
         if (!config.hotel_url) {
-            throw new Error(
-                'TripJack hotel URL is not configured'
-            );
+            throw new Error('TripJack hotel URL is not configured');
+        }
+
+        if (!config.hotel_book_url) {
+            throw new Error('TripJack hotel book URL is not configured');
         }
 
         if (!config.flight_url) {
-            throw new Error(
-                'TripJack flight URL is not configured'
-            );
+            throw new Error('TripJack flight URL is not configured');
         }
 
         return {
             providerName: config.provider_name,
             environment,
             apiKey: config.api_key,
-
             hotelBaseUrl: config.hotel_url.replace(/\/+$/, ''),
+            hotelBookBaseUrl: config.hotel_book_url.replace(/\/+$/, ''),
             flightBaseUrl: config.flight_url.replace(/\/+$/, '')
         };
     }

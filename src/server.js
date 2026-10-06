@@ -75,7 +75,7 @@ const newsletterRoutes = require('./routes/newsletterRoutes');
 // ----- USE ROUTES -----
 // Public APIs
 app.use('/api/v1/build', apiTripBuilderRoutes);
-app.use('/api/v1/bookings', apiBookingRoutes);
+// app.use('/api/v1/bookings', apiBookingRoutes);
 app.use('/api/v1/blogs', apiBlogRoutes);
 app.use('/api/v1/trip-inquiries', tripInquiryRoutes);
 app.use('/api/v1/newsletter', newsletterRoutes);

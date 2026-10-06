@@ -56,7 +56,7 @@
 
   .provider-table {
     width: 100%;
-    min-width: 1150px;
+    min-width: 1350px;
     border-collapse: collapse;
   }
 
@@ -369,6 +369,8 @@
 
             <th>Hotel URL</th>
 
+            <th>Hotel Book URL</th>
+
             <th>Flight URL</th>
 
             <th>Actions</th>
@@ -433,6 +435,14 @@
                 <td>
 
                   <div class="provider-sub">
+                    <%= provider.hotel_book_url || 'Not configured' %>
+                  </div>
+
+                </td>
+
+                <td>
+
+                  <div class="provider-sub">
                     <%= provider.flight_url || 'Not configured' %>
                   </div>
 
@@ -442,10 +452,23 @@
 
                   <div class="provider-actions">
 
+                    <%
+                      /* API key ko browser me bhejna avoid kar rahe hain */
+                      const providerData = {
+                        id: provider.id,
+                        provider_name: provider.provider_name,
+                        hotel_url: provider.hotel_url,
+                        hotel_book_url: provider.hotel_book_url,
+                        flight_url: provider.flight_url,
+                        environment: provider.environment
+                      };
+                    %>
+
                     <button
                       type="button"
                       class="provider-action provider-edit"
-                      onclick='editProvider(<%- JSON.stringify(provider) %>)'>
+                      data-provider="<%= JSON.stringify(providerData) %>"
+                      onclick="editProvider(JSON.parse(this.dataset.provider))">
 
                       <i class="bi bi-pencil"></i>
                       Edit
@@ -480,7 +503,7 @@
 
             <tr>
 
-              <td colspan="6">
+              <td colspan="7">
 
                 <div class="provider-empty">
 
@@ -598,6 +621,21 @@
             id="hotel_url"
             name="hotel_url"
             placeholder="https://hotel-api.example.com"
+            required>
+
+        </div>
+
+        <div class="provider-field">
+
+          <label for="hotel_book_url">
+            Hotel Book URL
+          </label>
+
+          <input
+            type="url"
+            id="hotel_book_url"
+            name="hotel_book_url"
+            placeholder="https://hotel-api.example.com/book"
             required>
 
         </div>
@@ -727,6 +765,9 @@
 
     document.getElementById('hotel_url').value =
       provider.hotel_url || '';
+
+    document.getElementById('hotel_book_url').value =
+      provider.hotel_book_url || '';
 
     document.getElementById('flight_url').value =
       provider.flight_url || '';

@@ -1,0 +1,824 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TripJack Bookings</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --border: #e5e7eb;
+            --muted: #64748b;
+            --bg: #f8fafc;
+        }
+
+        body {
+            background: var(--bg);
+            color: #111827;
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-size: 14px;
+        }
+
+        .page-container { padding: 26px; max-width: 1600px; margin: auto; }
+        .page-title { font-size: 24px; font-weight: 750; }
+        .subtitle { color: var(--muted); font-size: 13px; }
+
+        .total-card, .content-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        }
+
+        .total-card { padding: 18px 22px; min-width: 230px; }
+        .total-icon {
+            width: 44px; height: 44px; border-radius: 10px;
+            background: #eff6ff; color: var(--primary);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 21px;
+        }
+        .total-label { font-size: 12px; color: var(--muted); }
+        .total-value { font-size: 28px; font-weight: 750; }
+
+        .toolbar {
+            padding: 16px 20px; display: flex;
+            justify-content: space-between; align-items: center;
+            gap: 12px; flex-wrap: wrap; border-bottom: 1px solid var(--border);
+        }
+
+        .filter-group { display: flex; gap: 6px; flex-wrap: wrap; }
+        .filter-btn {
+            border: 1px solid transparent; background: transparent;
+            border-radius: 8px; padding: 8px 14px;
+            color: var(--muted); font-size: 13px; font-weight: 650;
+        }
+        .filter-btn:hover { background: #f1f5f9; }
+        .filter-btn.active {
+            color: var(--primary); background: #eff6ff; border-color: #bfdbfe;
+        }
+
+        .refresh-btn, .view-btn {
+            background: #fff; border: 1px solid #cbd5e1;
+            border-radius: 7px; padding: 7px 12px;
+            font-size: 12px; font-weight: 650; color: #334155;
+        }
+        .refresh-btn:hover, .view-btn:hover {
+            border-color: var(--primary); color: var(--primary); background: #eff6ff;
+        }
+
+        .booking-table { min-width: 850px; margin: 0; }
+        .booking-table thead th {
+            background: #f8fafc; color: #64748b;
+            font-size: 11px; font-weight: 750;
+            letter-spacing: .4px; text-transform: uppercase;
+            padding: 14px 16px; white-space: nowrap;
+            border-bottom: 1px solid var(--border);
+        }
+        .booking-table tbody td {
+            padding: 15px 16px; vertical-align: middle;
+            border-color: #f1f5f9;
+        }
+        .booking-table tbody tr:hover { background: #fafcff; }
+        .booking-ref { font-weight: 700; color: #1e293b; }
+        .booking-date, .booking-sub { color: var(--muted); font-size: 11px; margin-top: 4px; }
+        .booking-main { font-weight: 650; color: #1e293b; }
+
+        .badge-custom {
+            display: inline-flex; align-items: center; gap: 5px;
+            border-radius: 6px; padding: 5px 9px;
+            font-size: 11px; font-weight: 750; white-space: nowrap;
+        }
+        .type-hotel { background: #eff6ff; color: #1d4ed8; }
+        .type-flight { background: #f5f3ff; color: #6d28d9; }
+        .type-other { background: #f1f5f9; color: #475569; }
+        .success { background: #dcfce7; color: #166534; }
+        .warning { background: #fef3c7; color: #92400e; }
+        .danger { background: #fee2e2; color: #991b1b; }
+        .neutral { background: #f1f5f9; color: #475569; }
+        .amount { font-weight: 750; white-space: nowrap; }
+
+        .pagination-area {
+            padding: 14px 20px; display: flex;
+            justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--border);
+        }
+        .pagination-info { font-size: 12px; color: var(--muted); }
+        .page-link { font-size: 12px; color: #475569; }
+        .page-item.active .page-link { background: var(--primary); border-color: var(--primary); }
+
+        .state-box { text-align: center; padding: 55px 20px; color: var(--muted); }
+        .state-box i { display: block; font-size: 35px; margin-bottom: 10px; }
+
+        /* Booking details modal */
+        .modal-content { border: 0; border-radius: 14px; overflow: hidden; }
+        .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); }
+        .modal-title { font-weight: 750; font-size: 18px; }
+        .modal-body { padding: 22px 24px; max-height: 75vh; overflow-y: auto; }
+        .modal-footer { border-top: 1px solid var(--border); padding: 13px 24px; }
+
+        .detail-hero {
+            padding: 16px; border: 1px solid var(--border);
+            border-radius: 10px; background: #fafcff;
+            display: flex; align-items: center;
+            justify-content: space-between; gap: 12px; flex-wrap: wrap;
+        }
+        .detail-hero-title { font-size: 16px; font-weight: 750; }
+        .detail-hero-subtitle { font-size: 12px; color: var(--muted); margin-top: 4px; }
+        .detail-section { margin-top: 22px; }
+        .section-heading {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 13px; font-weight: 750; color: #334155;
+            margin-bottom: 13px;
+        }
+        .section-heading i { color: var(--primary); font-size: 16px; }
+        .detail-grid {
+            display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px 20px;
+        }
+        .detail-item { min-width: 0; }
+        .detail-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+        .detail-value { font-size: 13px; font-weight: 650; color: #1e293b; overflow-wrap: anywhere; }
+        .detail-divider { border-top: 1px solid var(--border); margin-top: 20px; }
+        .guest-card, .provider-card {
+            padding: 13px; border: 1px solid var(--border);
+            border-radius: 9px; margin-top: 9px;
+        }
+        .provider-card { background: #fafcff; }
+        .provider-pre {
+            white-space: pre-wrap; overflow-wrap: anywhere;
+            max-height: 280px; overflow: auto;
+            font-size: 11px; background: #f8fafc;
+            border: 1px solid var(--border); border-radius: 7px;
+            padding: 12px; margin: 10px 0 0;
+        }
+        .provider-toggle {
+            border: 1px solid var(--border); border-radius: 7px;
+            background: white; padding: 6px 10px;
+            font-size: 12px; font-weight: 650;
+        }
+
+        @media (max-width: 767px) {
+            .page-container { padding: 16px 12px; }
+            .page-title { font-size: 21px; }
+            .total-card { width: 100%; }
+            .toolbar, .pagination-area { padding: 13px; }
+            .modal-header, .modal-body { padding: 16px; }
+            .detail-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+
+<body>
+<div class="page-container">
+
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+        <div>
+            <h1 class="page-title mb-1">
+                <i class="bi bi-journal-check text-primary me-2"></i>
+                TripJack Bookings
+            </h1>
+            <p class="subtitle mb-0">Manage hotel and flight reservations</p>
+        </div>
+
+        <div class="total-card">
+            <div class="d-flex align-items-center gap-3">
+                <div class="total-icon"><i class="bi bi-ticket-perforated"></i></div>
+                <div>
+                    <div class="total-label">Total Bookings</div>
+                    <div class="total-value" id="totalBookings">—</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-card">
+        <div class="toolbar">
+            <div class="filter-group">
+                <button class="filter-btn active" type="button" data-type="ALL">
+                    <i class="bi bi-grid me-1"></i> All
+                </button>
+                <button class="filter-btn" type="button" data-type="HOTEL">
+                    <i class="bi bi-building me-1"></i> Hotels
+                </button>
+                <button class="filter-btn" type="button" data-type="FLIGHT">
+                    <i class="bi bi-airplane me-1"></i> Flights
+                </button>
+            </div>
+            <button type="button" class="refresh-btn" id="refreshBtn">
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+            </button>
+        </div>
+
+        <div id="loadingState" class="state-box">
+            <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+            Loading bookings...
+        </div>
+
+        <div id="errorState" class="state-box d-none">
+            <i class="bi bi-exclamation-circle text-danger"></i>
+            <div class="fw-semibold text-dark">Unable to load bookings</div>
+            <div id="errorText" class="small my-2">Please try again.</div>
+            <button class="btn btn-sm btn-primary" id="retryBtn">Retry</button>
+        </div>
+
+        <div id="emptyState" class="state-box d-none">
+            <i class="bi bi-inbox"></i>
+            <div class="fw-semibold text-dark">No bookings found</div>
+            <div class="small">There are no bookings for this filter.</div>
+        </div>
+
+        <div class="table-responsive d-none" id="tableWrapper">
+            <table class="table booking-table">
+                <thead>
+                    <tr>
+                        <th>Booking Reference</th>
+                        <th>Booking Details</th>
+                        <th>Type</th>
+                        <th>Booking Status</th>
+                        <th>Payment</th>
+                        <th>Amount</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="bookingTableBody"></tbody>
+            </table>
+        </div>
+
+        <div class="pagination-area d-none" id="paginationArea">
+            <div class="pagination-info" id="paginationInfo"></div>
+            <nav aria-label="Bookings pagination">
+                <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Booking Details Modal -->
+<div class="modal fade" id="bookingDetailsModal" tabindex="-1"
+     aria-labelledby="bookingDetailsTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="bookingDetailsTitle">
+                        <i class="bi bi-receipt-cutoff text-primary me-2"></i>
+                        Booking Details
+                    </h5>
+                    <div class="small text-secondary mt-1" id="modalReference"></div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="bookingDetailsBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-light border btn-sm" data-bs-dismiss="modal">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+(() => {
+    'use strict';
+
+    const API_URL = 'http://localhost:5001/api/v1/bookings/allBookingsByAdmin';
+    const PAGE_LIMIT = 10;
+
+    let currentType = 'ALL';
+    let currentPage = 1;
+    let totalPages = 0;
+    let bookings = [];
+    let requestVersion = 0;
+
+    const $ = id => document.getElementById(id);
+    const modal = new bootstrap.Modal($('bookingDetailsModal'));
+
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, char => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;',
+            '"': '&quot;', "'": '&#39;'
+        })[char]);
+    }
+
+    function safeJson(value) {
+        try {
+            return JSON.stringify(value, null, 2);
+        } catch {
+            return String(value ?? '');
+        }
+    }
+
+    function date(value, withTime = false) {
+        if (!value) return '—';
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return escapeHtml(value);
+
+        return new Intl.DateTimeFormat('en-IN', {
+            day: '2-digit', month: 'short', year: 'numeric',
+            ...(withTime ? { hour: '2-digit', minute: '2-digit' } : {})
+        }).format(d);
+    }
+
+    function money(amount, currency = 'INR') {
+        if (amount === null || amount === undefined || amount === '') return '—';
+        const n = Number(amount);
+        if (!Number.isFinite(n)) return escapeHtml(amount);
+        try {
+            return new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: currency || 'INR',
+                maximumFractionDigits: 2
+            }).format(n);
+        } catch {
+            return `${escapeHtml(currency)} ${n.toFixed(2)}`;
+        }
+    }
+
+    function normalized(value) {
+        return String(value || 'UNKNOWN').trim().toUpperCase().replace(/[\s-]+/g, '_');
+    }
+
+    function statusClass(value) {
+        const s = normalized(value);
+        if (['BOOKED', 'SUCCESS', 'CONFIRMED', 'COMPLETED', 'PAID'].includes(s)) return 'success';
+        if (['PENDING', 'INITIATED', 'PROCESSING', 'BOOKING_IN_PROGRESS', 'ON_HOLD'].includes(s)) return 'warning';
+        if (['FAILED', 'BOOKING_FAILED', 'CANCELLED', 'CANCELED', 'REJECTED', 'REFUNDED'].includes(s)) return 'danger';
+        return 'neutral';
+    }
+
+    function statusBadge(value, css = statusClass(value)) {
+        return `<span class="badge-custom ${css}">${escapeHtml(normalized(value).replaceAll('_', ' '))}</span>`;
+    }
+
+    /*
+     * Payment display rule:
+     * BOOKED means the booking flow completed successfully.
+     * Display PAID for BOOKED even if an older row still has PENDING.
+     * This changes only the UI, not the database.
+     */
+    function displayedPaymentStatus(booking) {
+        const bookingStatus = normalized(booking.status);
+        const paymentStatus = normalized(booking.payment_status);
+
+        if (bookingStatus === 'BOOKED') return 'PAID';
+
+        // Some existing records may use SUCCESS rather than BOOKED.
+        if (paymentStatus === 'SUCCESS' || paymentStatus === 'PAID') return 'PAID';
+
+        return paymentStatus;
+    }
+
+    function typeBadge(type) {
+        const t = normalized(type);
+        if (t === 'HOTEL') {
+            return '<span class="badge-custom type-hotel"><i class="bi bi-building"></i> HOTEL</span>';
+        }
+        if (t === 'FLIGHT') {
+            return '<span class="badge-custom type-flight"><i class="bi bi-airplane"></i> FLIGHT</span>';
+        }
+        return `<span class="badge-custom type-other">${escapeHtml(t)}</span>`;
+    }
+
+    function tripJackData(booking) {
+        const data = booking.booking_data || {};
+        return data.tripjack || data.tripJack || {};
+    }
+
+    function getHotel(booking) {
+        const data = booking.booking_data || {};
+        const tj = tripJackData(booking);
+        const review = tj.review || {};
+        const details = tj.bookingDetails || {};
+        const order = details.order || details.data?.order || {};
+        const hInfo = details.itemInfos?.HOTEL?.hInfo ||
+            details.data?.itemInfos?.HOTEL?.hInfo || {};
+        const hotel = data.hotel || {};
+
+        const option = review.option || {};
+        const room = option.roomInfo?.[0] || {};
+        const bookedRoom = hInfo.ops?.[0]?.ris?.[0] || {};
+
+        return {
+            name: hotel.hotelName || review.hotelName || hInfo.name || 'Hotel booking',
+            hotelId: hotel.hotelId || review.hotelId || hInfo.id || '',
+            address: hotel.address || hInfo.ad || hInfo.address || '',
+            checkIn: data.search?.checkIn || hInfo.checkInDate || '',
+            checkOut: data.search?.checkOut || hInfo.checkOutDate || '',
+            room: room.name || bookedRoom.rc || bookedRoom.rn || '',
+            meal: option.mealBasis || bookedRoom.mb || '',
+            rating: hInfo.rt || hInfo.rating || '',
+            order
+        };
+    }
+
+    function getFlight(booking) {
+        const data = booking.booking_data || {};
+        const tj = tripJackData(booking);
+        const review = tj.review || {};
+        const details = tj.bookingDetails || {};
+        const order = details.order || details.data?.order || {};
+        const trip = review.tripInfos?.[0] || {};
+        const segment = trip.sI?.[0] || {};
+        const airline = segment.fD?.aI || {};
+
+        return {
+            airline: airline.name || '',
+            flightNo: [airline.code, segment.fD?.fN].filter(Boolean).join(' '),
+            from: segment.da?.city || segment.da?.name || data.search?.from || '',
+            to: segment.aa?.city || segment.aa?.name || data.search?.to || '',
+            departure: segment.dt || data.search?.departureDate || '',
+            arrival: segment.at || '',
+            pnr: order.pnr || order.bookingId || '',
+            order
+        };
+    }
+
+    function description(booking) {
+        if (normalized(booking.booking_type) === 'HOTEL') {
+            const h = getHotel(booking);
+            return {
+                title: h.name,
+                subtitle: h.checkIn && h.checkOut
+                    ? `${date(h.checkIn)} – ${date(h.checkOut)}`
+                    : h.room || 'Hotel reservation'
+            };
+        }
+        if (normalized(booking.booking_type) === 'FLIGHT') {
+            const f = getFlight(booking);
+            return {
+                title: f.airline || 'Flight booking',
+                subtitle: f.from && f.to ? `${f.from} → ${f.to}` : date(f.departure)
+            };
+        }
+        return { title: booking.booking_type || 'Booking', subtitle: booking.provider || '—' };
+    }
+
+    function showState(state) {
+        $('loadingState').classList.toggle('d-none', state !== 'loading');
+        $('errorState').classList.toggle('d-none', state !== 'error');
+        $('emptyState').classList.toggle('d-none', state !== 'empty');
+        $('tableWrapper').classList.toggle('d-none', state !== 'table');
+        $('paginationArea').classList.toggle('d-none', state !== 'table');
+    }
+
+    async function request(type, page, limit) {
+        const params = new URLSearchParams({
+            type, page: String(page), limit: String(limit)
+        });
+        const response = await fetch(`${API_URL}?${params}`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: { Accept: 'application/json' }
+        });
+        if (!response.ok) throw new Error(`Request failed (${response.status})`);
+        const result = await response.json();
+        if (!result.success) throw new Error(result.message || 'Unable to fetch bookings');
+        return result;
+    }
+
+    async function loadTotal() {
+        try {
+            const result = await request('ALL', 1, 1);
+            $('totalBookings').textContent =
+                (Number(result.pagination?.totalRecords) || 0).toLocaleString('en-IN');
+        } catch {
+            // The ALL list response also updates the total.
+        }
+    }
+
+    async function loadBookings(page = 1) {
+        const version = ++requestVersion;
+        currentPage = page;
+        showState('loading');
+        $('pagination').innerHTML = '';
+
+        try {
+            const result = await request(currentType, page, PAGE_LIMIT);
+            if (version !== requestVersion) return;
+
+            bookings = Array.isArray(result.data) ? result.data : [];
+            const info = result.pagination || {};
+            totalPages = Number(info.totalPages) || 0;
+
+            if (currentType === 'ALL') {
+                $('totalBookings').textContent =
+                    (Number(info.totalRecords) || 0).toLocaleString('en-IN');
+            }
+
+            renderRows();
+            renderPagination(info);
+            showState(bookings.length ? 'table' : 'empty');
+        } catch (error) {
+            if (version !== requestVersion) return;
+            $('errorText').textContent = error.message || 'Please try again.';
+            showState('error');
+        }
+    }
+
+    function renderRows() {
+        $('bookingTableBody').innerHTML = bookings.map((b, index) => {
+            const d = description(b);
+            const paymentStatus = displayedPaymentStatus(b);
+
+            return `
+                <tr>
+                    <td>
+                        <div class="booking-ref">${escapeHtml(b.booking_reference || '—')}</div>
+                        <div class="booking-date">${date(b.created_at, true)}</div>
+                    </td>
+                    <td>
+                        <div class="booking-main">${escapeHtml(d.title)}</div>
+                        <div class="booking-sub">${escapeHtml(d.subtitle)}</div>
+                    </td>
+                    <td>${typeBadge(b.booking_type)}</td>
+                    <td>${statusBadge(b.status)}</td>
+                    <td>${statusBadge(paymentStatus)}</td>
+                    <td><span class="amount">${money(b.amount, b.currency)}</span></td>
+                    <td class="text-end">
+                        <button type="button" class="view-btn" style="border: none; background: none; width: 100%;" data-view="${index}">
+                            <i class="bi bi-eye me-1"></i> View
+                        </button>
+                    </td>
+                </tr>`;
+        }).join('');
+    }
+
+    function renderPagination(info) {
+        const page = Number(info.currentPage) || currentPage;
+        const limit = Number(info.limit) || PAGE_LIMIT;
+        const total = Number(info.totalRecords) || 0;
+        const start = total ? ((page - 1) * limit + 1) : 0;
+        const end = Math.min(page * limit, total);
+
+        $('paginationInfo').textContent = `Showing ${start}–${end} of ${total} bookings`;
+
+        if (totalPages <= 1) return;
+
+        const addPage = (label, target, disabled = false, active = false) => {
+            const li = document.createElement('li');
+            li.className = `page-item${disabled ? ' disabled' : ''}${active ? ' active' : ''}`;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'page-link';
+            btn.textContent = label;
+            btn.disabled = disabled;
+            btn.addEventListener('click', () => loadBookings(target));
+            li.appendChild(btn);
+            $('pagination').appendChild(li);
+        };
+
+        addPage('‹', page - 1, page <= 1);
+
+        const first = Math.max(1, page - 2);
+        const last = Math.min(totalPages, page + 2);
+
+        if (first > 1) {
+            addPage('1', 1, false, page === 1);
+            if (first > 2) {
+                const li = document.createElement('li');
+                li.className = 'page-item disabled';
+                li.innerHTML = '<span class="page-link">…</span>';
+                $('pagination').appendChild(li);
+            }
+        }
+
+        for (let p = first; p <= last; p++) addPage(String(p), p, false, p === page);
+
+        if (last < totalPages) {
+            if (last < totalPages - 1) {
+                const li = document.createElement('li');
+                li.className = 'page-item disabled';
+                li.innerHTML = '<span class="page-link">…</span>';
+                $('pagination').appendChild(li);
+            }
+            addPage(String(totalPages), totalPages, false, page === totalPages);
+        }
+
+        addPage('›', page + 1, page >= totalPages);
+    }
+
+    function item(label, value) {
+        const display = value === null || value === undefined || value === ''
+            ? '—'
+            : escapeHtml(value);
+        return `<div class="detail-item">
+            <div class="detail-label">${escapeHtml(label)}</div>
+            <div class="detail-value">${display}</div>
+        </div>`;
+    }
+
+    function section(title, icon, html) {
+        return `<section class="detail-section">
+            <h6 class="section-heading"><i class="bi ${icon}"></i>${escapeHtml(title)}</h6>
+            ${html}
+        </section>`;
+    }
+
+    function renderHotel(booking) {
+        const h = getHotel(booking);
+        const data = booking.booking_data || {};
+        const rooms = data.search?.rooms || [];
+        const guestCount = rooms.reduce((sum, room) =>
+            sum + Number(room.adults || 0) + Number(room.children || 0), 0);
+
+        return section('Hotel Details', 'bi-building', `
+            <div class="detail-grid">
+                ${item('Hotel Name', h.name)}
+                ${item('Hotel ID', h.hotelId)}
+                ${item('Address', h.address)}
+                ${item('Hotel Rating', h.rating ? `${h.rating} star` : '')}
+                ${item('Check-in', date(h.checkIn))}
+                ${item('Check-out', date(h.checkOut))}
+                ${item('Room', h.room)}
+                ${item('Meal Plan', h.meal)}
+                ${item('Guests', guestCount || '')}
+            </div>
+        `);
+    }
+
+    function renderFlight(booking) {
+        const f = getFlight(booking);
+        return section('Flight Details', 'bi-airplane', `
+            <div class="detail-grid">
+                ${item('Airline', f.airline)}
+                ${item('Flight Number', f.flightNo)}
+                ${item('From', f.from)}
+                ${item('To', f.to)}
+                ${item('Departure', date(f.departure, true))}
+                ${item('Arrival', date(f.arrival, true))}
+                ${item('PNR', f.pnr)}
+            </div>
+        `);
+    }
+
+    function renderGuests(booking) {
+        const data = booking.booking_data || {};
+        const guests = data.guests || data.passengers || [];
+        const primary = data.primaryGuest;
+
+        const list = Array.isArray(guests) && guests.length
+            ? guests
+            : (primary ? [primary] : []);
+
+        if (!list.length) return '<div class="small text-secondary">Guest information unavailable.</div>';
+
+        return list.map((g, i) => {
+            const name = [g.title, g.firstName, g.lastName].filter(Boolean).join(' ');
+            return `<div class="guest-card">
+                <div class="fw-semibold">${escapeHtml(name || `Guest ${i + 1}`)}</div>
+                <div class="small text-secondary mt-1">${escapeHtml(g.type || 'Guest')}${g.isPrimary ? ' · Primary guest' : ''}</div>
+                <div class="detail-grid mt-3">
+                    ${item('Email', g.email)}
+                    ${item('Mobile', g.mobile)}
+                    ${item('Date of Birth', date(g.dob))}
+                    ${item('Nationality', g.nationality)}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function providerDetails(booking) {
+        const data = booking.booking_data || {};
+        const tj = tripJackData(booking);
+        const book = tj.book || {};
+        const details = tj.bookingDetails || {};
+        const order = details.order || details.data?.order || book.order || {};
+        const providerId = booking.provider_booking_id ||
+            order.bookingId || book.bookingId || tj.bookingId;
+        const pnr = order.pnr || book.pnr || details.pnr || '';
+
+        return section('Provider Details', 'bi-plug', `
+            <div class="provider-card">
+                <div class="detail-grid">
+                    ${item('Provider', booking.provider || 'TRIPJACK')}
+                    ${item('Provider Booking ID', providerId)}
+                    ${item('Provider Reference / PNR', booking.provider_reference || pnr)}
+                    ${item('TripJack Booking Status', tj.bookingStatus || order.status || book.status)}
+                    ${item('Correlation ID', tj.correlationId || data.correlationId)}
+                </div>
+            </div>
+            <details class="mt-3">
+                <summary class="provider-toggle">
+                    <i class="bi bi-code-slash me-1"></i> View raw provider response
+                </summary>
+                <pre class="provider-pre">${escapeHtml(safeJson({
+                    book: book,
+                    bookingDetails: details
+                }))}</pre>
+            </details>
+        `);
+    }
+
+    function paymentDetails(booking) {
+        const payment = booking.payment_data || {};
+        const paymentStatus = displayedPaymentStatus(booking);
+
+        return section('Payment Details', 'bi-credit-card', `
+            <div class="detail-grid">
+                ${item('Amount', money(booking.amount, booking.currency))}
+                ${item('Currency', booking.currency || 'INR')}
+                <div class="detail-item">
+                    <div class="detail-label">Payment Status</div>
+                    <div class="detail-value">${statusBadge(paymentStatus)}</div>
+                </div>
+                ${item('Payment Gateway', payment.gateway || payment.provider)}
+                ${item('Transaction Reference', payment.merchantTxnNo || payment.transaction_id)}
+                ${item('Paid At', date(payment.paid_at, true))}
+            </div>
+        `);
+    }
+
+    function openDetails(index) {
+        const b = bookings[index];
+        if (!b) return;
+
+        const d = description(b);
+        const paymentStatus = displayedPaymentStatus(b);
+
+        $('modalReference').textContent = b.booking_reference || '';
+
+        const specific = normalized(b.booking_type) === 'HOTEL'
+            ? renderHotel(b)
+            : normalized(b.booking_type) === 'FLIGHT'
+                ? renderFlight(b)
+                : '';
+
+        $('bookingDetailsBody').innerHTML = `
+            <div class="detail-hero">
+                <div>
+                    <div class="detail-hero-title">${escapeHtml(d.title)}</div>
+                    <div class="detail-hero-subtitle">${escapeHtml(d.subtitle)}</div>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    ${typeBadge(b.booking_type)}
+                    ${statusBadge(b.status)}
+                </div>
+            </div>
+
+            ${section('Booking Information', 'bi-receipt', `
+                <div class="detail-grid">
+                    ${item('Booking Reference', b.booking_reference)}
+                    ${item('Booking Type', b.booking_type)}
+                    ${item('Created At', date(b.created_at, true))}
+                    ${item('Last Updated', date(b.updated_at, true))}
+                </div>
+            `)}
+
+            ${specific}
+
+            ${section('Guest / Traveller Details', 'bi-people', renderGuests(b))}
+
+            ${providerDetails(b)}
+
+            ${paymentDetails(b)}
+        `;
+        modal.show();
+    }
+
+    $('bookingTableBody').addEventListener('click', event => {
+        const btn = event.target.closest('[data-view]');
+        if (btn) openDetails(Number(btn.dataset.view));
+    });
+
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const type = btn.dataset.type;
+            if (type === currentType) return;
+
+            currentType = type;
+            currentPage = 1;
+
+            document.querySelectorAll('.filter-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.type === currentType);
+            });
+
+            loadBookings(1);
+        });
+    });
+
+    $('refreshBtn').addEventListener('click', () => {
+        loadTotal();
+        loadBookings(currentPage);
+    });
+
+    $('retryBtn').addEventListener('click', () => {
+        loadTotal();
+        loadBookings(currentPage);
+    });
+
+    loadTotal();
+    loadBookings(1);
+})();
+</script>
+</body>
+</html>
+

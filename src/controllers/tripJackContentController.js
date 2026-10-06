@@ -14,7 +14,6 @@ class TripJackContentController {
             );
 
 
-            console.log(cities)
             return res.status(200).json({
                 success: true,
                 data: cities

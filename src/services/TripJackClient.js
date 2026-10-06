@@ -5,6 +5,36 @@ class TripJackClient {
         this.tripJackConfigService = tripJackConfigService;
     }
 
+    /**
+     * Service + path ke hisaab se sahi base URL chunta hai.
+     * - flight                      -> flightBaseUrl
+     * - hotel + path "oms/..."      -> hotelBookUrl  (booking APIs)
+     * - hotel (baaki sab)           -> hotelBaseUrl
+     */
+    resolveBaseUrl(config, service, cleanPath) {
+        if (service === 'flight') {
+            return {
+                baseUrl: config.flightBaseUrl,
+                label: 'flight base URL'
+            };
+        }
+
+        const isHotelBooking =
+            service === 'hotel' && /^oms(\/|$)/i.test(cleanPath);
+
+        if (isHotelBooking) {
+            return {
+                baseUrl: config.hotelBookBaseUrl,
+                label: 'hotel book URL'
+            };
+        }
+
+        return {
+            baseUrl: config.hotelBaseUrl,
+            label: 'hotel base URL'
+        };
+    }
+
     async request({
         method = 'GET',
         path,
@@ -13,24 +43,28 @@ class TripJackClient {
         headers = {},
         service = 'hotel'
     }) {
-        const config = await this.tripJackConfigService.getConfig();
-
         if (!path) {
             throw new Error('TripJack API path is required');
         }
 
-        const baseUrl =
-            service === 'flight'
-                ? config.flightBaseUrl
-                : config.hotelBaseUrl;
+        const config = await this.tripJackConfigService.getConfig();
+        
+
+        const cleanPath = path.replace(/^\/+/, '');
+
+        const { baseUrl, label } = this.resolveBaseUrl(
+            config,
+            service,
+            cleanPath
+        );
 
         if (!baseUrl) {
             throw new Error(
-                `TripJack ${service} base URL is not configured`
+                `TripJack ${label} is not configured`
             );
         }
 
-        const url = `${baseUrl}/${path.replace(/^\/+/, '')}`;
+        const url = `${baseUrl.replace(/\/+$/, '')}/${cleanPath}`;
 
         try {
             const response = await axios({
@@ -53,13 +87,16 @@ class TripJackClient {
         catch (error) {
             const tripJackError = error.response?.data;
 
-            console.error('TripJack API Error:', {
-                service,
-                method,
-                url,
-                status: error.response?.status || null,
-                error: tripJackError || error.message
-            });
+            console.error(
+                'TripJack API Error:',
+                JSON.stringify({
+                    service,
+                    method,
+                    url,
+                    status: error.response?.status || null,
+                    error: tripJackError || error.message
+                }, null, 2)
+            );
 
             const apiError = new Error(
                 tripJackError?.errors?.[0]?.message ||

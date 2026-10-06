@@ -194,6 +194,39 @@ class TripJackHotelService {
             }
         );
     }
+
+    async book(payload) {
+        return this.tripJackClient.post(
+            'oms/v3/hotel/book',
+            payload,
+            {
+                service: 'hotel'
+            }
+        );
+    }
+
+    async getBookingDetails({ bookingId }) {
+        // book() jaisa hi client/headers use karo, sirf endpoint badlo
+        const response = await this.tripJackClient.post(
+            '/oms/v3/hotel/booking-details',
+            { bookingId }
+        );
+        return response;
+    }
+
+    async cancelBooking({ bookingId }) {
+        if (!bookingId || typeof bookingId !== 'string') {
+            throw new Error('Valid bookingId is required');
+        }
+
+        const response = await this.tripJackClient.post(
+            `/oms/v3/hotel/cancel-booking/${encodeURIComponent(bookingId)}`,
+            {},
+            { service: 'hotel-booker' }
+        );
+
+        return response;
+    }
 }
 
 module.exports = TripJackHotelService;

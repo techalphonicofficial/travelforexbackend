@@ -23,12 +23,15 @@ const ProviderConfig = sequelize.define(
         },
 
         hotel_url: {
-            type: DataTypes.TEXT,
+            type: DataTypes.STRING(500),
             allowNull: false
         },
-
+        hotel_book_url: {
+            type: DataTypes.STRING(500),
+            allowNull: true   // purane records ke liye null allow rakho
+        },
         flight_url: {
-            type: DataTypes.TEXT,
+            type: DataTypes.STRING(500),
             allowNull: false
         },
 
