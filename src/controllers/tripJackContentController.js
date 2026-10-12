@@ -6,11 +6,12 @@ class TripJackContentController {
 
     async cityRegionSearch(req, res) {
         try {
-            const { query, limit } = req.query;
+            const { query, limit, countryName } = req.query;
 
             const cities = await this.tripJackContentService.searchCities(
                 query,
-                limit ? Number(limit) : undefined
+                limit ? Number(limit) : undefined,
+                countryName ? countryName : undefined
             );
 
 

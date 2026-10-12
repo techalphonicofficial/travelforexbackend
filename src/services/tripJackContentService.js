@@ -14,18 +14,19 @@ class TripJackContentService {
      * @param {number} [limit=10]
      * @returns {Promise<Array>}
      */
-    async searchCities(query, limit = 10) {
-        if (!query || typeof query !== 'string' || !query.trim()) {
-            throw new Error('Search query is required');
-        }
-
-        return this.tripJackCityRegionModel.findAll({
-            where: {
-                cityName: {
-                    [Op.iLike]: `%${query.trim()}%`
+            async searchCities(query, limit = 10, countryName) {
+                if (!query || typeof query !== 'string' || !query.trim()) {
+                    throw new Error('Search query is required');
                 }
-            },
-            limit,
+
+                return this.tripJackCityRegionModel.findAll({
+                    where: {
+                        cityName: {
+                            [Op.iLike]: `%${query.trim()}%`
+                        },
+                        countryName: countryName || "INDIA"
+                    },
+                    limit,
             order: [['cityName', 'ASC']]
         });
     }
