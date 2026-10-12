@@ -36,6 +36,7 @@ const allowedOrigins = [
   'http://localhost:3000',
   'https://admin.travel-forex.com',
   'https://travel-forex.com',
+  'https://www.travel-forex.com',
   'http://192.168.0.166:3000',
 ];
 
