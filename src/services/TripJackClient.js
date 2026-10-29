@@ -81,6 +81,19 @@ class TripJackClient {
                 }
             });
 
+            // TripJack sends some failures (e.g. IP not whitelisted) with HTTP 200
+            if (response.data?.status?.success === false) {
+                console.warn(
+                    'TripJack API returned failure:',
+                    JSON.stringify({
+                        service,
+                        url,
+                        httpStatus: response.data.status.httpStatus || null,
+                        errors: response.data.errors || null
+                    })
+                );
+            }
+
             return response.data;
 
         }

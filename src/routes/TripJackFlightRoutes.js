@@ -4,8 +4,8 @@ const router = express.Router();
 
 const { controllers } = require('../container');
 
-const tfc = (method) => (req, res) =>
-    controllers.tripJackFlightController[method](req, res);
+const tfc = (method) => (req, res, next) =>
+    controllers.tripJackFlightController[method](req, res, next);
 
 /**
  * @swagger
