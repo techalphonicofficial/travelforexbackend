@@ -1,3 +1,9 @@
+const { customerMessage, toCustomerBooking } = require('../utils/customerSafe');
+
+/* The logged-in customer may only see their own bookings */
+const isOwner = (booking, req) =>
+    Boolean(req.user?.id) && String(booking?.user_id) === String(req.user.id);
+
 class BookingController {
 
     constructor(bookingService) {
@@ -9,7 +15,6 @@ class BookingController {
      * Create Booking
      */
     async createBooking(req, res) {
-        console.log('createBooking called',req.body);
 
         try {
 
@@ -29,7 +34,9 @@ class BookingController {
             const booking =
                 await this.bookingService.createBooking({
 
-                    userId,
+                    // Logged-in user from the JWT, never from the request body
+                    userId:
+                        req.user?.id ?? userId,
 
                     bookingType,
 
@@ -59,8 +66,15 @@ class BookingController {
                 message:
                     'Booking created successfully',
 
-                data:
-                    booking
+                // never return the supplier validation payload to the browser
+                data: {
+                    success: booking?.success,
+                    // no supplier name for customers
+                    booking: booking?.booking
+                        ? (({ provider, ...rest }) => rest)(booking.booking)
+                        : null,
+                    amountBreakup: booking?.amountBreakup
+                }
             });
 
 
@@ -79,60 +93,54 @@ class BookingController {
                 success: false,
 
                 message:
-                    error.message ||
-                    'Unable to create booking'
+                    customerMessage(
+                        error.message,
+                        'We could not confirm this fare. Please try again or choose another flight.'
+                    )
             });
         }
     }
 
 
-     async createHotelBooking(req, res) {
+    async createHotelBooking(req, res) {
         try {
-            const {
-                userId,
-                bookingType,
-                provider,
-                providerBookingId,
-                providerReference,
-                amount,
-                currency,
-                bookingData,
-                paymentData
-            } = req.body;
+            const { bookingType, provider, amount, currency, correlationId, bookingData } = req.body || {};
 
-            const booking = await this.bookingService.createHotelBooking({
-                userId,
-                bookingType,
-                provider,
-                providerBookingId,
-                providerReference,
+            const result = await this.bookingService.createHotelBooking({
+                // logged-in user from the JWT, never from the body
+                userId: req.user?.id || null,
+                bookingType: bookingType || 'HOTEL',
+                provider: provider || 'TRIPJACK',
                 amount,
                 currency: currency || 'INR',
-                correlationId: req.body.bookingData.tripjack.correlationId,
-                bookingData,
-                paymentData
+                correlationId: correlationId || bookingData?.tripjack?.correlationId || null,
+                bookingData
             });
 
             return res.status(201).json({
                 success: true,
                 message: 'Hotel booking created successfully',
-                data: booking
+                data: result
             });
         } catch (error) {
-            console.error('Create Hotel Booking Error:', error);
+            console.error('Create Hotel Booking Error:', error.message);
             return res.status(error.status || 500).json({
                 success: false,
-                message: error.message || 'Unable to create hotel booking'
+                message: customerMessage(error.message, 'Unable to start the booking. Please try again.')
             });
         }
     }
-     
+
     async continueToPay(req, res) {
         console.log('continueToPay called');
         try {
             const { bookingId } = req.params;
 
-            const result = await this.bookingService.continueToPay({ bookingId , environment: 'UAT' });
+            const result = await this.bookingService.continueToPay({
+                bookingId,
+                userId: req.user?.id ?? null,
+                environment: 'UAT'
+            });
 
             return res.status(200).json({
                 success: true,
@@ -143,7 +151,7 @@ class BookingController {
             console.error('Continue to Pay Error:', error);
             return res.status(error.status || 500).json({
                 success: false,
-                message: error.message || 'Unable to process payment'
+                message: customerMessage(error.message, 'Unable to start the payment. Please try again.')
             });
         }
     }   
@@ -152,141 +160,74 @@ class BookingController {
      * Get Booking By ID
      */
     async getBooking(req, res) {
-
         try {
+            const booking = await this.bookingService.findById(req.params.id);
 
-            const { id } =
-                req.params;
-
-
-            const booking =
-                await this.bookingService.findById(
-                    id
-                );
-
-
-            if (!booking) {
-
-                return res.status(404).json({
-
-                    success: false,
-
-                    message:
-                        'Booking not found'
-                });
+            if (!booking || !isOwner(booking, req)) {
+                return res.status(404).json({ success: false, message: 'Booking not found' });
             }
 
-
-            return res.status(200).json({
-
-                success: true,
-
-                data:
-                    booking
-            });
-
-
+            return res.status(200).json({ success: true, data: toCustomerBooking(booking) });
         } catch (error) {
-
-            console.error(
-                'Get Booking Error:',
-                error
-            );
-
-
-            return res.status(500).json({
-
-                success: false,
-
-                message:
-                    error.message ||
-                    'Unable to fetch booking'
-            });
+            console.error('Get Booking Error:', error);
+            return res.status(500).json({ success: false, message: 'Unable to fetch booking' });
         }
     }
 
-      /**
-     * Get Booking BookingRefrence
+    /**
+     * Get Booking by booking reference (customer, owner only)
      */
     async getBookingByReference(req, res) {
-
         try {
+            let booking = await this.bookingService.findByBookingReference(req.params.id);
 
-            const { id } =
-                req.params;
-
-
-            const booking =
-                await this.bookingService.findByBookingReference(
-                    id
-                );
-
-
-            if (!booking) {
-
-                return res.status(404).json({
-
-                    success: false,
-
-                    message:
-                        'Booking not found'
-                });
+            if (!booking || !isOwner(booking, req)) {
+                return res.status(404).json({ success: false, message: 'Booking not found' });
             }
 
+            // Paid flight still in progress / payment not reported yet:
+            // refresh from the airline / payment gateway (throttled)
+            booking = await this.bookingService.refreshFlightStatus(booking);
+            booking = await this.bookingService.refreshPaymentStatus(booking);
 
-            return res.status(200).json({
-
-                success: true,
-
-                data:
-                    booking
-            });
-
-
+            return res.status(200).json({ success: true, data: toCustomerBooking(booking) });
         } catch (error) {
-
-            console.error(
-                'Get Booking Error:',
-                error
-            );
-
-
-            return res.status(500).json({
-
-                success: false,
-
-                message:
-                    error.message ||
-                    'Unable to fetch booking'
-            });
+            console.error('Get Booking Error:', error);
+            return res.status(500).json({ success: false, message: 'Unable to fetch booking' });
         }
     }
 
+    /**
+     * Logged-in customer's bookings
+     */
+    async getBookingsByUserId(req, res, next) {
+        try {
+            if (!req.user?.id || String(req.params.userId) !== String(req.user.id)) {
+                return res.status(403).json({ success: false, message: 'Not allowed' });
+            }
 
+            const { page = 1, limit = 10, bookingType, trip } = req.query;
 
-   async getBookingsByUserId(req, res, next) {
-    try {
-        const { userId } = req.params;
-        const { page = 1, limit = 10, bookingType } = req.query;
+            const result = await this.bookingService.getBookingsByUserId(
+                req.user.id,
+                page,
+                limit,
+                bookingType || null,
+                trip || null
+            );
 
-        const result = await this.bookingService.getBookingsByUserId(
-            userId || null,
-            page,
-            limit,
-            bookingType || null
-        );
-
-        return res.status(200).json({
-            success: true,
-            message: 'Bookings fetched successfully',
-            data: result.bookings,
-            pagination: result.pagination
-        });
-    } catch (error) {
-        next(error);
+            return res.status(200).json({
+                success: true,
+                message: 'Bookings fetched successfully',
+                data: result.bookings.map(toCustomerBooking),
+                pagination: result.pagination,
+                summary: result.summary,
+                filterCounts: result.filterCounts
+            });
+        } catch (error) {
+            next(error);
+        }
     }
 }
-}
-
 
 module.exports = BookingController;

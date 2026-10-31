@@ -36,6 +36,31 @@ router.get('/city-search', tcc('cityRegionSearch'));
 
 /**
  * @swagger
+ * /api/v1/tripjack/content/hotel-search:
+ *   get:
+ *     summary: Search hotels by name (local index of supplier hotel names)
+ *     tags:
+ *       - TripJack Content
+ *     parameters:
+ *       - in: query
+ *         name: query
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: taj mahal
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         example: 8
+ *     responses:
+ *       200:
+ *         description: Matching hotels (tjHotelId, name, cityName, countryName, starRating)
+ */
+router.get('/hotel-search', tcc('hotelNameSearch'));
+
+/**
+ * @swagger
  * /api/v1/tripjack/content/hids-by-region:
  *   post:
  *     summary: Get TripJack hotel IDs (hids) for given region IDs

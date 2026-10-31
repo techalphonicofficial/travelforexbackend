@@ -1,5 +1,5 @@
 const server = require('./src/server');
-const { db, services: { bookingEmailScheduler } } = require('./src/container');
+const { db, services: { bookingEmailScheduler, iciciPaymentService } } = require('./src/container');
 const port = process.env.PORT || 3000;
 
 // ─── Guard against any unhandled errors to keep the server alive ───
@@ -19,6 +19,11 @@ db.authenticate()
 
     if (bookingEmailScheduler) {
       bookingEmailScheduler.start();
+    }
+
+    // Re-check paid TripJack flights until they are confirmed
+    if (iciciPaymentService?.startFlightBookingReconciler) {
+      iciciPaymentService.startFlightBookingReconciler();
     }
     server.listen(port, () => {
 

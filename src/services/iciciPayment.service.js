@@ -3,6 +3,7 @@ const axios = require('axios');
 const Payment = require('../models/Payment');
 const paymentGatewayConfigService = require('./paymentGatewayConfig.service');
 const { createSecureHash } = require('../utils/iciciHash');
+const { mapTravellers, ticketState, ticketCheckDue, ticketSyncExpired } = require('../utils/flightTickets');
 
 class IciciPaymentService {
     constructor(tripJackFlightService = null, tripJackHotelService = null) {
@@ -766,9 +767,11 @@ class IciciPaymentService {
 
                     const traveller = { ti, pt, fN, lN };
 
+                    // one PAN per booking: the lead guest (first adult of room 1)
                     const pan = String(guest.pan || '').trim().toUpperCase();
-                    if (panRequired && !PAN_REGEX.test(pan)) {
-                        throw new Error(`${label}: valid PAN is required for this option (got "${pan}")`);
+                    const isLead = guest.isPrimary === true || (roomIndex === roomIndexes[0] && i === 0 && !guests.some((g) => g.isPrimary));
+                    if (panRequired && isLead && !PAN_REGEX.test(pan)) {
+                        throw new Error(`${label}: valid PAN of the lead guest is required for this option (got "${pan}")`);
                     }
                     if (pan && PAN_REGEX.test(pan)) traveller.pan = pan;
 
@@ -1007,6 +1010,492 @@ class IciciPaymentService {
      * requested after booking processing has
      * had some time to complete.
      */
+    // =========================================================
+    // TRIPJACK FLIGHT: CONFIRMATION AFTER BOOK
+    //
+    // The air/book response only means "request accepted".
+    // A flight is confirmed only when booking-details says
+    // order.status = SUCCESS and every traveller has a PNR.
+    // =========================================================
+
+    /**
+     * Read TripJack booking-details and update our booking.
+     * Returns { status, orderStatus, pnr }.
+     */
+    async reconcileFlightBooking(bookingOrId, { source = 'poll' } = {}) {
+        const Booking = require('../models/Booking');
+
+        const booking =
+            typeof bookingOrId === 'object' && bookingOrId?.update
+                ? await Booking.findByPk(bookingOrId.id)
+                : await Booking.findByPk(bookingOrId);
+
+        if (!booking) {
+            return { status: null, orderStatus: null, pnr: null };
+        }
+
+        const bookingData = booking.booking_data || {};
+
+        // Never touch a booking that is already final
+        if (['BOOKED', 'CANCELLED', 'BOOKING_FAILED'].includes(booking.status)) {
+            return { status: booking.status, orderStatus: null, pnr: bookingData.pnr || null };
+        }
+
+        const tripJackBookingId =
+            booking.provider_booking_id ||
+            bookingData?.fareValidate?.request?.bookingId ||
+            null;
+
+        if (!tripJackBookingId || !this.tripJackFlightService) {
+            return { status: booking.status, orderStatus: null, pnr: null };
+        }
+
+        let body = null;
+        let checkError = null;
+
+        try {
+            const response = await this.tripJackFlightService.bookingDetails({
+                bookingId: tripJackBookingId,
+                requirePaxPricing: true
+            });
+            body = response?.data ?? response;
+            if (body?.status?.success === false) {
+                checkError = body?.errors?.[0]?.message || 'Booking details not available';
+            }
+        } catch (error) {
+            checkError = error.message;
+        }
+
+        const orderStatus = String(body?.order?.status || '').toUpperCase() || null;
+        const travellers = Array.isArray(body?.itemInfos?.AIR?.travellerInfos)
+            ? body.itemInfos.AIR.travellerInfos
+            : [];
+
+        // PNR per sector, e.g. { "DEL-BOM": "ABC123" }, and ticket numbers on each passenger
+        const { passengers, pnrDetails, pnrs } = mapTravellers(bookingData, travellers);
+        const everyoneHasPnr =
+            travellers.length > 0 &&
+            travellers.every((traveller) => Object.values(traveller?.pnrDetails || {}).some(Boolean));
+
+        let status = 'BOOKING_IN_PROGRESS';
+        if (orderStatus === 'SUCCESS' && everyoneHasPnr) status = 'BOOKED';
+        else if (['FAILED', 'ABORTED'].includes(orderStatus)) status = 'BOOKING_FAILED';
+        else if (orderStatus === 'CANCELLED') status = 'CANCELLED';
+
+        const checks = Array.isArray(bookingData.statusChecks) ? bookingData.statusChecks.slice(-19) : [];
+        checks.push({
+            at: new Date().toISOString(),
+            source,
+            orderStatus,
+            pnrs,
+            error: checkError
+        });
+
+        const firstCheck = checks[0]?.at ? Date.parse(checks[0].at) : Date.now();
+        const unresolvedFor = Date.now() - firstCheck;
+
+        // The supplier still has no order 15 minutes after we started checking:
+        // the book call never created one, so nothing was booked (refund due).
+        const noOrder = /no order found/i.test(String(checkError || ''));
+        if (status === 'BOOKING_IN_PROGRESS' && noOrder && unresolvedFor > 15 * 60 * 1000) {
+            status = 'BOOKING_FAILED';
+        }
+
+        await booking.update({
+            status,
+            payment_status: 'SUCCESS',
+            provider_booking_id: String(tripJackBookingId),
+            provider_reference: pnrs.length ? pnrs.join(', ') : booking.provider_reference,
+            booking_data: {
+                ...bookingData,
+                passengers,
+                ...(pnrs.length && { pnr: pnrs.join(', '), pnrDetails }),
+                tripJack: {
+                    ...(bookingData.tripJack || {}),
+                    ...(body && !checkError && { bookingDetails: body })
+                },
+                tripJackOrderStatus: orderStatus,
+                statusChecks: checks,
+                lastStatusCheckAt: new Date().toISOString(),
+                ...(status === 'BOOKED' && {
+                    confirmedAt: new Date().toISOString(),
+                    // e-ticket numbers can come later: keep checking until complete
+                    ticketSync: this.ticketSyncInfo({ ...bookingData, passengers, pnr: pnrs.join(', ') }, bookingData.ticketSync)
+                }),
+                // Paid but not booked: needs a refund
+                ...(status === 'BOOKING_FAILED' && {
+                    refundRequired: true,
+                    bookingError: {
+                        type: 'FLIGHT',
+                        message: orderStatus
+                            ? `Airline booking ${orderStatus.toLowerCase()}`
+                            : 'No booking was created with the airline',
+                        failedAt: new Date().toISOString()
+                    },
+                    ...(noOrder && { needsManualReview: true })
+                }),
+                // Still unknown after 30 minutes: ops must check it
+                ...(status === 'BOOKING_IN_PROGRESS' && unresolvedFor > 30 * 60 * 1000 && { needsManualReview: true })
+            }
+        });
+
+        console.log('TripJack flight status check:', {
+            bookingId: booking.id,
+            tripJackBookingId,
+            source,
+            orderStatus,
+            status,
+            pnrs,
+            error: checkError
+        });
+
+        return { status, orderStatus, pnr: pnrs.join(', ') || null };
+    }
+
+    /* booking_data.ticketSync after a check: what is still missing */
+    ticketSyncInfo(bookingData, previous = {}, extra = {}) {
+        const state = ticketState(bookingData);
+        const now = new Date().toISOString();
+        return {
+            ...(previous || {}),
+            startedAt: previous?.startedAt || now,
+            lastCheckAt: now,
+            checks: Number(previous?.checks || 0) + 1,
+            lcc: state.lcc,
+            hasPnr: state.hasPnr,
+            hasTickets: state.hasTickets,
+            complete: state.complete,
+            ...(state.complete && !previous?.completedAt && { completedAt: now }),
+            ...extra
+        };
+    }
+
+    /**
+     * Booked flight with a missing PNR or e-ticket number: ask the supplier
+     * again and save what has arrived. The booking stays BOOKED.
+     * Low-cost airlines are complete with the PNR alone.
+     */
+    async syncFlightTickets(bookingOrId, { source = 'sweep', force = false } = {}) {
+        const Booking = require('../models/Booking');
+        const booking =
+            typeof bookingOrId === 'object' && bookingOrId?.update
+                ? await Booking.findByPk(bookingOrId.id)
+                : await Booking.findByPk(bookingOrId);
+
+        if (!booking || String(booking.booking_type).toUpperCase() !== 'FLIGHT' || booking.status !== 'BOOKED') {
+            return null;
+        }
+
+        const bookingData = booking.booking_data || {};
+        if (!force && !ticketCheckDue(bookingData)) return bookingData.ticketSync || null;
+
+        const tripJackBookingId = booking.provider_booking_id || bookingData?.fareValidate?.request?.bookingId;
+        if (!tripJackBookingId || !this.tripJackFlightService) return null;
+
+        let body = null;
+        let checkError = null;
+        try {
+            const response = await this.tripJackFlightService.bookingDetails({
+                bookingId: tripJackBookingId,
+                requirePaxPricing: true
+            });
+            body = response?.data ?? response;
+            if (body?.status?.success === false) {
+                checkError = body?.errors?.[0]?.message || 'Booking details not available';
+            }
+        } catch (error) {
+            checkError = error.message;
+        }
+
+        if (checkError) {
+            await booking.update({
+                booking_data: {
+                    ...bookingData,
+                    ticketSync: this.ticketSyncInfo(bookingData, bookingData.ticketSync, { lastError: checkError, lastSource: source })
+                }
+            });
+            console.error('Flight ticket sync failed:', booking.id, checkError);
+            return null;
+        }
+
+        const orderStatus = String(body?.order?.status || '').toUpperCase() || null;
+        const travellers = Array.isArray(body?.itemInfos?.AIR?.travellerInfos) ? body.itemInfos.AIR.travellerInfos : [];
+        const { passengers, pnrDetails, pnrs } = mapTravellers(bookingData, travellers);
+
+        const nextData = {
+            ...bookingData,
+            passengers,
+            ...(pnrs.length && { pnr: pnrs.join(', '), pnrDetails }),
+            tripJack: { ...(bookingData.tripJack || {}), bookingDetails: body },
+            tripJackOrderStatus: orderStatus
+        };
+        nextData.ticketSync = this.ticketSyncInfo(nextData, bookingData.ticketSync, { lastError: null, lastSource: source });
+        // the supplier no longer reports the order as ticketed: ops must look at it
+        if (orderStatus && orderStatus !== 'SUCCESS') nextData.needsManualReview = true;
+
+        await booking.update({
+            provider_reference: pnrs.length ? pnrs.join(', ') : booking.provider_reference,
+            booking_data: nextData
+        });
+
+        console.log('Flight ticket sync:', {
+            bookingId: booking.id,
+            source,
+            orderStatus,
+            pnrs,
+            complete: nextData.ticketSync.complete,
+            lcc: nextData.ticketSync.lcc
+        });
+        return nextData.ticketSync;
+    }
+
+    /**
+     * Keep checking a pending flight in the background
+     * (not awaited, so the payment webhook returns fast).
+     */
+    pollFlightBooking(bookingId, delaysInSeconds = [5, 10, 20, 30, 60, 120, 300]) {
+        const run = async (step) => {
+            if (step >= delaysInSeconds.length) return;
+            await this.wait(delaysInSeconds[step] * 1000);
+            try {
+                const result = await this.reconcileFlightBooking(bookingId, { source: `poll-${step + 1}` });
+                if (result.status === 'BOOKING_IN_PROGRESS') await run(step + 1);
+            } catch (error) {
+                console.error('Flight status poll failed:', bookingId, error.message);
+                await run(step + 1);
+            }
+        };
+        run(0).catch(() => {});
+    }
+
+    /**
+     * Safety net (also after a server restart): every 2 minutes,
+     * re-check paid flight bookings that are still in progress.
+     */
+    startFlightBookingReconciler(intervalMs = 2 * 60 * 1000) {
+        if (this.flightReconcilerTimer) return;
+
+        const sweep = async () => {
+            if (this.flightReconcilerRunning) return;
+            this.flightReconcilerRunning = true;
+            try {
+                const { Op } = require('sequelize');
+                const Booking = require('../models/Booking');
+                const pending = await Booking.findAll({
+                    where: {
+                        booking_type: { [Op.in]: ['FLIGHT', 'HOTEL'] },
+                        status: 'BOOKING_IN_PROGRESS',
+                        payment_status: 'SUCCESS',
+                        updated_at: { [Op.gte]: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) }
+                    },
+                    limit: 25
+                });
+
+                for (const booking of pending) {
+                    const last = Date.parse(booking.booking_data?.lastStatusCheckAt || 0);
+                    if (Date.now() - last < 90 * 1000) continue;
+                    if (String(booking.booking_type).toUpperCase() === 'HOTEL') {
+                        // hotel rows keep their status in booking_data.tripjack
+                        if (Date.now() - Date.parse(booking.updated_at || 0) < 90 * 1000) continue;
+                        await this.reconcileHotelBooking(booking).catch((error) =>
+                            console.error('Hotel reconcile failed:', booking.id, error.message)
+                        );
+                        continue;
+                    }
+                    await this.reconcileFlightBooking(booking, { source: 'sweep' });
+                }
+
+                // Booked flights still waiting for a PNR / e-ticket number
+                const { literal } = require('sequelize');
+                const waitingTickets = await Booking.findAll({
+                    where: {
+                        booking_type: 'FLIGHT',
+                        status: 'BOOKED',
+                        created_at: { [Op.gte]: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000) },
+                        [Op.and]: [
+                            literal(`COALESCE(booking_data #>> '{ticketSync,complete}', 'false') <> 'true'`),
+                            literal(`COALESCE(booking_data #>> '{ticketSync,gaveUp}', 'false') <> 'true'`)
+                        ]
+                    },
+                    // longest unchecked first
+                    order: [[literal(`booking_data #>> '{ticketSync,lastCheckAt}'`), 'ASC NULLS FIRST']],
+                    limit: 25
+                });
+                for (const booking of waitingTickets) {
+                    const data = booking.booking_data || {};
+                    if (ticketSyncExpired(data)) {
+                        // still missing a day after departure: hand over to operations
+                        await booking.update({
+                            booking_data: {
+                                ...data,
+                                needsManualReview: true,
+                                ticketSync: { ...(data.ticketSync || {}), gaveUp: true, gaveUpAt: new Date().toISOString() }
+                            }
+                        });
+                        continue;
+                    }
+                    if (!ticketCheckDue(data)) continue;
+                    await this.syncFlightTickets(booking, { source: 'sweep' }).catch((error) =>
+                        console.error('Flight ticket sync error:', booking.id, error.message)
+                    );
+                }
+            } catch (error) {
+                console.error('Flight booking reconciler error:', error.message);
+            } finally {
+                this.flightReconcilerRunning = false;
+            }
+        };
+
+        this.flightReconcilerTimer = setInterval(sweep, intervalMs);
+        if (this.flightReconcilerTimer.unref) this.flightReconcilerTimer.unref();
+        setTimeout(sweep, 15 * 1000);
+    }
+
+    /**
+     * Payment failed / cancelled at the gateway: the booking must say so
+     * (otherwise the customer page keeps showing "processing").
+     */
+    async markBookingPaymentFailed(payment, callbackData = {}) {
+        try {
+            const Booking = require('../models/Booking');
+            const booking = payment?.booking_id ? await Booking.findByPk(payment.booking_id) : null;
+            if (!booking || booking.payment_status === 'SUCCESS') return;
+
+            await booking.update({
+                status: 'PAYMENT_FAILED',
+                payment_status: 'FAILED',
+                booking_data: {
+                    ...(booking.booking_data || {}),
+                    paymentFailure: {
+                        merchantTxnNo: payment.merchant_txn_no,
+                        responseCode: callbackData.responseCode || callbackData.txnResponseCode || null,
+                        message: callbackData.respDescription || callbackData.txnRespDescription || null,
+                        at: new Date().toISOString()
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Unable to mark booking payment failed:', error.message);
+        }
+    }
+
+    /**
+     * ICICI "command" API (STATUS / REFUND): form fields + secureHash.
+     */
+    async iciciCommand(config, fields) {
+        const base = String(config.base_url || '').replace(/\/+$/, '');
+        // Command API (STATUS / REFUND) lives next to the sale API:
+        // "/tsp/pg/api/v2/initiateSale" -> "/tsp/pg/api/command"
+        // (without the "/tsp" prefix ICICI answers 404)
+        const prefix = String(config.initiate_sale_url || '').match(/^(.*?)\/pg\/api\//)?.[1] ?? '/tsp';
+        const path = config.command_url || `${prefix}/pg/api/command`;
+        const url = /^https?:/i.test(path) ? path : `${base}/${path.replace(/^\/+/, '')}`;
+
+        const payload = {
+            merchantId: config.merchant_id,
+            aggregatorID: config.aggregator_id,
+            ...fields
+        };
+        payload.secureHash = createSecureHash(payload, config.secure_key);
+
+        const response = await axios.post(url, new URLSearchParams(payload).toString(), {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            timeout: 30000
+        });
+
+        return response.data || {};
+    }
+
+    /**
+     * No callback received (customer closed the page etc.):
+     * ask ICICI for the result of the sale.
+     */
+    async checkPaymentStatus(payment, environment = 'UAT') {
+        if (!payment || payment.status !== 'pending') {
+            return { checked: false, status: payment?.status || null };
+        }
+
+        const config = await this.getGatewayConfig(environment);
+        const result = await this.iciciCommand(config, {
+            merchantTxnNo: payment.merchant_txn_no,
+            originalTxnNo: payment.merchant_txn_no,
+            transactionType: 'STATUS'
+        });
+
+        const txnStatus = String(result.txnStatus || '').toUpperCase();
+        const txnCode = String(result.txnResponseCode || '').trim();
+        const okCode = ['000', '0000'].includes(txnCode);
+
+        await payment.update({
+            payment_data: {
+                ...(payment.payment_data || {}),
+                lastStatusCheck: { at: new Date().toISOString(), txnStatus, txnCode, responseCode: result.responseCode || null }
+            }
+        });
+
+        const Booking = require('../models/Booking');
+        const booking = payment.booking_id ? await Booking.findByPk(payment.booking_id) : null;
+
+        // Paid: run the normal post-payment flow (booking with the airline)
+        if (txnStatus === 'SUC' && okCode) {
+            const paidAmount = Number(result.amount);
+            if (Number.isFinite(paidAmount) && Math.round(paidAmount * 100) !== Math.round(Number(payment.amount) * 100)) {
+                throw new Error('Payment amount mismatch');
+            }
+            await this.processVerifiedPayment(payment, {
+                ...result,
+                responseCode: '0000',
+                bookingTypeHint: booking?.booking_type
+            });
+            return { checked: true, status: 'success' };
+        }
+
+        // Clearly not paid
+        if (['REJ', 'ERR', 'FAIL', 'FAILED'].includes(txnStatus) || (txnCode && !okCode && txnStatus !== 'REQ')) {
+            await this.markBookingPaymentFailed(payment, result);
+            await payment.update({ status: 'failed', gateway_response: result });
+            return { checked: true, status: 'failed' };
+        }
+
+        return { checked: true, status: 'pending' };
+    }
+
+    /**
+     * Refund (full or partial) through ICICI.
+     * Returns { status: SUCCESS | PROCESSING | FAILED, ... }.
+     */
+    async refundPayment({ payment, amount, environment = 'UAT' }) {
+        if (!payment || payment.status !== 'success') {
+            throw new Error('Only a successful payment can be refunded');
+        }
+
+        const config = await this.getGatewayConfig(environment);
+        const refundTxnNo = `RFD${Date.now()}${Math.floor(100 + Math.random() * 900)}`;
+
+        const result = await this.iciciCommand(config, {
+            merchantTxnNo: refundTxnNo,
+            originalTxnNo: payment.merchant_txn_no,
+            transactionType: 'REFUND',
+            amount: Number(amount).toFixed(2)
+        });
+
+        const responseCode = String(result.responseCode || '').trim();
+        const txnStatus = String(result.txnStatus || '').toUpperCase();
+        const accepted = ['000', '0000'].includes(responseCode);
+
+        let status = 'FAILED';
+        if (accepted && txnStatus === 'SUC') status = 'SUCCESS';
+        else if (accepted) status = 'PROCESSING';
+
+        return {
+            status,
+            refundTxnNo,
+            gatewayRef: result.txnID || null,
+            message: result.respDescription || result.txnRespDescription || null,
+            response: result
+        };
+    }
+
     async wait(milliseconds) {
 
         return new Promise(
@@ -1144,6 +1633,15 @@ class IciciPaymentService {
             throw new Error('Invalid secureHash in payment callback');
         }
 
+        return this.processVerifiedPayment(payment, callbackData);
+    }
+
+    /**
+     * Payment result already verified (webhook hash or STATUS API).
+     * Handles failure, idempotency and the booking after a success.
+     */
+    async processVerifiedPayment(payment, callbackData) {
+
         // 9. Determine payment status
         const responseCode = String(callbackData.responseCode || '')
             .trim()
@@ -1163,8 +1661,21 @@ class IciciPaymentService {
             transactionStatus === 'success' ||
             transactionStatus === 'successful';
 
+        // Already captured: a later (duplicate / failure) callback must not change it
+        if (payment.status === 'success') {
+            return {
+                success: true,
+                alreadyProcessed: true,
+                paymentId: payment.id,
+                merchantTxnNo: payment.merchant_txn_no,
+                status: payment.status
+            };
+        }
+
         // 10. Payment failed
         if (!isSuccess) {
+            await this.markBookingPaymentFailed(payment, callbackData);
+
             await payment.update({
                 status: 'failed',
                 transaction_id:
@@ -1190,7 +1701,11 @@ class IciciPaymentService {
         }
 
         // 11. Determine booking type
-        const bookingType = String(callbackData.addlParam2 || '')
+        const bookingType = String(
+            callbackData.addlParam2 ||
+            callbackData.bookingTypeHint ||
+            ''
+        )
             .trim()
             .toUpperCase();
 
@@ -1211,7 +1726,22 @@ class IciciPaymentService {
             };
         }
 
-        // 13. Mark payment successful
+        // 13. Mark payment successful: only one request may win this
+        const [claimed] = await Payment.update(
+            { status: 'success' },
+            { where: { id: payment.id, status: 'pending' } }
+        );
+
+        if (!claimed) {
+            return {
+                success: true,
+                alreadyProcessed: true,
+                paymentId: payment.id,
+                merchantTxnNo: payment.merchant_txn_no,
+                status: 'success'
+            };
+        }
+
         await payment.update({
             status: 'success',
             transaction_id:
@@ -1404,223 +1934,91 @@ class IciciPaymentService {
                 });
 
                 // =====================================================
-                // 21. DIRECT TRIPJACK BOOK
-                // NO FARE VALIDATE HERE
+                // 21. TRIPJACK BOOK (no fare validate here)
+                // A timeout / network error does NOT mean the booking
+                // failed: TripJack may still have booked it.
                 // =====================================================
 
-                const bookResponse =
-                    await this.tripJackFlightService.book(
-                        tripJackBookPayload
-                    );
+                let bookResponse = null;
+                let bookError = null;
+
+                try {
+                    bookResponse =
+                        await this.tripJackFlightService.book(
+                            tripJackBookPayload
+                        );
+                } catch (error) {
+                    bookError = error;
+                    console.error('TripJack book call error (will verify with booking-details):', error.message);
+                }
 
                 const bookBody =
                     bookResponse?.data ?? bookResponse;
 
-                if (
-                    bookBody?.status?.success === false ||
-                    bookBody?.status?.httpStatus >= 400
-                ) {
+                const bookRejected =
+                    !bookError &&
+                    (
+                        bookBody?.status?.success === false ||
+                        bookBody?.status?.httpStatus >= 400
+                    );
+
+                await existingBooking.update({
+                    provider_booking_id:
+                        String(tripJackBookPayload.bookingId),
+                    booking_data: {
+                        ...bookingData,
+                        tripJack: {
+                            ...(bookingData.tripJack || {}),
+                            fareValidate:
+                                fareValidateData.response || null,
+                            book: bookResponse || {
+                                error: bookError?.message || 'No response'
+                            }
+                        },
+                        bookRequestedAt: new Date().toISOString()
+                    }
+                });
+
+                // =====================================================
+                // 22. CONFIRM WITH BOOKING DETAILS
+                // =====================================================
+
+                await this.wait(bookRejected ? 1000 : 4000);
+
+                const firstCheck =
+                    await this.reconcileFlightBooking(
+                        existingBooking.id,
+                        { source: 'after-book' }
+                    );
+
+                // TripJack rejected the book and nothing was booked
+                if (bookRejected && firstCheck.status !== 'BOOKED') {
                     throw new Error(
                         bookBody?.errors?.[0]?.message ||
                         'TripJack booking failed'
                     );
                 }
 
-                // =====================================================
-                // 22. Extract booking ID and reference
-                // =====================================================
+                // Still pending: keep checking in the background
+                if (firstCheck.status === 'BOOKING_IN_PROGRESS') {
+                    this.pollFlightBooking(existingBooking.id);
+                }
 
-                const providerBookingId =
-                    bookBody?.bookingId ||
-                    bookBody?.order?.bookingId ||
-                    tripJackBookPayload.bookingId;
-
-                const providerReference =
-                    bookBody?.pnr ||
-                    bookBody?.order?.pnr ||
-                    bookBody?.providerReference ||
-                    null;
-
-                // =====================================================
-                // 23. Wait before fetching booking details
-                // =====================================================
-
-                await this.wait(5000);
-
-                // =====================================================
-                // 24. Booking Details
-                // =====================================================
-
-                let bookingDetailsResponse = null;
-
-                try {
-
-                    bookingDetailsResponse =
-                        await this.tripJackFlightService.bookingDetails({
-                            bookingId: providerBookingId
-                        });
-
-                } catch (detailsError) {
-
-                    console.error(
-                        'TripJack Booking Details failed:',
-                        detailsError.message
+                const finalBooking =
+                    await bookingService.findById(
+                        existingBooking.id
                     );
-
-                }
-
-                // =====================================================
-                // 25. Verify final booking status
-                // =====================================================
-
-                const detailsBody =
-                    bookingDetailsResponse?.data ??
-                    bookingDetailsResponse;
-
-                const detailsStatus = String(
-                    detailsBody?.order?.status || ''
-                ).toUpperCase();
-
-                if (detailsStatus === 'FAILED') {
-
-                    throw new Error(
-                        'TripJack booking details returned FAILED status'
-                    );
-
-                }
-
-                if (
-                    detailsStatus &&
-                    detailsStatus !== 'SUCCESS' &&
-                    detailsStatus !== 'BOOKED'
-                ) {
-
-                    await existingBooking.update({
-
-                        payment_status: 'SUCCESS',
-
-                        status: 'BOOKING_IN_PROGRESS',
-
-                        provider_booking_id:
-                            String(providerBookingId),
-
-                        booking_data: {
-
-                            ...bookingData,
-
-                            tripJack: {
-
-                                // Keep the already saved Fare Validate response
-                                fareValidate:
-                                    fareValidateData.response || null,
-
-                                book: bookResponse,
-
-                                bookingDetails:
-                                    bookingDetailsResponse
-
-                            }
-
-                        }
-
-                    });
-
-                    return {
-
-                        success: true,
-
-                        alreadyProcessed: false,
-
-                        paymentId: payment.id,
-
-                        merchantTxnNo:
-                            payment.merchant_txn_no,
-
-                        status: 'success',
-
-                        bookingStatus: 'BOOKING_IN_PROGRESS',
-
-                        bookingType: 'FLIGHT',
-
-                        booking: existingBooking
-
-                    };
-
-                }
-
-                // =====================================================
-                // 26. Save final booking state
-                // =====================================================
-
-                await existingBooking.update({
-
-                    provider_booking_id:
-                        providerBookingId
-                            ? String(providerBookingId)
-                            : existingBooking.provider_booking_id,
-
-                    provider_reference:
-                        providerReference
-                            ? String(providerReference)
-                            : existingBooking.provider_reference,
-
-                    status: 'BOOKED',
-
-                    payment_status: 'SUCCESS',
-
-                    booking_data: {
-
-                        ...bookingData,
-
-                        tripJack: {
-
-                            // Keep the already saved Fare Validate response
-                            fareValidate:
-                                fareValidateData.response || null,
-
-                            book: bookResponse,
-
-                            bookingDetails:
-                                bookingDetailsResponse
-
-                        }
-
-                    }
-
-                });
 
                 return {
-
                     success: true,
-
                     alreadyProcessed: false,
-
                     paymentId: payment.id,
-
-                    merchantTxnNo:
-                        payment.merchant_txn_no,
-
+                    merchantTxnNo: payment.merchant_txn_no,
                     status: 'success',
-
-                    bookingStatus: 'BOOKED',
-
+                    bookingStatus: firstCheck.status,
                     bookingType: 'FLIGHT',
-
-                    booking: existingBooking,
-
-                    tripJack: {
-
-                        // Return already completed Fare Validate response
-                        fareValidate:
-                            fareValidateData.response || null,
-
-                        book: bookResponse,
-
-                        bookingDetails:
-                            bookingDetailsResponse
-
-                    }
-
+                    pnr: firstCheck.pnr,
+                    booking: finalBooking || existingBooking
                 };
 
             } catch (flightError) {

@@ -1,8 +1,9 @@
 const { randomUUID } = require('crypto');
 
 class TripJackHotelService {
-    constructor(tripJackClient) {
+    constructor(tripJackClient, hotelIndexService = null) {
         this.tripJackClient = tripJackClient;
+        this.hotelIndexService = hotelIndexService;
     }
 
     async listing(payload) {
@@ -18,14 +19,71 @@ class TripJackHotelService {
             correlationId
         };
 
-        const listingResponse =
-            await this.tripJackClient.post(
-                '/hms/v3/hotel/listing',
-                listingPayload,
-                {
-                    service: 'hotel'
+        // TripJack listing accepts at most 100 hids per call (more is a
+        // schema error): split into batches and merge the results.
+        const MAX_HIDS = 100;
+        const MAX_BATCHES = 20;
+        const CONCURRENCY = 5;
+        const allHids = Array.isArray(payload.hids)
+            ? [...new Set(payload.hids.map(String).filter(Boolean))]
+            : null;
+
+        let listingResponse;
+
+        if (allHids && allHids.length > MAX_HIDS) {
+            const batches = [];
+            for (let i = 0; i < allHids.length && batches.length < MAX_BATCHES; i += MAX_HIDS) {
+                batches.push(allHids.slice(i, i + MAX_HIDS));
+            }
+
+            const results = new Array(batches.length);
+            let next = 0;
+            const worker = async () => {
+                while (next < batches.length) {
+                    const index = next++;
+                    try {
+                        results[index] = await this.tripJackClient.post(
+                            '/hms/v3/hotel/listing',
+                            { ...listingPayload, hids: batches[index] },
+                            { service: 'hotel' }
+                        );
+                    } catch (error) {
+                        console.error('Hotel listing batch failed:', index, error.message);
+                        results[index] = null;
+                    }
                 }
-            );
+            };
+            await Promise.all(Array.from({ length: Math.min(CONCURRENCY, batches.length) }, worker));
+
+            const seen = new Set();
+            const merged = results.flatMap((result) => {
+                const list = result?.data?.hotels || result?.hotels || [];
+                return Array.isArray(list) ? list : [];
+            }).filter((hotel) => {
+                const id = String(hotel?.hotelId || '');
+                if (!id || seen.has(id)) return false;
+                seen.add(id);
+                return true;
+            });
+
+            if (!results.some(Boolean)) {
+                throw new Error('Unable to search hotels right now. Please try again.');
+            }
+
+            listingResponse = {
+                status: { success: true, httpStatus: 200 },
+                hotels: merged
+            };
+        } else {
+            listingResponse =
+                await this.tripJackClient.post(
+                    '/hms/v3/hotel/listing',
+                    listingPayload,
+                    {
+                        service: 'hotel'
+                    }
+                );
+        }
 
         const hotels =
             listingResponse?.data?.hotels ||
@@ -39,11 +97,11 @@ class TripJackHotelService {
             };
         }
 
-        const hotelIds = hotels
+        const hotelIds = [...new Set(hotels
             .map((hotel) => hotel?.hotelId)
             .filter(Boolean)
-            .map(String)
-            .slice(0, 100);
+            .map(String))]
+            .slice(0, 1000);
 
         if (!hotelIds.length) {
             return {
@@ -52,29 +110,31 @@ class TripJackHotelService {
             };
         }
 
-        let contentResponse;
-
-        try {
-            contentResponse =
-                await this.tripJackClient.hotelContent(
-                    hotelIds
-                );
-        } catch (error) {
-            console.error(
-                'TripJack hotel content API error:',
-                error.message
-            );
-
-            return {
-                ...listingResponse,
-                correlationId
-            };
+        // Content API takes up to 100 ids per call: fetch in parallel batches
+        const batches = [];
+        for (let i = 0; i < hotelIds.length; i += 100) {
+            batches.push(hotelIds.slice(i, i + 100));
         }
 
-        const contentHotels =
-            contentResponse?.data?.hotels ||
-            contentResponse?.hotels ||
-            [];
+        const contentResults = await Promise.allSettled(
+            batches.map((ids) => this.tripJackClient.hotelContent(ids))
+        );
+
+        const contentHotels = contentResults.flatMap((result) => {
+            if (result.status !== 'fulfilled') {
+                console.error('Hotel content API error:', result.reason?.message);
+                return [];
+            }
+            const list = result.value?.data?.hotels || result.value?.hotels || [];
+            return Array.isArray(list) ? list : [];
+        });
+
+        // remember hotel names for the search box (not awaited)
+        if (this.hotelIndexService && contentHotels.length) {
+            this.hotelIndexService.upsertContent(contentHotels).catch((error) =>
+                console.error('Hotel name index update failed:', error.message)
+            );
+        }
 
         const contentMap = new Map();
 
@@ -108,19 +168,50 @@ class TripJackHotelService {
                     ? content.images
                     : [];
 
+            // TripJack sends one size key per image (Standard, XXL, XL, ...)
+            const imageUrl = (image) => {
+                const links = image?.links || {};
+                return (
+                    links.Standard?.href ||
+                    links.XL?.href ||
+                    links.XXL?.href ||
+                    Object.values(links).find((link) => link?.href)?.href ||
+                    null
+                );
+            };
+
             const heroImage =
-                images.find(
-                    (image) =>
-                        image?.is_hero_image === true
-                )?.links?.Standard?.href ||
-                images[0]?.links?.Standard?.href ||
+                imageUrl(images.find((image) => image?.is_hero_image === true)) ||
+                imageUrl(images[0]) ||
                 null;
+
+            // Send only what the pages show (raw content is ~25KB per hotel)
+            const slimImages = images
+                .map((image) => ({
+                    caption: image?.caption || '',
+                    is_hero_image: image?.is_hero_image === true,
+                    url: imageUrl(image)
+                }))
+                .filter((image) => image.url)
+                .slice(0, 40);
 
             return {
                 ...hotel,
                 image: heroImage,
-                images,
-                hotelContent: content
+                images: slimImages,
+                hotelContent: {
+                    tjHotelId: content.tjHotelId,
+                    name: content.name,
+                    star_rating: content.star_rating,
+                    property_type: content.property_type,
+                    locale: {
+                        address: content.locale?.address,
+                        coordinates: content.locale?.coordinates
+                    },
+                    policies: content.policies,
+                    amenities: content.amenities,
+                    descriptions: content.descriptions
+                }
             };
         });
 

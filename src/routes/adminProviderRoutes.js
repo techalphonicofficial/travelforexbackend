@@ -12,6 +12,10 @@ router.get('/', ap('index'));
 
 // TripJack Bookings
 router.get('/tripjack-bookings', ap('tripjackBookings'));
+router.get('/tripjack-bookings/data', ap('tripjackBookingsData'));
+router.get('/tripjack-bookings/:id/details', ap('tripjackBookingDetails'));
+router.post('/tripjack-bookings/:id/refresh', ap('tripjackBookingRefresh'));
+router.post('/tripjack-bookings/:id/refund', ap('tripjackBookingRefund'));
 
 // Create provider
 router.post('/', ap('create'));

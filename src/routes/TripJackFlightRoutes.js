@@ -60,44 +60,11 @@ router.post('/review', tfc('review'));
  */
 router.post('/seat', tfc('seat'));
 
-/**
- * @swagger
- * /api/v1/tripjack/flights/fare-validate:
- *   post:
- *     summary: Validate flight fare before booking
- *     tags:
- *       - TripJack Flights
+/*
+ * fare-validate, book, confirm-book and booking-details are NOT public:
+ * booking happens only on the server after a verified payment
+ * (BookingService / IciciPaymentService). Exposing "book" would let anyone
+ * issue tickets from the supplier wallet without paying.
  */
-router.post('/fare-validate', tfc('fareValidate'));
-
-/**
- * @swagger
- * /api/v1/tripjack/flights/book:
- *   post:
- *     summary: Book selected TripJack flight
- *     tags:
- *       - TripJack Flights
- */
-router.post('/book', tfc('book'));
-
-/**
- * @swagger
- * /api/v1/tripjack/flights/confirm-book:
- *   post:
- *     summary: Confirm held TripJack flight booking
- *     tags:
- *       - TripJack Flights
- */
-router.post('/confirm-book', tfc('confirmBook'));
-
-/**
- * @swagger
- * /api/v1/tripjack/flights/booking-details:
- *   post:
- *     summary: Get TripJack flight booking details
- *     tags:
- *       - TripJack Flights
- */
-router.post('/booking-details', tfc('bookingDetails'));
 
 module.exports = router;

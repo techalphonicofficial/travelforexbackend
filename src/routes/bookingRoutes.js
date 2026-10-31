@@ -4,46 +4,48 @@ const express = require('express');
 const router = express.Router();
 
 const { controllers } = require('../container');
+const { apiAuth } = require('../middleware/apiAuthMiddleware');
 
-const bc = (method) => (req, res) =>
-    controllers.bookingController[method](req, res);
+const bc = (method) => (req, res, next) =>
+    controllers.bookingController[method](req, res, next);
 
 /**
  * Create booking
  */
-router.post('/', bc('createBooking'));
+// Flight booking + payment need a logged-in user
+router.post('/', apiAuth, bc('createBooking'));
 
-router.post('/continue-to-pay/:bookingId', bc('continueToPay'));
+router.post('/continue-to-pay/:bookingId', apiAuth, bc('continueToPay'));
 
-router.post('/hotel', bc('createHotelBooking'));
+// Hotel booking + payment need a logged-in user
+router.post('/hotel', apiAuth, bc('createHotelBooking'));
 
-/** 
- * Admin: All bookings (paginated)
+/*
+ * Admin booking list moved to the session-protected admin panel:
+ * GET /admin/providers/tripjack-bookings/data
  */
-router.get(
-    '/allBookingsByAdmin',
-    bc('getBookingsByUserId')
-);
 
 /**
- * Booking details by reference
+ * Booking details by reference (owner only)
  */
 router.get(
     '/booking-details/:id',
+    apiAuth,
     bc('getBookingByReference')
 );
 
 /**
- * User bookings
+ * Logged-in user's bookings (own bookings only)
  */
 router.get(
     '/user/:userId',
+    apiAuth,
     bc('getBookingsByUserId')
 );
 
 /**
- * Booking details by ID
+ * Booking details by ID (owner only)
  */
-router.get('/:id', bc('getBooking'));
+router.get('/:id', apiAuth, bc('getBooking'));
 
 module.exports = router;

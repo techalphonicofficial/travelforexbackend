@@ -37,6 +37,8 @@ const CouponService = require('./services/CouponService');
 // ===== TRIPJACK =====
 
 const TripJackCityRegion = require('./models/TripJackCityRegion');
+const TripJackHotelIndex = require('./models/TripJackHotelIndex');
+const TripJackHotelIndexService = require('./services/tripJackHotelIndexService');
 
 const TripJackConfigService =
   require('./services/TripJackConfigService');
@@ -1428,8 +1430,12 @@ const tripJackConfigService =
 const tripJackClient =
   new TripJackClient(tripJackConfigService);
 
+// hotel names for the hotel search box
+const tripJackHotelIndexService =
+  new TripJackHotelIndexService(tripJackClient, TripJackHotelIndex);
+
 const tripJackHotelService =
-  new TripJackHotelService(tripJackClient);
+  new TripJackHotelService(tripJackClient, tripJackHotelIndexService);
 
 const tripJackFlightService = new TripJackFlightService(
   tripJackClient
@@ -1455,7 +1461,8 @@ const tripJackContentService =
 const tripJackContentController =
   new TripJackContentController(
     tripJackContentService,
-    tripJackCityRegionSyncService
+    tripJackCityRegionSyncService,
+    tripJackHotelIndexService
   );
 
 
@@ -1736,6 +1743,7 @@ module.exports = {
     VendorProfile,
     ProviderConfig,
     TripJackCityRegion,
+    TripJackHotelIndex,
 
     Continent,
     Country,
@@ -1868,6 +1876,7 @@ module.exports = {
 
     tripJackCityRegionSyncService,
     tripJackContentService,
+    tripJackHotelIndexService,
 
     accountingService,
     tripBuilderService,
